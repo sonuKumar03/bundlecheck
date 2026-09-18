@@ -1,5 +1,7 @@
 # bundlecheck
 
+[![CI](https://github.com/sonuKumar03/bundlecheck/actions/workflows/ci.yml/badge.svg)](https://github.com/sonuKumar03/bundlecheck/actions/workflows/ci.yml)
+
 Fast Go CLI and AI agent skill for reporting initial/lazy JavaScript sizes and npm package
 contributions from Angular's esbuild-based builds, providing automated optimization suggestions with `suggest`, tracing dependency import paths with `why`, estimating Gzip wire transfer sizes, tracking baselines across code changes, comparing saved summaries, and enforcing size budgets in CI.
 
