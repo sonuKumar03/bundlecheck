@@ -235,12 +235,18 @@ bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 10KB
 
 ## 🛡️ CI & GitHub Actions Integration
 
-Add `bundlecheck` to your GitHub Actions workflow to post bundle size reports on Pull Requests and prevent regressions:
+### Method 1: Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.1.0`)
+
+The fastest way to add bundle analysis, size budgets, and automatic PR commenting to any Angular repository:
 
 ```yaml
 name: Bundle Size Guard
 
 on: [pull_request]
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   bundlecheck:
@@ -257,18 +263,26 @@ jobs:
           npm ci
           npx ng build --configuration production --stats-json
 
-      - name: Install bundlecheck
-        run: |
-          curl -sSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+      - name: Run BundleCheck & Post PR Report
+        uses: sonuKumar03/bundlecheck@v0.1.0
+        with:
+          post-comment: 'true'
+          max-initial: '350KB'
+          max-total: '1.2MB'
+```
 
-      - name: Generate PR Bundle Report
-        run: |
-          bundlecheck summary --format markdown --gzip --suggest -o bundle-report.md
+### Method 2: Direct CLI in CI Scripts
 
-      - name: Enforce Size Budget
-        run: |
-          bundlecheck check --max-initial 350KB --max-total 1.2MB
+```yaml
+- name: Install bundlecheck
+  run: |
+    curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+    echo "$HOME/go/bin" >> $GITHUB_PATH
+
+- name: Enforce Size Budget & Generate Report
+  run: |
+    bundlecheck summary --format markdown --gzip --suggest -o bundle-report.md
+    bundlecheck check --max-initial 350KB --max-total 1.2MB
 ```
 
 ---

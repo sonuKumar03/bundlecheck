@@ -1,0 +1,170 @@
+name: 'BundleCheck - Angular Bundle Analyzer & PR Reporter'
+description: 'Analyze Angular bundle sizes, estimate Gzip wire transfers, generate PR reports, and enforce size budgets in CI.'
+author: 'Sonu Kumar'
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  stats:
+    description: 'Path to Angular stats.json (auto-detected if omitted)'
+    required: false
+    default: ''
+  dist:
+    description: 'Path to emitted browser dist with index.html (auto-detected if omitted)'
+    required: false
+    default: ''
+  project:
+    description: 'Project name for multi-project workspaces when auto-detecting'
+    required: false
+    default: ''
+  format:
+    description: 'Report format: markdown, json, or text'
+    required: false
+    default: 'markdown'
+  output:
+    description: 'File path to write report output (e.g. pr-comment.md)'
+    required: false
+    default: 'bundle-report.md'
+  gzip:
+    description: 'Include Gzip wire transfer estimation'
+    required: false
+    default: 'true'
+  suggest:
+    description: 'Include automated optimization suggestions'
+    required: false
+    default: 'true'
+  max-initial:
+    description: 'Maximum allowed initial JS size (e.g. 250KB, 1MB)'
+    required: false
+    default: ''
+  max-lazy:
+    description: 'Maximum allowed lazy JS size (e.g. 500KB)'
+    required: false
+    default: ''
+  max-total:
+    description: 'Maximum allowed total JS size (e.g. 1.5MB)'
+    required: false
+    default: ''
+  baseline:
+    description: 'Path to baseline summary JSON for regression checks'
+    required: false
+    default: ''
+  max-initial-delta:
+    description: 'Maximum allowed increase in initial JS vs baseline (e.g. 0B, 10KB)'
+    required: false
+    default: ''
+  max-total-delta:
+    description: 'Maximum allowed increase in total JS vs baseline'
+    required: false
+    default: ''
+  post-comment:
+    description: 'Automatically post or update PR summary comment'
+    required: false
+    default: 'false'
+
+outputs:
+  initial-bytes:
+    description: 'Initial bundle size in raw bytes'
+    value: ${{ steps.run-bundlecheck.outputs.initial_bytes }}
+  lazy-bytes:
+    description: 'Lazy chunks size in raw bytes'
+    value: ${{ steps.run-bundlecheck.outputs.lazy_bytes }}
+  total-bytes:
+    description: 'Total JavaScript size in raw bytes'
+    value: ${{ steps.run-bundlecheck.outputs.total_bytes }}
+  report-path:
+    description: 'Path where the bundle report was written'
+    value: ${{ inputs.output }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.27.x'
+
+    - name: Build & Install bundlecheck
+      shell: bash
+      run: |
+        if ! command -v bundlecheck >/dev/null 2>&1; then
+          go install github.com/sonuKumar03/bundlecheck@latest
+        fi
+
+    - name: Run bundlecheck Analysis & Budgets
+      id: run-bundlecheck
+      shell: bash
+      run: |
+        ARGS=()
+        if [ -n "${{ inputs.stats }}" ]; then ARGS+=("-s" "${{ inputs.stats }}"); fi
+        if [ -n "${{ inputs.dist }}" ]; then ARGS+=("-d" "${{ inputs.dist }}"); fi
+        if [ -n "${{ inputs.project }}" ]; then ARGS+=("-p" "${{ inputs.project }}"); fi
+
+        # If baseline or regression thresholds are passed, use measure/check
+        SUMMARY_FLAGS=("${ARGS[@]}" "-f" "${{ inputs.format }}")
+        if [ "${{ inputs.gzip }}" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
+        if [ "${{ inputs.suggest }}" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
+        if [ -n "${{ inputs.output }}" ]; then SUMMARY_FLAGS+=("-o" "${{ inputs.output }}"); fi
+
+        # Run summary report
+        bundlecheck summary "${SUMMARY_FLAGS[@]}"
+
+        # Extract structured metrics via JSON
+        JSON_OUT=$(bundlecheck summary "${ARGS[@]}" -f json)
+        INITIAL=$(echo "$JSON_OUT" | grep -o '"initialJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
+        LAZY=$(echo "$JSON_OUT" | grep -o '"lazyJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
+        TOTAL=$(echo "$JSON_OUT" | grep -o '"totalJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
+
+        echo "initial_bytes=$INITIAL" >> $GITHUB_OUTPUT
+        echo "lazy_bytes=$LAZY" >> $GITHUB_OUTPUT
+        echo "total_bytes=$TOTAL" >> $GITHUB_OUTPUT
+
+        # Enforce budget checks if any threshold is specified
+        CHECK_FLAGS=("${ARGS[@]}")
+        HAS_BUDGET=false
+        if [ -n "${{ inputs.max-initial }}" ]; then CHECK_FLAGS+=("--max-initial" "${{ inputs.max-initial }}"); HAS_BUDGET=true; fi
+        if [ -n "${{ inputs.max-lazy }}" ]; then CHECK_FLAGS+=("--max-lazy" "${{ inputs.max-lazy }}"); HAS_BUDGET=true; fi
+        if [ -n "${{ inputs.max-total }}" ]; then CHECK_FLAGS+=("--max-total" "${{ inputs.max-total }}"); HAS_BUDGET=true; fi
+        if [ -n "${{ inputs.baseline }}" ]; then CHECK_FLAGS+=("--baseline" "${{ inputs.baseline }}"); HAS_BUDGET=true; fi
+        if [ -n "${{ inputs.max-initial-delta }}" ]; then CHECK_FLAGS+=("--max-initial-delta" "${{ inputs.max-initial-delta }}"); HAS_BUDGET=true; fi
+        if [ -n "${{ inputs.max-total-delta }}" ]; then CHECK_FLAGS+=("--max-total-delta" "${{ inputs.max-total-delta }}"); HAS_BUDGET=true; fi
+
+        if [ "$HAS_BUDGET" = "true" ]; then
+          echo "Enforcing bundle size budgets..."
+          bundlecheck check "${CHECK_FLAGS[@]}"
+        fi
+
+    - name: Post PR Comment
+      if: inputs.post-comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const reportPath = '${{ inputs.output }}';
+          if (fs.existsSync(reportPath)) {
+            const reportContent = fs.readFileSync(reportPath, 'utf8');
+            const headerTag = '<!-- bundlecheck-report -->';
+            const body = `${headerTag}\n${reportContent}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c => c.body.includes(headerTag));
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+          }
