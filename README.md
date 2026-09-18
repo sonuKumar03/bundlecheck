@@ -60,20 +60,28 @@ $ bundlecheck summary --suggest --gzip
 
 ## 🚀 Installation
 
-### Option 1: One-Line Installer (CLI + Agent Skill)
+### Option 1: One-Line Installer (CLI + AI Agent Skill)
+
+Install the CLI binary and the AI Agent skill in a single command without cloning:
 
 ```bash
-git clone https://github.com/sonuKumar03/bundlecheck.git
-cd bundlecheck
-./install.sh --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
-This installs `bundlecheck` to `$GOBIN` (or `$HOME/go/bin`) and installs the skill to `$HOME/.agents/skills/bundlecheck/SKILL.md`.
+This installs `bundlecheck` to `$GOBIN` (or `$HOME/go/bin`) and installs the skill to `$HOME/.agents/skills/bundlecheck/SKILL.md` (and `$HOME/.gemini/antigravity-cli/skills/bundlecheck`).
 
 ### Option 2: Go Install
 
 ```bash
 go install github.com/sonuKumar03/bundlecheck@latest
+```
+
+### Option 3: From Local Source
+
+```bash
+git clone https://github.com/sonuKumar03/bundlecheck.git
+cd bundlecheck
+./install.sh --with-skill
 ```
 
 ---

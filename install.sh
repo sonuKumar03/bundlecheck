@@ -34,24 +34,48 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-CDPATH= cd -- "$(dirname -- "$0")"
-go install .
+script_dir=""
+if [ -n "${0:-}" ] && [ -f "$0" ]; then
+  script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fi
+
+if [ -n "$script_dir" ] && [ -f "$script_dir/go.mod" ]; then
+  (cd "$script_dir" && go install .)
+  skill_src="$script_dir/.agents/skills/bundlecheck/SKILL.md"
+else
+  go install github.com/sonuKumar03/bundlecheck@latest
+  skill_src=""
+fi
+
+install_skill_file() {
+  dest="$1"
+  mkdir -p "$(dirname "$dest")"
+  if [ -n "$skill_src" ] && [ -f "$skill_src" ]; then
+    cp "$skill_src" "$dest"
+  else
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/.agents/skills/bundlecheck/SKILL.md -o "$dest"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO "$dest" https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/.agents/skills/bundlecheck/SKILL.md
+    else
+      printf 'Error: curl or wget is required to download skill file\n' >&2
+      return 1
+    fi
+  fi
+}
 
 if [ "$with_skill" = true ]; then
   if [ -n "$custom_skill_dir" ]; then
-    mkdir -p "$custom_skill_dir"
-    cp .agents/skills/bundlecheck/SKILL.md "$custom_skill_dir/SKILL.md"
+    install_skill_file "$custom_skill_dir/SKILL.md"
     printf 'Installed bundlecheck skill at %s\n' "$custom_skill_dir"
   else
     skill_dir="$HOME/.agents/skills/bundlecheck"
-    mkdir -p "$skill_dir"
-    cp .agents/skills/bundlecheck/SKILL.md "$skill_dir/SKILL.md"
+    install_skill_file "$skill_dir/SKILL.md"
     printf 'Installed bundlecheck skill at %s\n' "$skill_dir"
 
     if [ -d "$HOME/.gemini/antigravity-cli/skills" ]; then
       agy_dir="$HOME/.gemini/antigravity-cli/skills/bundlecheck"
-      mkdir -p "$agy_dir"
-      cp .agents/skills/bundlecheck/SKILL.md "$agy_dir/SKILL.md"
+      install_skill_file "$agy_dir/SKILL.md"
       printf 'Installed bundlecheck skill at %s\n' "$agy_dir"
     fi
   fi
