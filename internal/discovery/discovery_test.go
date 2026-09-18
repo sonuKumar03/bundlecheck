@@ -122,6 +122,30 @@ func TestDiscoveryNxWorkspace(t *testing.T) {
 	}
 }
 
+func TestDiscoveryIndexCsrHtmlAndNxApps(t *testing.T) {
+	tmp := t.TempDir()
+	appDist := filepath.Join(tmp, "dist", "apps", "shop", "browser")
+	serverDist := filepath.Join(tmp, "dist", "apps", "shop", "server")
+	_ = os.MkdirAll(appDist, 0755)
+	_ = os.MkdirAll(serverDist, 0755)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "apps", "shop", "stats.json"), []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(appDist, "index.csr.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(appDist, "main.js"), []byte(`console.log(1)`), 0644)
+	_ = os.WriteFile(filepath.Join(serverDist, "index.server.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(serverDist, "server.mjs"), []byte(`console.log(2)`), 0644)
+
+	stats, foundDist, err := discovery.Locate(tmp, "")
+	if err != nil {
+		t.Fatalf("expected single browser candidate to be detected: %v", err)
+	}
+	if !strings.Contains(stats, filepath.Join("dist", "apps", "shop", "stats.json")) {
+		t.Errorf("unexpected stats: %s", stats)
+	}
+	if foundDist != appDist {
+		t.Errorf("expected dist %q, got %q", appDist, foundDist)
+	}
+}
+
 func BenchmarkFindCandidatesScaling(b *testing.B) {
 	tmp := b.TempDir()
 	const numApps = 200

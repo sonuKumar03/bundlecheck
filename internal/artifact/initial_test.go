@@ -101,3 +101,20 @@ func TestBrowserAbsolutePaths(t *testing.T) {
 		t.Fatalf("missing index: %v", err)
 	}
 }
+
+func TestIndexCsrHtmlSupport(t *testing.T) {
+	dist := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dist, "main.js"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dist, "index.csr.html"), []byte(`<script src="main.js"></script>`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, roots, err := BrowserOutputs([]snapshot.BundleOutput{{Path: "main.js"}}, dist)
+	if err != nil {
+		t.Fatalf("expected index.csr.html to be parsed: %v", err)
+	}
+	if len(got) != 1 || len(roots) != 1 || roots[0] != "main.js" {
+		t.Fatalf("unexpected outputs: got=%v roots=%v", got, roots)
+	}
+}

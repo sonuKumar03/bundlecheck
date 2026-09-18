@@ -95,7 +95,7 @@ func FindCandidates(rootDir string) ([]Candidate, error) {
 		name := d.Name()
 		if name == "stats.json" || strings.HasSuffix(name, ".stats.json") {
 			statsFiles = append(statsFiles, p)
-		} else if name == "index.html" {
+		} else if (name == "index.html" || name == "index.csr.html") && filepath.Base(filepath.Dir(p)) != "server" {
 			dir := filepath.Dir(p)
 			if hasJavaScriptFiles(dir) {
 				indexDirs = append(indexDirs, dir)
@@ -189,7 +189,7 @@ func deriveProjectName(rootDir, statsPath, distPath string) string {
 	}
 	parts := strings.Split(filepath.ToSlash(rel), "/")
 	for _, p := range parts {
-		if p != "dist" && p != "browser" && p != "stats.json" && p != "." && p != "" && !strings.HasSuffix(p, ".json") {
+		if p != "dist" && p != "apps" && p != "projects" && p != "browser" && p != "stats.json" && p != "." && p != "" && !strings.HasSuffix(p, ".json") {
 			return p
 		}
 	}

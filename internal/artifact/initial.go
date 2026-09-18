@@ -21,10 +21,13 @@ func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.Bu
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve dist: %w", err)
 	}
-	index := filepath.Join(abs, "index.html")
-	f, err := os.Open(index)
+	indexPath, err := findIndexFile(abs)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read index.html %q: %w", index, err)
+		return nil, nil, err
+	}
+	f, err := os.Open(indexPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read index file %q: %w", indexPath, err)
 	}
 	defer func() {
 		_ = f.Close()
@@ -107,11 +110,12 @@ func browserPath(p, dist string, files map[string]bool) (string, bool, error) {
 		return strings.TrimPrefix(p, dist+"/"), true, nil
 	}
 	candidates := make(map[string]bool)
-	if files[p] || !strings.Contains(p, "/") {
+	if files[p] {
 		candidates[p] = true
 	}
 	marker := "/" + path.Base(dist) + "/"
 	rest := "/" + p
+	hasMarker := false
 	for {
 		i := strings.Index(rest, marker)
 		if i < 0 {
@@ -119,6 +123,7 @@ func browserPath(p, dist string, files map[string]bool) (string, bool, error) {
 		}
 		tail := rest[i+len(marker):]
 		candidates[tail] = true
+		hasMarker = true
 		rest = "/" + tail
 	}
 	possible := make([]string, 0, len(candidates))
@@ -139,10 +144,21 @@ func browserPath(p, dist string, files map[string]bool) (string, bool, error) {
 	if match != "" {
 		return match, true, nil
 	}
-	if len(possible) > 0 {
+	if hasMarker && len(possible) > 0 {
 		return possible[0], true, nil
 	}
 	return "", false, nil
+}
+
+func findIndexFile(dist string) (string, error) {
+	candidates := []string{"index.html", "index.csr.html", "index.server.html"}
+	for _, c := range candidates {
+		p := filepath.Join(dist, c)
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("read index.html %q: open %s: no such file or directory (also checked index.csr.html, index.server.html)", filepath.Join(dist, "index.html"), filepath.Join(dist, "index.html"))
 }
 
 func scriptPaths(doc *html.Node) ([]string, error) {
