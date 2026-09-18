@@ -119,6 +119,6 @@ jobs:
         with:
           name: bundlecheck-audit-result
           path: |
-            target-repo/${{ inputs.sub_dir }}/bundle-report.md
-            target-repo/${{ inputs.sub_dir }}/bundlecheck-audit.json
+            target-repo/**/bundle-report.md
+            target-repo/**/bundlecheck-audit.json
           if-no-files-found: ignore
