@@ -91,7 +91,7 @@ func ReadMetadata(ctx context.Context, root string) (Metadata, error) {
 		return m, fmt.Errorf("invalid Nx graph JSON: %w", err)
 	}
 	if len(m.Graph.Nodes) == 0 {
-		return m, fmt.Errorf("Nx graph has no project nodes; require Nx supporting 'graph --print'")
+		return m, fmt.Errorf("nx graph has no project nodes; require Nx supporting 'graph --print'")
 	}
 	return m, nil
 }

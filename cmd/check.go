@@ -152,7 +152,9 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			if format == "json" {
 				if err := report.JSON(w, checkResult); err != nil {

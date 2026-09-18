@@ -72,7 +72,9 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			opts := report.TextOptions{
 				Top:    top,

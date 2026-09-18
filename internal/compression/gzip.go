@@ -36,7 +36,9 @@ func MeasureFile(filePath string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	var buf bytes.Buffer
 	gw, err := gzip.NewWriterLevel(&buf, gzip.DefaultCompression)

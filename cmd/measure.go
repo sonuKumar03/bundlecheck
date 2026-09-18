@@ -81,7 +81,9 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			opts := report.TextOptions{
 				Top:    top,

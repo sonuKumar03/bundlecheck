@@ -26,7 +26,9 @@ func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.Bu
 	if err != nil {
 		return nil, nil, fmt.Errorf("read index.html %q: %w", index, err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	doc, err := html.Parse(f)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse index.html: %w", err)
@@ -206,9 +208,7 @@ func scriptPaths(doc *html.Node) ([]string, error) {
 			continue
 		}
 		p := snapshot.CleanPath(u.Path)
-		if strings.HasPrefix(p, baseDir) {
-			p = strings.TrimPrefix(p, baseDir)
-		}
+		p = strings.TrimPrefix(p, baseDir)
 		p = strings.TrimPrefix(p, "/")
 		refs = append(refs, p)
 	}

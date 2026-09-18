@@ -64,7 +64,9 @@ func summaryCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			if format == "json" {
 				if showSuggest {
@@ -168,10 +170,6 @@ func resolveBuildArtifacts(stats, dist, project string) (string, string, error) 
 func runAnalysis(stats, dist string) (*analysis.AnalysisResult, error) {
 	res, _, err := runAnalysisWithOptions(stats, dist, true)
 	return res, err
-}
-
-func runAnalysisWithSnapshot(stats, dist string) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
-	return runAnalysisWithOptions(stats, dist, true)
 }
 
 func runAnalysisWithOptions(stats, dist string, withCompression bool) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {

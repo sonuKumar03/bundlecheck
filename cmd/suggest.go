@@ -96,7 +96,9 @@ and duplicated package contributions.`,
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			if format == "json" {
 				return report.JSON(w, advisorRes)

@@ -77,7 +77,9 @@ Explains whether the package is pulled into initial or lazy JavaScript and shows
 			if err != nil {
 				return err
 			}
-			defer cleanup()
+			defer func() {
+				_ = cleanup()
+			}()
 
 			if format == "json" {
 				return report.JSON(w, whyResult)
