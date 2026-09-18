@@ -20,9 +20,18 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13.2
+
+  vulncheck:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-file: 'go.mod'
 
   test:
     strategy:
@@ -45,12 +54,52 @@ jobs:
       - name: Run Tests
         run: go test -v ./...
 
-      - name: Run Microbenchmarks
-        run: go test -bench=. -benchmem ./...
-
       - name: Build Binary
         run: go build -o bundlecheck .
 
       - name: Validate install.sh
         if: runner.os != 'Windows'
         run: sh -n install.sh
+
+  benchmark:
+    name: Continuous Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run Microbenchmarks
+        run: go test -bench=. -benchmem -run=^# ./... | tee benchmark-output.txt
+
+      - name: Restore previous benchmark data
+        uses: actions/cache/restore@v4
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-benchmark-
+
+      - name: Ensure cache directory exists
+        run: mkdir -p ./cache
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: benchmark-output.txt
+          external-data-json-path: ./cache/benchmark-data.json
+          fail-on-alert: false
+          summary-always: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save benchmark data
+        uses: actions/cache/save@v4
+        if: github.ref == 'refs/heads/master'
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark-${{ github.sha }}
