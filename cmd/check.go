@@ -18,6 +18,7 @@ func checkCommand() *cobra.Command {
 		project         string
 		baselinePath    string
 		format          string
+		output          string
 		maxInitial      string
 		maxLazy         string
 		maxTotal        string
@@ -32,8 +33,8 @@ func checkCommand() *cobra.Command {
 Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is breached.`,
 		Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
-			if format != "text" && format != "json" {
-				return fmt.Errorf("unsupported format %q: use text or json", format)
+			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
+				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}
 
 			// Parse limits
@@ -103,12 +104,22 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 				checkResult = budget.CheckSummary(currentResult.Summary, limits)
 			}
 
+			w, cleanup, err := getOutputWriter(c, output)
+			if err != nil {
+				return err
+			}
+			defer cleanup()
+
 			if format == "json" {
-				if err := report.JSON(c.OutOrStdout(), checkResult); err != nil {
+				if err := report.JSON(w, checkResult); err != nil {
+					return err
+				}
+			} else if report.IsMarkdownFormat(format) {
+				if err := report.CheckMarkdown(w, checkResult); err != nil {
 					return err
 				}
 			} else {
-				if err := report.BudgetReport(c.OutOrStdout(), checkResult); err != nil {
+				if err := report.BudgetReport(w, checkResult); err != nil {
 					return err
 				}
 			}
@@ -125,7 +136,8 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
-	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
+	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
+	c.Flags().StringVarP(&output, "output", "o", "", "Write output to file instead of stdout")
 	c.Flags().StringVar(&maxInitial, "max-initial", "", "Maximum allowed initial JS size (e.g. 250KB, 1MB)")
 	c.Flags().StringVar(&maxLazy, "max-lazy", "", "Maximum allowed lazy JS size (e.g. 500KB)")
 	c.Flags().StringVar(&maxTotal, "max-total", "", "Maximum allowed total JS size (e.g. 1.5MB)")

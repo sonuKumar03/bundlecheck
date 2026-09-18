@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -40,8 +39,17 @@ func TestSummaryFixtures(t *testing.T) {
 				if err := json.Unmarshal(out.Bytes(), &got); err != nil {
 					t.Fatalf("stdout not clean JSON: %s", out.String())
 				}
-				if got.Summary != tt.totals || !reflect.DeepEqual(got.Packages, tt.packages) {
-					t.Fatalf("got %+v, want %+v, %+v", got, tt.totals, tt.packages)
+				if got.Summary.InitialJS != tt.totals.InitialJS || got.Summary.LazyJS != tt.totals.LazyJS || got.Summary.TotalJS != tt.totals.TotalJS {
+					t.Fatalf("totals mismatch: got %+v, want %+v", got.Summary, tt.totals)
+				}
+				if len(got.Packages) != len(tt.packages) {
+					t.Fatalf("package count mismatch: got %d, want %d", len(got.Packages), len(tt.packages))
+				}
+				for j, p := range got.Packages {
+					want := tt.packages[j]
+					if p.Name != want.Name || p.InitialBytes != want.InitialBytes || p.LazyBytes != want.LazyBytes || p.TotalBytes != want.TotalBytes {
+						t.Fatalf("package %d mismatch: got %+v, want %+v", j, p, want)
+					}
 				}
 				if i > 0 && previous != out.String() {
 					t.Fatal("nondeterministic JSON")
@@ -92,6 +100,29 @@ func TestSummaryFileOutputAndOptions(t *testing.T) {
 	}
 }
 
+func TestSummaryMarkdown(t *testing.T) {
+	base := filepath.Join("..", "testdata", "lazy-import")
+	args := []string{"summary", "-s", filepath.Join(base, "stats.json"), "-d", filepath.Join(base, "browser"), "-f", "markdown", "--suggest", "--gzip"}
+	var out, errOut bytes.Buffer
+	if code := Execute(args, &out, &errOut); code != 0 || errOut.Len() != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "## 📦 Angular Bundle Summary") {
+		t.Errorf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "| Category | Size | Gzip |") {
+		t.Errorf("expected markdown summary table with gzip, got: %s", output)
+	}
+	if !strings.Contains(output, "### Top NPM Contributors") {
+		t.Errorf("expected top npm contributors section, got: %s", output)
+	}
+	if !strings.Contains(output, "## 💡 Bundle Optimization Recommendations") {
+		t.Errorf("expected suggestions section in markdown, got: %s", output)
+	}
+}
+
 func TestSummaryErrors(t *testing.T) {
 	base := filepath.Join("..", "testdata", "minimal")
 	valid := []string{"summary", "--stats", filepath.Join(base, "stats.json"), "--dist", filepath.Join(base, "browser")}
@@ -106,7 +137,7 @@ func TestSummaryErrors(t *testing.T) {
 		{"missing stats", []string{"summary", "--stats", "missing.json", "--dist", filepath.Join(base, "browser"), "--format", "json"}, "stats"},
 		{"missing index", []string{"summary", "--stats", filepath.Join(base, "stats.json"), "--dist", t.TempDir(), "--format", "json"}, "index.html"},
 		{"positional args", append(append([]string{}, valid...), "extra"), "unknown command"},
-		{"unknown command", []string{"why"}, "unknown command"},
+		{"unknown command", []string{"nonexistent"}, "unknown command"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var out, errOut bytes.Buffer

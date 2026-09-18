@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"bundlecheck/internal/comparison"
@@ -53,3 +54,30 @@ func TestMeasureRegressionBudget(t *testing.T) {
 		t.Fatal("expected failure on regression limit breached")
 	}
 }
+
+func TestMeasureMarkdown(t *testing.T) {
+	baselinePath := filepath.Join("..", "testdata", "comparison", "before.json")
+	afterBase := filepath.Join("..", "testdata", "lazy-import")
+
+	args := []string{
+		"measure",
+		"-s", filepath.Join(afterBase, "stats.json"),
+		"-d", filepath.Join(afterBase, "browser"),
+		"-b", baselinePath,
+		"-f", "markdown",
+	}
+
+	var out, errOut bytes.Buffer
+	if code := Execute(args, &out, &errOut); code != 0 || errOut.Len() != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "## 📊 Angular Bundle Comparison") {
+		t.Errorf("expected markdown header in measure output, got: %s", output)
+	}
+	if !strings.Contains(output, "| Category | Before | After | Delta | Status |") {
+		t.Errorf("expected delta table in markdown, got: %s", output)
+	}
+}
+

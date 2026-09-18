@@ -12,11 +12,12 @@ import (
 func Execute(args []string, stdout, stderr io.Writer) int {
 	root := &cobra.Command{
 		Use:     "bundlecheck",
-		Short:   "Summarize, measure, compare, and check Angular browser JavaScript bundles",
+		Short:   "Summarize, measure, compare, trace, advise, and check Angular browser JavaScript bundles",
 		Version: analysis.ToolVersion,
 		Long: `bundlecheck is a fast CLI and AI agent skill for Angular esbuild bundle analysis.
 It calculates accurate initial vs. lazy JavaScript byte totals, attributes npm package sizes,
-tracks baselines across changes, and enforces bundle size budgets in CI.`,
+estimates Gzip wire transfer sizes, traces dependency import paths, generates optimization
+recommendations, tracks baselines across changes, and enforces bundle size budgets in CI.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -29,6 +30,8 @@ tracks baselines across changes, and enforces bundle size budgets in CI.`,
 		baselineCommand(),
 		measureCommand(),
 		checkCommand(),
+		whyCommand(),
+		suggestCommand(),
 	)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(stderr, "bundlecheck: %v\n", err)

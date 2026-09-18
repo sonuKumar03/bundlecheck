@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,3 +35,27 @@ func TestCheckCommand(t *testing.T) {
 		t.Fatal("expected failure on budget exceeded, got exit 0")
 	}
 }
+
+func TestCheckMarkdown(t *testing.T) {
+	base := filepath.Join("..", "testdata", "minimal")
+
+	// Pass with markdown format
+	argsPass := []string{
+		"check",
+		"-s", filepath.Join(base, "stats.json"),
+		"-d", filepath.Join(base, "browser"),
+		"--max-initial", "2KB",
+		"-f", "markdown",
+	}
+	var out, errOut bytes.Buffer
+	if code := Execute(argsPass, &out, &errOut); code != 0 {
+		t.Fatalf("expected pass, got exit %d: %s", code, errOut.String())
+	}
+	if !strings.Contains(out.String(), "## ✅ Angular Bundle Budget Check: PASSED") {
+		t.Errorf("expected passed markdown header, got: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "All configured bundle size budgets and delta thresholds passed successfully.") {
+		t.Errorf("expected budget pass message, got: %s", out.String())
+	}
+}
+

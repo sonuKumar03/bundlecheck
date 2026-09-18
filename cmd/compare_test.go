@@ -73,6 +73,26 @@ func TestCompareShortFlagsAndOptions(t *testing.T) {
 	}
 }
 
+func TestCompareMarkdown(t *testing.T) {
+	base := filepath.Join("..", "testdata", "comparison")
+	args := []string{"compare", "-b", filepath.Join(base, "before.json"), "-a", filepath.Join(base, "after.json"), "-f", "markdown"}
+	var out, errOut bytes.Buffer
+	if code := Execute(args, &out, &errOut); code != 0 || errOut.Len() != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "## 📊 Angular Bundle Comparison") {
+		t.Errorf("expected markdown header in compare output, got: %s", output)
+	}
+	if !strings.Contains(output, "| Category | Before | After | Delta |") {
+		t.Errorf("expected delta table in markdown, got: %s", output)
+	}
+	if !strings.Contains(output, "### Changed Packages") {
+		t.Errorf("expected changed packages section, got: %s", output)
+	}
+}
+
 func TestCompareErrors(t *testing.T) {
 	before, after := filepath.Join("..", "testdata", "comparison", "before.json"), filepath.Join("..", "testdata", "comparison", "after.json")
 	bad := filepath.Join(t.TempDir(), "bad.json")

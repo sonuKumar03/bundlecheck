@@ -15,19 +15,24 @@ type BundleSnapshot struct {
 }
 
 type Totals struct {
-	InitialJS int64 `json:"initialJs"`
-	LazyJS    int64 `json:"lazyJs"`
-	TotalJS   int64 `json:"totalJs"`
+	InitialJS     int64 `json:"initialJs"`
+	InitialGzipJS int64 `json:"initialGzipJs,omitempty"`
+	LazyJS        int64 `json:"lazyJs"`
+	LazyGzipJS    int64 `json:"lazyGzipJs,omitempty"`
+	TotalJS       int64 `json:"totalJs"`
+	TotalGzipJS   int64 `json:"totalGzipJs,omitempty"`
 }
 
 type Module struct {
-	Path  string `json:"path"`
-	Bytes int64  `json:"bytes"`
+	Path    string   `json:"path"`
+	Bytes   int64    `json:"bytes"`
+	Imports []Import `json:"imports,omitempty"`
 }
 
 type BundleOutput struct {
 	Path       string         `json:"path"`
 	Bytes      int64          `json:"bytes"`
+	GzipBytes  int64          `json:"gzipBytes,omitempty"`
 	Initial    bool           `json:"initial"`
 	EntryPoint string         `json:"entryPoint,omitempty"`
 	Inputs     []Contribution `json:"inputs"`
@@ -48,10 +53,13 @@ type Import struct {
 }
 
 type Package struct {
-	Name         string `json:"name"`
-	InitialBytes int64  `json:"initialBytes"`
-	LazyBytes    int64  `json:"lazyBytes"`
-	TotalBytes   int64  `json:"totalBytes"`
+	Name             string `json:"name"`
+	InitialBytes     int64  `json:"initialBytes"`
+	InitialGzipBytes int64  `json:"initialGzipBytes,omitempty"`
+	LazyBytes        int64  `json:"lazyBytes"`
+	LazyGzipBytes    int64  `json:"lazyGzipBytes,omitempty"`
+	TotalBytes       int64  `json:"totalBytes"`
+	TotalGzipBytes   int64  `json:"totalGzipBytes,omitempty"`
 }
 
 // CleanPath uses portable slash-separated identifiers, even for Windows stats.

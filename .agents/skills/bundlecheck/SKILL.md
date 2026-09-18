@@ -1,11 +1,11 @@
 ---
 name: bundlecheck
-description: Use when inspecting Angular esbuild JavaScript sizes or npm contributions, capturing baselines, measuring subsequent changes, comparing saved summary snapshots, or validating size budgets in CI/agent loops.
+description: Use when inspecting Angular esbuild JavaScript sizes or npm contributions, getting optimization recommendations with 'suggest', tracing dependency import paths with 'why', capturing baselines, measuring subsequent changes, comparing saved summary snapshots, or validating size budgets in CI/agent loops.
 ---
 
 # bundlecheck
 
-Fast bundle analysis and change measurement CLI for Angular esbuild projects.
+Fast bundle analysis, optimization advisor, dependency tracing, and change measurement CLI for Angular esbuild projects.
 Use JSON output (`--format json`) for programmatic inspection and automated verification.
 
 ## 1. Install or locate
@@ -30,17 +30,26 @@ When tasked with optimizing an Angular application's bundle size:
    ```
    This automatically discovers artifacts and saves the baseline to `.bundlecheck/baseline.json`.
 
-### Step B: Identify Heavy Initial Contributors
-Inspect `packages[]` in the summary JSON or run:
+### Step B: Generate Optimization Suggestions
+Run the automated advisor to receive ranked, actionable optimization opportunities:
 ```sh
-bundlecheck summary --top 10
+bundlecheck suggest --format json
 ```
-Key patterns to investigate for initial bundle reduction:
-- Static imports of feature components/routes -> Convert to lazy route `loadComponent: () => import('./...')` or `loadChildren`.
-- Heavy third-party libraries in root modules (e.g. `lodash`, `moment`, `chart.js`, `pdfjs`) -> Convert to dynamic `await import(...)` inside event handlers or service methods.
-- Heavy template elements -> Use Angular `@defer (on viewport)` blocks.
+Or run `bundlecheck summary --suggest --gzip` to see both metrics and recommendations in one command.
 
-### Step C: Measure Subsequent Changes
+### Step C: Trace & Refactor Targets
+1. Trace **why** a heavy package is in the initial bundle:
+   ```sh
+   bundlecheck why <package-name> --format json
+   ```
+   Inspect `chains[].path` to see the exact sequence of source files that imported the package.
+
+2. Apply targeted Angular refactorings:
+   - Dynamic imports: `const lib = await import('<package>')` inside user action handlers or services.
+   - Lazy routes: `loadComponent: () => import('./feature.component')` in route definitions.
+   - Templates: Wrap heavy visual sections in `@defer (on viewport)`.
+
+### Step D: Measure Subsequent Changes
 After modifying code, rebuild and measure the exact impact against the baseline:
 ```sh
 ng build --configuration production --stats-json
@@ -50,7 +59,7 @@ Check `summary.delta.initialJs`:
 - Negative number = initial JS decreased (Success!).
 - Positive number = initial JS increased (Regression).
 
-### Step D: Enforce Regression Limits
+### Step E: Enforce Regression Limits
 Verify that the refactor did not introduce unexpected bundle growth:
 ```sh
 bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 0B
@@ -63,20 +72,38 @@ bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 0B
 # Zero-config auto-discovery
 bundlecheck summary --format json
 
-# Explicit paths and direct file export
-bundlecheck summary --stats ./dist/app/stats.json --dist ./dist/app/browser -o snapshot.json --format json
+# Summary with Gzip wire transfer sizing
+bundlecheck summary --gzip
 
-# Filter packages in human text mode
-bundlecheck summary --filter angular --top 10
+# Summary with immediate optimization suggestions
+bundlecheck summary --suggest --gzip
+```
+
+### Optimization Suggestions (`bundlecheck suggest`)
+```sh
+# Ranked recommendations
+bundlecheck suggest
+
+# Filter by minimum initial savings threshold
+bundlecheck suggest --min-savings 5KB --gzip
+
+# JSON format for automated agent planning
+bundlecheck suggest --format json
+```
+
+### Trace Dependency Path (`bundlecheck why`)
+```sh
+# Trace why a package is in the bundle
+bundlecheck why lodash
+
+# Trace only initial bundle import paths in JSON
+bundlecheck why @angular/material --initial-only --format json
 ```
 
 ### Baseline (`bundlecheck baseline`)
 ```sh
 # Captures current build and writes to .bundlecheck/baseline.json
 bundlecheck baseline
-
-# Custom baseline path
-bundlecheck baseline -o .bundlecheck/v1-baseline.json
 ```
 
 ### Measure (`bundlecheck measure`)
@@ -103,21 +130,46 @@ bundlecheck check --max-initial 250KB --max-total 1MB
 bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 10KB
 ```
 
+### PR and CI Markdown Reporting (`--format markdown`)
+Generate ready-to-post GitHub Pull Request comments and CI summaries:
+```sh
+# Bundle summary in markdown table
+bundlecheck summary --format markdown --gzip --suggest -o pr-comment.md
+
+# Before/after comparison table with collapsible unchanged sections
+bundlecheck compare --before before.json --after after.json --format markdown
+
+# Measure current build against baseline as markdown
+bundlecheck measure --format markdown -o pr-summary.md
+
+# Budget check in markdown
+bundlecheck check --max-initial 250KB --format markdown
+```
+
 ## 4. JSON Schema Contract
 
 ### Summary JSON (`command: "summary"`)
-- `schemaVersion`: `"1"`
-- `toolVersion`: `"0.1.0"`
-- `summary.initialJs`: Integer bytes in the static closure of local script roots in `index.html`.
-- `summary.lazyJs`: Integer bytes of every other browser JS output.
-- `summary.totalJs`: `initialJs + lazyJs`.
-- `packages[]`: List of attributed packages sorted by initial bytes descending, then name ascending.
+- `summary.initialJs`, `summary.initialGzipJs`: Integer bytes of initial bundle.
+- `summary.lazyJs`, `summary.lazyGzipJs`: Integer bytes of lazy chunks.
+- `summary.totalJs`, `summary.totalGzipJs`: Total JavaScript bytes.
+- `packages[]`: List of attributed packages with initial, lazy, and total bytes.
+
+### Suggestions JSON (`command: "suggest"`)
+- `suggestions[].rule`: `"heavy-initial-package"`, `"eager-feature-component"`, `"split-package"`.
+- `suggestions[].severity`: `"HIGH"`, `"MEDIUM"`, `"LOW"`.
+- `suggestions[].savingsBytes`, `savingsGzipBytes`: Estimated initial JS byte savings.
+- `suggestions[].action`: Concrete refactoring guidance.
+- `totalPotentialSavings`: Aggregated estimated savings in initial JS.
+
+### Trace JSON (`command: "why"`)
+- `target`, `packageName`: Queried module / package.
+- `initialBytes`, `lazyBytes`, `totalBytes`: Byte sizes attributed to target.
+- `chains[]`: List of import path chains from root entrypoints to target.
 
 ### Comparison JSON (`command: "compare"`)
 - `summary.before`, `summary.after`, `summary.delta`: Each has `initialJs`, `lazyJs`, `totalJs`.
 - `packages[].status`: `"added"`, `"removed"`, `"changed"`, or `"unchanged"`.
-- `packages[].before`, `packages[].after`, `packages[].delta`: Each has `initialBytes`, `lazyBytes`, `totalBytes`.
-- Deltas are **after minus before**: negative numbers indicate byte savings.
+- `packages[].delta`: Signed integer byte deltas (negative = savings).
 
 ## 5. Error Handling & Troubleshooting
 - Always capture exit status, stdout, and stderr separately.

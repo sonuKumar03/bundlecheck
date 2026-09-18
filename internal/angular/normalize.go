@@ -12,18 +12,44 @@ func Normalize(m *Metafile) (*snapshot.BundleSnapshot, error) {
 	if m == nil {
 		return nil, fmt.Errorf("cannot normalize nil stats")
 	}
-	s := &snapshot.BundleSnapshot{SchemaVersion: "1", Inputs: []snapshot.Module{}, Outputs: []snapshot.BundleOutput{}, Packages: []snapshot.Package{}}
-	modules := make(map[string]int64)
+	s := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Inputs:        []snapshot.Module{},
+		Outputs:       []snapshot.BundleOutput{},
+		Packages:      []snapshot.Package{},
+	}
+
+	modules := make(map[string]snapshot.Module)
 	for _, p := range keys(m.Inputs) {
 		name := snapshot.CleanPath(p)
-		if n, exists := modules[name]; exists && n != m.Inputs[p].Bytes {
+		raw := m.Inputs[p]
+		if existing, exists := modules[name]; exists && existing.Bytes != raw.Bytes {
 			return nil, fmt.Errorf("conflicting normalized input %q", name)
 		}
-		modules[name] = m.Inputs[p].Bytes
+
+		mod := snapshot.Module{
+			Path:    name,
+			Bytes:   raw.Bytes,
+			Imports: []snapshot.Import{},
+		}
+		for _, imp := range raw.Imports {
+			impPath := imp.Path
+			if !imp.External {
+				impPath = snapshot.CleanPath(impPath)
+			}
+			mod.Imports = append(mod.Imports, snapshot.Import{
+				Path:     impPath,
+				Dynamic:  imp.Kind == "dynamic-import",
+				External: imp.External,
+				Asset:    imp.Kind == "file-loader",
+			})
+		}
+		modules[name] = mod
 	}
 	for _, p := range keys(modules) {
-		s.Inputs = append(s.Inputs, snapshot.Module{Path: p, Bytes: modules[p]})
+		s.Inputs = append(s.Inputs, modules[p])
 	}
+
 	seen := make(map[string]bool)
 	for _, p := range keys(m.Outputs) {
 		raw := m.Outputs[p]

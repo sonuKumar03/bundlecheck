@@ -15,6 +15,7 @@ type TextOptions struct {
 	Top    int
 	Filter string
 	All    bool
+	Gzip   bool
 }
 
 func Text(w io.Writer, r *analysis.AnalysisResult) error {
@@ -25,7 +26,14 @@ func TextWithOptions(w io.Writer, r *analysis.AnalysisResult, opts TextOptions) 
 	var text strings.Builder
 	table := tabwriter.NewWriter(&text, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(table, "Angular Bundle Summary")
-	fmt.Fprintf(table, "Initial JS\t%s\nLazy JS\t%s\nTotal JS\t%s\n", formatBytes(r.Summary.InitialJS), formatBytes(r.Summary.LazyJS), formatBytes(r.Summary.TotalJS))
+
+	if opts.Gzip && r.Summary.TotalGzipJS > 0 {
+		fmt.Fprintf(table, "Initial JS\t%s\t(%s gzip)\n", formatBytes(r.Summary.InitialJS), formatBytes(r.Summary.InitialGzipJS))
+		fmt.Fprintf(table, "Lazy JS\t%s\t(%s gzip)\n", formatBytes(r.Summary.LazyJS), formatBytes(r.Summary.LazyGzipJS))
+		fmt.Fprintf(table, "Total JS\t%s\t(%s gzip)\n", formatBytes(r.Summary.TotalJS), formatBytes(r.Summary.TotalGzipJS))
+	} else {
+		fmt.Fprintf(table, "Initial JS\t%s\nLazy JS\t%s\nTotal JS\t%s\n", formatBytes(r.Summary.InitialJS), formatBytes(r.Summary.LazyJS), formatBytes(r.Summary.TotalJS))
+	}
 
 	header := "\nLargest initial packages"
 	if opts.Filter != "" {
@@ -56,10 +64,18 @@ func TextWithOptions(w io.Writer, r *analysis.AnalysisResult, opts TextOptions) 
 			pct = fmt.Sprintf("(%.1f%%)", share)
 		}
 
-		if pct != "" {
-			fmt.Fprintf(table, "%s\t%s\t%s\n", p.Name, formatBytes(p.InitialBytes), pct)
+		if opts.Gzip && p.InitialGzipBytes > 0 {
+			if pct != "" {
+				fmt.Fprintf(table, "%s\t%s\t%s\t(%s gzip)\n", p.Name, formatBytes(p.InitialBytes), pct, formatBytes(p.InitialGzipBytes))
+			} else {
+				fmt.Fprintf(table, "%s\t%s\t(%s gzip)\n", p.Name, formatBytes(p.InitialBytes), formatBytes(p.InitialGzipBytes))
+			}
 		} else {
-			fmt.Fprintf(table, "%s\t%s\n", p.Name, formatBytes(p.InitialBytes))
+			if pct != "" {
+				fmt.Fprintf(table, "%s\t%s\t%s\n", p.Name, formatBytes(p.InitialBytes), pct)
+			} else {
+				fmt.Fprintf(table, "%s\t%s\n", p.Name, formatBytes(p.InitialBytes))
+			}
 		}
 		shown++
 		if shown >= limit {

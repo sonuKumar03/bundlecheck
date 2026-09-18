@@ -38,8 +38,8 @@ func compareCommand() *cobra.Command {
 			if before == "" || after == "" {
 				return fmt.Errorf("--before and --after require nonempty paths")
 			}
-			if format != "text" && format != "json" {
-				return fmt.Errorf("unsupported format %q: use text or json", format)
+			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
+				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}
 
 			b, err := comparison.Parse(before)
@@ -59,22 +59,25 @@ func compareCommand() *cobra.Command {
 			}
 			defer cleanup()
 
-			if format == "json" {
-				return report.JSON(w, r)
-			}
-
 			opts := report.TextOptions{
 				Top:    top,
 				Filter: filter,
 				All:    all,
 			}
+
+			if format == "json" {
+				return report.JSON(w, r)
+			} else if report.IsMarkdownFormat(format) {
+				return report.ComparisonMarkdown(w, r, opts)
+			}
+
 			return report.ComparisonTextWithOptions(w, r, opts)
 		},
 	}
 
 	c.Flags().StringVarP(&before, "before", "b", "", "Path to saved summary JSON before the change (defaults to .bundlecheck/baseline.json if present)")
 	c.Flags().StringVarP(&after, "after", "a", "", "Path to saved summary JSON after the change (required)")
-	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
+	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of top package changes to display in text mode")
 	c.Flags().StringVar(&filter, "filter", "", "Filter package changes by name substring in text mode")
