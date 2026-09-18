@@ -3,11 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>bundlecheck — Fast Angular Bundle Optimizer, Dependency Tracer & CI Size Guard</title>
-  <meta name="description" content="Blazing-fast Go CLI and AI agent skill for Angular esbuild bundle analysis, dependency tracing, automated size optimization suggestions, and CI budgets.">
+  <title>bundlecheck — Fast Angular esbuild Bundle Inspector & CI Budget Gate</title>
+  <meta name="description" content="Lightning-fast zero-dependency CLI & GitHub Action for analyzing Angular esbuild bundles, catching budget regressions, and suggesting actionable optimizations.">
+  <meta name="author" content="Sonu Kumar">
+  <meta name="theme-color" content="#030712">
+  <link rel="canonical" href="https://sonukumar03.github.io/bundlecheck/">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sonukumar03.github.io/bundlecheck/">
+  <meta property="og:title" content="bundlecheck — Fast Angular esbuild Bundle Inspector">
+  <meta property="og:description" content="Sub-millisecond Angular esbuild bundle inspector and CI budget gate.">
+  <meta property="og:site_name" content="bundlecheck">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Schema.org JSON-LD for Agentic Browsing & SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "bundlecheck",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Fast Angular esbuild bundle inspector and CI budget gate written in Go with zero runtime dependencies.",
+    "softwareVersion": "0.1.1",
+    "url": "https://sonukumar03.github.io/bundlecheck/",
+    "codeRepository": "https://github.com/sonuKumar03/bundlecheck",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": {
+      "@type": "Person",
+      "name": "Sonu Kumar",
+      "url": "https://github.com/sonuKumar03"
+    }
+  }
+  </script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -15,8 +59,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
           },
           colors: {
             brand: {
@@ -29,332 +73,812 @@
       }
     }
   </script>
+
   <style>
-    body {
-      background-color: #090d16;
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-    .grid-pattern {
-      background-size: 32px 32px;
+    ::-webkit-scrollbar-track {
+      background: #030712;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    /* Subtle background grid */
+    .bg-grid {
+      background-size: 36px 36px;
       background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     }
-    .hero-glow {
-      background: radial-gradient(circle at 50% 10%, rgba(99, 102, 241, 0.16) 0%, rgba(14, 165, 233, 0.05) 40%, rgba(9, 13, 22, 0) 70%);
+    .radial-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.18) 0%, rgba(3, 7, 18, 0) 70%);
     }
-    .card-border {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+
+    /* Skip to content link */
+    .skip-to-content {
+      position: absolute;
+      top: -40px;
+      left: 10px;
+      background: #6366f1;
+      color: white;
+      padding: 8px 16px;
+      z-index: 100;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: top 0.2s ease;
     }
-    .card-border:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-    }
-    .code-shadow {
-      box-shadow: 0 0 60px -15px rgba(99, 102, 241, 0.15), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    .skip-to-content:focus {
+      top: 12px;
     }
   </style>
 </head>
-<body class="text-slate-200 font-sans antialiased selection:bg-indigo-500 selection:text-white min-h-screen relative">
+<body class="bg-[#030712] text-[#cbd5e1] font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
 
-  <!-- Subtle background grid -->
-  <div class="fixed inset-0 grid-pattern pointer-events-none z-0"></div>
-  <div class="fixed inset-0 hero-glow pointer-events-none z-0"></div>
+  <!-- Accessibility Skip Link -->
+  <a href="#main-content" class="skip-to-content">Skip to main content</a>
 
-  <!-- Top Navigation -->
-  <header class="border-b border-slate-800/80 sticky top-0 bg-[#090d16]/90 backdrop-blur-md z-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+  <!-- TOP HEADER -->
+  <header role="banner" class="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#030712]/85 backdrop-blur-md">
+    <div class="w-full px-4 sm:px-6 h-14 flex items-center justify-between">
+      
+      <!-- Left: Mobile Menu Toggle & Brand Logo -->
       <div class="flex items-center space-x-3">
-        <span class="text-xl">📦</span>
-        <span class="font-extrabold text-lg tracking-tight text-white">bundlecheck</span>
-        <span class="text-[11px] px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-mono font-medium">v0.1.1</span>
-      </div>
-      <div class="flex items-center space-x-6 text-sm">
-        <a href="#commands" class="text-slate-400 hover:text-white transition-colors">Commands</a>
-        <a href="#why-bundlecheck" class="text-slate-400 hover:text-white transition-colors hidden sm:inline-block">Why BundleCheck</a>
-        <a href="#ci" class="text-slate-400 hover:text-white transition-colors">GitHub Action</a>
-        <a href="https://github.com/sonuKumar03/bundlecheck" target="_blank" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition-all">
-          <svg class="w-3.5 h-3.5 fill-current text-slate-300" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>GitHub</span>
+        <button id="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle navigation menu" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:ring-2 focus:ring-indigo-400">
+          <svg class="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <a href="#overview" class="flex items-center space-x-2.5 group" aria-label="bundlecheck home">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform" aria-hidden="true">
+            ⚡
+          </div>
+          <span class="font-bold text-base text-white tracking-tight group-hover:text-indigo-300 transition-colors">bundlecheck</span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">v0.1.1</span>
         </a>
       </div>
+
+      <!-- Center: Quick Search Bar (Command Palette Trigger) -->
+      <button onclick="openSearchModal()" aria-label="Search documentation (Press Cmd+K)" class="hidden sm:flex items-center space-x-3 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-700/80 text-xs text-slate-400 hover:text-slate-200 transition-all w-64 md:w-80 justify-between focus:ring-2 focus:ring-indigo-400">
+        <div class="flex items-center space-x-2">
+          <svg class="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Search docs, commands...</span>
+        </div>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 text-slate-300">⌘K</kbd>
+      </button>
+
+      <!-- Right Action CTA -->
+      <div class="flex items-center space-x-3">
+        <button onclick="openSearchModal()" aria-label="Search" class="sm:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <svg class="w-4 h-4 stroke-current" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+
+        <a href="https://github.com/sonuKumar03/bundlecheck" target="_blank" rel="noopener noreferrer" aria-label="View bundlecheck on GitHub (opens in new tab)" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs font-mono border border-slate-700 transition-all focus:ring-2 focus:ring-indigo-400">
+          <svg class="w-4 h-4 fill-current text-white inline-block" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span class="font-sans font-medium">GitHub</span>
+          <span class="text-amber-400 font-mono text-[11px]">★</span>
+        </a>
+      </div>
+
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="relative pt-20 pb-16 z-10">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-      
-      <!-- Pill Badge -->
-      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono mb-6">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-        <span>Native Go binary</span>
-        <span class="text-slate-600">/</span>
-        <span>Universal Agent Skill</span>
+  <!-- APP CONTAINER WITH SIDEBAR & MAIN CONTENT -->
+  <div class="flex-1 flex w-full max-w-[1600px] mx-auto">
+    
+    <!-- LEFT SIDEBAR (STICKY ON DESKTOP) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-[#030712] border-r border-slate-800 lg:sticky lg:top-14 lg:self-start lg:h-[calc(100vh-3.5rem)] -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between overflow-y-auto flex-shrink-0 pt-16 lg:pt-4">
+      <div class="p-4 space-y-6">
+        
+        <!-- 1. Overview & Problem -->
+        <div>
+          <div class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Overview</div>
+          <nav class="space-y-1">
+            <a href="#overview" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-200 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-indigo-400 group-hover:scale-110 transition-transform">⚡</span>
+              <span>Introduction</span>
+            </a>
+            <a href="#the-problem" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-rose-400 group-hover:scale-110 transition-transform">⚠️</span>
+              <span>The Problem</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- 2. Getting Started (Directly After Problem) -->
+        <div>
+          <div class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Getting Started</div>
+          <nav class="space-y-1">
+            <a href="#install" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-emerald-400 group-hover:scale-110 transition-transform">📦</span>
+              <span>Installation</span>
+            </a>
+            <a href="#quickstart" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-sky-400 group-hover:scale-110 transition-transform">🚀</span>
+              <span>Quickstart</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- 3. Core Commands (With Inline Previews) -->
+        <div>
+          <div class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Commands Reference</div>
+          <nav class="space-y-1 font-mono text-xs">
+            <a href="#cmd-summary" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>summary</span>
+              <span class="text-[10px] text-slate-500">Breakdown</span>
+            </a>
+            <a href="#cmd-why" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>why &lt;pkg&gt;</span>
+              <span class="text-[10px] text-slate-500">Trace chain</span>
+            </a>
+            <a href="#cmd-suggest" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>suggest</span>
+              <span class="text-[10px] text-slate-500">Tips</span>
+            </a>
+            <a href="#cmd-compare" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>compare</span>
+              <span class="text-[10px] text-slate-500">Delta</span>
+            </a>
+            <a href="#cmd-check" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>check</span>
+              <span class="text-[10px] text-slate-500">CI gate</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- 4. CI & Automation -->
+        <div>
+          <div class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">CI & Automation</div>
+          <nav class="space-y-1">
+            <a href="#config-file" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-slate-400 group-hover:text-indigo-400">⚙️</span>
+              <span>Config File</span>
+            </a>
+            <a href="#github-action" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-purple-400 group-hover:scale-110 transition-transform">🛡️</span>
+              <span>GitHub Action</span>
+            </a>
+            <a href="#agent-skill" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
+              <span class="text-emerald-400 group-hover:scale-110 transition-transform">🤖</span>
+              <span>AI Agent Skill</span>
+            </a>
+          </nav>
+        </div>
+
       </div>
 
-      <!-- Headline -->
-      <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-[1.15] mb-6">
-        Angular bundle analysis, <br class="hidden sm:inline">
-        <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400">
-          without the guesswork.
-        </span>
-      </h1>
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-800/80 text-[11px] text-slate-500 space-y-1">
+        <div>MIT License • Go v1.21+</div>
+        <div>Angular v17+ (esbuild)</div>
+      </div>
+    </aside>
 
-      <p class="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-        Fast CLI that parses Angular/esbuild metadata to trace dependency paths with <code class="text-indigo-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">why</code>, suggests dynamic imports with <code class="text-yellow-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">suggest</code>, and gates size budgets in CI.
-      </p>
+    <!-- SIDEBAR BACKDROP FOR MOBILE -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm hidden lg:hidden" aria-hidden="true"></div>
 
-      <!-- 1-Click Install Box -->
-      <div class="max-w-xl mx-auto mb-6">
-        <div class="relative flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-2 shadow-2xl group hover:border-slate-700 transition-all">
-          <div class="pl-3 pr-2 text-slate-500 font-mono text-sm select-none">❯</div>
-          <input id="install-cmd" readonly value="curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill" class="bg-transparent text-slate-300 font-mono text-xs sm:text-sm w-full outline-none select-all truncate">
-          <button onclick="copyCommand()" id="copy-btn" class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-all flex items-center space-x-1.5">
-            <svg id="copy-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            <span id="copy-text">Copy</span>
+    <!-- MAIN CONTENT AREA (OVERVIEW -> PROBLEM -> INSTALL & QUICKSTART -> COMMANDS -> CI) -->
+    <main id="main-content" role="main" class="flex-1 min-w-0 px-4 sm:px-8 lg:px-12 py-10 space-y-16">
+
+      <!-- 1. HERO / OVERVIEW -->
+      <section id="overview" class="scroll-mt-20 space-y-8 relative">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono backdrop-blur">
+          <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
+          <span>Zero-Dependency Go CLI</span>
+          <span class="text-slate-500">•</span>
+          <span>&lt; 5ms Execution</span>
+        </div>
+
+        <div class="space-y-4 max-w-3xl">
+          <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+            Inspect Angular Bundles. <br>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-300">
+              Enforce Zero-Bloat Budgets.
+            </span>
+          </h1>
+          <p class="text-base sm:text-lg text-slate-300 leading-relaxed">
+            A lightning-fast command-line tool and GitHub Action that turns Angular esbuild <code class="text-indigo-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-xs">stats.json</code> files into clear dependency insights, root-cause traces, optimization suggestions, and hard budget gates.
+          </p>
+        </div>
+
+        <!-- 3 Quick Pillars -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div class="text-xs font-mono font-bold text-emerald-400">⚡ SUB-MILLISECOND SPEED</div>
+            <div class="text-xs text-slate-300">Pure compiled Go binary. Zero Node/npm startup overhead or heavy dependencies.</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div class="text-xs font-mono font-bold text-indigo-400">🎯 ROOT-CAUSE TRACING</div>
+            <div class="text-xs text-slate-300">Trace exact file-by-file import chains pulling oversized dependencies into entry points.</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div class="text-xs font-mono font-bold text-sky-400">🛡️ AUTOMATED CI GATING</div>
+            <div class="text-xs text-slate-300">Enforce max initial JS, total bundle sizes, and delta thresholds directly in GitHub PRs.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. THE PROBLEM (WHY ANGULAR BUNDLES BLOAT) -->
+      <section id="the-problem" class="scroll-mt-20 space-y-6">
+        <div class="space-y-2">
+          <div class="text-xs font-mono font-semibold uppercase tracking-wider text-rose-400">The Problem</div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Why Angular Bundles Grow Out of Control</h2>
+          <p class="text-sm text-slate-300 max-w-3xl">
+            Modern Angular applications use esbuild for blazing fast build times, but bundle size regressions remain a major source of slow Time-to-Interactive (TTI) and First Contentful Paint (FCP).
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Problem 1 -->
+          <div class="p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2.5">
+            <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold text-sm">
+              1
+            </div>
+            <h3 class="text-sm font-semibold text-white">Accidental Entry Point Leaks</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Importing a single utility function from a non-tree-shakeable CommonJS library (like <code class="text-slate-300 font-mono">lodash</code> or <code class="text-slate-300 font-mono">moment</code>) pulls megabytes directly into <code class="text-slate-300 font-mono">main.js</code>.
+            </p>
+          </div>
+
+          <!-- Problem 2 -->
+          <div class="p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2.5">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">
+              2
+            </div>
+            <h3 class="text-sm font-semibold text-white">Duplicate Nested Dependencies</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Conflicting transitive versions of packages like <code class="text-slate-300 font-mono">tslib</code> or <code class="text-slate-300 font-mono">rxjs</code> get bundled simultaneously without developer awareness, bloating chunk payloads.
+            </p>
+          </div>
+
+          <!-- Problem 3 -->
+          <div class="p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2.5">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm">
+              3
+            </div>
+            <h3 class="text-sm font-semibold text-white">Zero CI Visibility & Gating</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Pull requests merge unnoticed size spikes because standard CI logs bury massive JSON outputs instead of surfacing clear byte deltas and failing budgets.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. GETTING STARTED: INSTALLATION -->
+      <section id="install" class="scroll-mt-20 space-y-4">
+        <div class="space-y-1">
+          <div class="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400">Quick Setup</div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Installation</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+          Install the prebuilt binary directly to <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">/usr/local/bin</code> (or specify <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">--bin-dir ~/.local/bin</code>).
+        </p>
+
+        <!-- Install Command Box -->
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-xs">
+          <div class="overflow-x-auto text-slate-200">
+            <span class="text-slate-500 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh
+          </div>
+          <button onclick="copyText('curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh', 'install-copy-btn')" aria-label="Copy install command" class="ml-3 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 flex-shrink-0 transition-colors">
+            <span id="install-copy-btn">Copy</span>
           </button>
         </div>
-      </div>
 
-    </div>
-  </section>
+        <!-- With Skill Flag -->
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between font-mono text-xs">
+          <div class="overflow-x-auto text-slate-300">
+            <span class="text-slate-500 select-none"># Install binary + AI Agent Skill:</span><br>
+            <span class="text-slate-500 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill
+          </div>
+          <button onclick="copyText('curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill', 'install-skill-btn')" aria-label="Copy install with skill command" class="ml-3 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 flex-shrink-0 transition-colors">
+            <span id="install-skill-btn">Copy</span>
+          </button>
+        </div>
+      </section>
 
-  <!-- Interactive Real Terminal Showcase -->
-  <section id="commands" class="py-12 z-10 relative">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6">
-      
-      <div class="bg-[#0b101c] border border-slate-800 rounded-2xl overflow-hidden code-shadow">
-        
-        <!-- Terminal Header Tabs -->
-        <div class="bg-slate-900/90 border-b border-slate-800/90 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center space-x-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
-            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
-            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
-            <span class="text-xs font-mono text-slate-400 ml-2 font-medium">terminal</span>
+      <!-- 4. GETTING STARTED: QUICKSTART -->
+      <section id="quickstart" class="scroll-mt-20 space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <span>Quickstart</span>
+        </h2>
+        <p class="text-sm text-slate-300">
+          Generate Angular stats during your build and run bundlecheck in two simple steps:
+        </p>
+
+        <div class="space-y-3 font-mono text-xs">
+          <!-- Step 1 -->
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+            <div class="text-indigo-400 font-semibold font-sans text-sm">Step 1: Build Angular with stats-json</div>
+            <div class="p-2.5 rounded bg-black/50 border border-slate-800 text-slate-200">
+              ng build --stats-json
+            </div>
+            <div class="text-slate-400 text-[11px] font-sans">This produces <code class="text-slate-300 font-mono">dist/&lt;project-name&gt;/stats.json</code>.</div>
           </div>
 
-          <!-- Real Subcommands -->
-          <div class="flex space-x-1 overflow-x-auto text-xs font-mono">
-            <button onclick="switchDeck('summary')" id="tab-summary" class="deck-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium">bundlecheck summary</button>
-            <button onclick="switchDeck('suggest')" id="tab-suggest" class="deck-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">bundlecheck suggest</button>
-            <button onclick="switchDeck('why')" id="tab-why" class="deck-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">bundlecheck why &lt;pkg&gt;</button>
-            <button onclick="switchDeck('measure')" id="tab-measure" class="deck-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">bundlecheck measure</button>
-            <button onclick="switchDeck('check')" id="tab-check" class="deck-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">bundlecheck check</button>
+          <!-- Step 2 -->
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+            <div class="text-indigo-400 font-semibold font-sans text-sm">Step 2: Inspect Bundle Breakdown</div>
+            <div class="p-2.5 rounded bg-black/50 border border-slate-800 text-slate-200">
+              bundlecheck summary dist/my-app/stats.json
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Terminal Output Viewport -->
-        <div class="p-6 font-mono text-xs sm:text-sm leading-relaxed overflow-x-auto min-h-[380px] bg-[#070a12]">
+      <!-- 5. CORE COMMANDS WITH INLINE TERMINAL DEMOS -->
+      <section id="commands" class="scroll-mt-20 space-y-8">
+        <div class="space-y-2">
+          <div class="text-xs font-mono font-semibold uppercase tracking-wider text-indigo-400">Command Reference</div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">5 Core Commands to Inspect & Control Bundles</h2>
+          <p class="text-sm text-slate-300 max-w-3xl">
+            Each command outputs clean, structured ANSI tables and trees designed for both human terminal inspection and automated CI pipelines.
+          </p>
+        </div>
+
+        <div class="space-y-8">
           
-          <!-- Tab 1: summary -->
-          <div id="deck-summary" class="deck-content">
-            <div class="text-slate-500 mb-3">$ bundlecheck summary --suggest --gzip</div>
-            <div class="text-emerald-400 font-bold mb-3">## 📦 Angular Bundle Summary</div>
-            <table class="w-full text-left border-collapse mb-5 text-xs sm:text-sm">
-              <thead>
-                <tr class="border-b border-slate-800 text-slate-400">
-                  <th class="py-2 font-semibold">Category</th>
-                  <th class="py-2 font-semibold">Raw Size</th>
-                  <th class="py-2 font-semibold">Wire Size (Gzip)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-900 text-slate-300">
-                <tr><td class="py-2 font-semibold text-white">Initial JS</td><td class="text-indigo-300">160 KB</td><td class="text-emerald-400 font-semibold">51.2 KB</td></tr>
-                <tr><td class="py-2 font-semibold text-white">Lazy JS</td><td class="text-indigo-300">300 KB</td><td class="text-emerald-400 font-semibold">96.0 KB</td></tr>
-                <tr class="font-bold text-white"><td class="py-2">Total JS</td><td class="text-indigo-300">460 KB</td><td class="text-emerald-400">147.2 KB</td></tr>
-              </tbody>
-            </table>
-            <div class="text-slate-400 font-semibold mb-2">### Top NPM Contributors</div>
-            <div class="space-y-1 text-slate-300">
-              <div>• <span class="text-indigo-300 font-semibold">pdfjs-dist:</span> 50 KB (31.2% share) <span class="text-slate-500 font-mono">[initial]</span></div>
-              <div>• <span class="text-indigo-300 font-semibold">@angular/core:</span> 30 KB (18.8% share) <span class="text-slate-500 font-mono">[initial]</span></div>
-              <div>• <span class="text-indigo-300 font-semibold">rxjs:</span> 25 KB (15.6% share) <span class="text-slate-500 font-mono">[initial]</span></div>
+          <!-- CMD 1: summary -->
+          <div id="cmd-summary" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs">1</span>
+                <h3 class="text-base font-mono font-bold text-indigo-300">bundlecheck summary &lt;stats.json&gt;</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">Breakdown</span>
             </div>
-          </div>
-
-          <!-- Tab 2: suggest -->
-          <div id="deck-suggest" class="deck-content hidden">
-            <div class="text-slate-500 mb-3">$ bundlecheck suggest --gzip</div>
-            <div class="text-yellow-400 font-bold mb-2">## 💡 Bundle Optimization Recommendations</div>
-            <div class="text-slate-400 mb-4">> Potential Initial JS Reduction: ~100 KB across 2 opportunities</div>
             
-            <div class="bg-slate-900/90 border border-red-500/40 p-4 rounded-xl mb-3 shadow-lg">
-              <div class="text-red-400 font-bold text-sm">🔴 [HIGH] #1: Move 'pdfjs-dist' behind a dynamic import</div>
-              <div class="text-slate-300 text-xs mt-2 space-y-1">
-                <div>• <span class="text-slate-500">Savings:</span> ~50 KB (~51.2 KB gzip)</div>
-                <div>• <span class="text-slate-500">Target / Importer:</span> src/main.ts</div>
-                <div>• <span class="text-slate-500">Rationale:</span> Heavy third-party utility included in first-paint bootstrap closure.</div>
-                <div class="text-emerald-400 font-semibold pt-1">Action: Replace static import with dynamic 'const lib = await import("pdfjs-dist")'</div>
-              </div>
-            </div>
+            <p class="text-sm text-slate-300">
+              Parses initial entry points, lazy route chunks, and calculates total NPM package contributions sorted by byte weight.
+            </p>
 
-            <div class="bg-slate-900/90 border border-yellow-500/40 p-4 rounded-xl">
-              <div class="text-yellow-400 font-bold text-sm">🟡 [MEDIUM] #2: Lazy load eager feature component in 'src/app/routes.ts'</div>
-              <div class="text-slate-300 text-xs mt-2 space-y-1">
-                <div>• <span class="text-slate-500">Savings:</span> ~35 KB</div>
-                <div class="text-emerald-400 font-semibold pt-1">Action: Change 'component: AdminComponent' to 'loadComponent: () => import("./admin.component")'</div>
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck summary</span> dist/my-app/stats.json</div>
+              <div class="text-white font-bold pt-1">BUNDLE SUMMARY</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>Initial JavaScript:   <span class="text-emerald-300 font-bold">248.50 KB</span> (3 files: main, polyfills, styles)</div>
+              <div>Lazy Chunks:          <span class="text-slate-300">812.20 KB</span> (14 route-split chunks)</div>
+              <div>Total Assets:         <span class="text-slate-300">1.06 MB</span></div>
+              <div class="pt-2 text-white font-bold">TOP CONTRIBUTING NPM PACKAGES</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>1. @angular/core       <span class="text-amber-300">84.20 KB</span>  (33.8% of initial)</div>
+              <div>2. rxjs                 <span class="text-amber-300">42.10 KB</span>  (16.9% of initial)</div>
+              <div>3. @angular/common     <span class="text-amber-300">31.50 KB</span>  (12.6% of initial)</div>
+              <div>4. lodash-es            <span class="text-amber-300">18.40 KB</span>  (7.4% of initial)</div>
+              <div>5. tslib                <span class="text-amber-300">6.20 KB</span>   (2.5% of initial)</div>
+            </div>
+          </div>
+
+          <!-- CMD 2: why -->
+          <div id="cmd-why" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono font-bold text-xs">2</span>
+                <h3 class="text-base font-mono font-bold text-sky-300">bundlecheck why &lt;stats.json&gt; &lt;package-name&gt;</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/30">Trace Chain</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Traces the exact import graph path showing why a particular npm package was bundled, which application file pulled it in, and which chunk it landed inside.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck why</span> dist/my-app/stats.json lodash-es</div>
+              <div class="text-white font-bold pt-1">IMPORT CHAIN TRACE: 'lodash-es' (18.40 KB)</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div class="text-slate-300">src/main.ts</div>
+              <div class="text-slate-300"> └── src/app/app.config.ts</div>
+              <div class="text-slate-300">      └── src/app/services/analytics.service.ts</div>
+              <div class="text-indigo-300 font-bold">           └── node_modules/lodash-es/debounce.js [in chunk: main-C82D.js]</div>
+              <div class="pt-2 text-xs text-emerald-300 font-sans font-medium">
+                ✓ Direct dependency. Package enters through the initial entry point.
               </div>
             </div>
           </div>
 
-          <!-- Tab 3: why -->
-          <div id="deck-why" class="deck-content hidden">
-            <div class="text-slate-500 mb-3">$ bundlecheck why lodash</div>
-            <div class="text-indigo-300 font-bold mb-2">Dependency Trace for "lodash"</div>
-            <div class="text-slate-400 mb-3 text-xs">Initial JS: <span class="text-white font-bold">128 B</span> | Lazy JS: <span class="text-white font-bold">0 B</span> | Total JS: <span class="text-white font-bold">128 B</span></div>
-            <div class="text-slate-300 font-semibold mb-2 text-xs">Import Chain(s) (1 found):</div>
-            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl text-slate-300 space-y-1">
-              <div class="text-indigo-400 font-semibold">#1 (chunk: main.js - INITIAL, size: 128 B)</div>
-              <div class="text-white">src/main.ts</div>
-              <div class="text-slate-400 pl-3">└── src/app/app.component.ts</div>
-              <div class="text-emerald-400 pl-6 font-bold">└── node_modules/lodash/lodash.js</div>
+          <!-- CMD 3: suggest -->
+          <div id="cmd-suggest" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-mono font-bold text-xs">3</span>
+                <h3 class="text-base font-mono font-bold text-amber-300">bundlecheck suggest &lt;stats.json&gt;</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">Optimization</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Scans for heavy legacy libraries (moment, lodash), duplicate bundled package versions, and non-tree-shakeable dependencies with actionable refactoring advice.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck suggest</span> dist/my-app/stats.json</div>
+              <div class="text-amber-300 font-bold pt-1">[!] 3 OPTIMIZATION OPPORTUNITIES DETECTED</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>• <strong class="text-white">moment (72.4 KB)</strong>: Found in initial bundle. Replace with native <span class="text-emerald-300 font-semibold">Intl.DateTimeFormat</span> (-65 KB).</div>
+              <div>• <strong class="text-white">lodash (54.1 KB)</strong>: CommonJS build detected. Replace with <span class="text-emerald-300 font-semibold">lodash-es</span> to enable tree-shaking.</div>
+              <div>• <strong class="text-white">Duplicate package 'tslib'</strong>: Bundled versions v2.4.0 and v2.6.2 simultaneously. Deduplicate in package.json.</div>
             </div>
           </div>
 
-          <!-- Tab 4: measure -->
-          <div id="deck-measure" class="deck-content hidden">
-            <div class="text-slate-500 mb-3">$ bundlecheck measure --format markdown</div>
-            <div class="text-emerald-400 font-bold mb-3">## 📊 Angular Bundle Comparison — ✅ Reduced (-45 KB)</div>
-            <table class="w-full text-left border-collapse mb-4 text-xs sm:text-sm">
-              <thead>
-                <tr class="border-b border-slate-800 text-slate-400">
-                  <th class="py-2 font-semibold">Category</th>
-                  <th class="py-2 font-semibold">Baseline</th>
-                  <th class="py-2 font-semibold">Current</th>
-                  <th class="py-2 font-semibold">Delta</th>
-                  <th class="py-2 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-900 text-slate-300">
-                <tr><td class="py-2 font-semibold text-white">Initial JS</td><td>205 KB</td><td>160 KB</td><td class="text-emerald-400 font-bold">-45 KB</td><td class="text-emerald-400">✅ Reduced</td></tr>
-                <tr><td class="py-2 font-semibold text-white">Lazy JS</td><td>255 KB</td><td>300 KB</td><td class="text-sky-300">+45 KB</td><td class="text-slate-400">⚪ Moved</td></tr>
-                <tr class="font-bold"><td class="py-2 text-white">Total JS</td><td>460 KB</td><td>460 KB</td><td class="text-slate-400">0 B</td><td class="text-slate-400">⚪ Neutral</td></tr>
-              </tbody>
-            </table>
+          <!-- CMD 4: compare -->
+          <div id="cmd-compare" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
+                <h3 class="text-base font-mono font-bold text-emerald-300">bundlecheck compare &lt;baseline.json&gt; &lt;stats.json&gt;</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Delta Diff</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Calculates exact byte and percentage deltas between a base branch snapshot and the current PR build.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck compare</span> .bundlecheck-baseline.json dist/my-app/stats.json</div>
+              <div class="text-white font-bold pt-1">BRANCH DELTA COMPARISON</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>Initial JavaScript:  248.50 KB -&gt; 232.10 KB (<span class="text-emerald-300 font-bold">-16.40 KB / -6.6%</span>) ✓</div>
+              <div>Lazy Chunks:         812.20 KB -&gt; 808.50 KB (<span class="text-emerald-300 font-bold">-3.70 KB / -0.4%</span>) ✓</div>
+              <div>Total Bundle Size:   1.06 MB   -&gt; 1.04 MB   (<span class="text-emerald-300 font-bold">-20.10 KB / -1.8%</span>) ✓</div>
+            </div>
           </div>
 
-          <!-- Tab 5: check -->
-          <div id="deck-check" class="deck-content hidden">
-            <div class="text-slate-500 mb-3">$ bundlecheck check --max-initial 250KB --max-total 1MB</div>
-            <div class="bg-emerald-500/10 border border-emerald-500/30 p-5 rounded-xl text-emerald-300">
-              <div class="font-bold text-base flex items-center space-x-2">
-                <span>✅</span>
-                <span>Angular Bundle Budget Check: PASSED</span>
+          <!-- CMD 5: check -->
+          <div id="cmd-check" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">5</span>
+                <h3 class="text-base font-mono font-bold text-rose-300">bundlecheck check &lt;stats.json&gt; [flags]</h3>
               </div>
-              <div class="text-xs text-emerald-400/90 mt-2">All configured bundle size limits and regression thresholds satisfied. (Exit code 0)</div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30">CI Gate</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Enforces strict size budgets. Returns exit code 0 on pass, or exit code 1 with budget violation details to block oversized pull requests.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --max-initial=300</div>
+              <div class="text-emerald-300 font-bold">✓ BUDGET CHECK PASSED: Initial JS is 248.50 KB (budget: 300.00 KB)</div>
+              <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --max-initial=200</div>
+              <div class="text-rose-400 font-bold">✗ BUDGET CHECK FAILED: Initial JS is 248.50 KB (budget: 200.00 KB, exceeded by +48.50 KB)</div>
+              <div class="text-slate-500 text-[11px]">Process exited with status code 1. Pipeline failed.</div>
             </div>
           </div>
 
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- Feature Grid -->
-  <section id="why-bundlecheck" class="py-16 z-10 relative border-t border-slate-800/80">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <!-- 6. CI & AUTOMATION: CONFIG FILE -->
+      <section id="config-file" class="scroll-mt-20 space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <span>Configuration (.bundlecheck.yml)</span>
+        </h2>
+        <p class="text-sm text-slate-300">
+          Persist project-wide size budgets and optimization rules in your repository root:
+        </p>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs leading-relaxed overflow-x-auto text-slate-200">
+<pre><code># .bundlecheck.yml
+budgets:
+  initial_js_max: 250kb
+  total_max: 1.5mb
+  max_delta_increase: 50kb
+
+rules:
+  disallow_packages:
+    - moment
+    - lodash
+  warn_duplicates: true</code></pre>
+        </div>
+      </section>
+
+      <!-- 7. CI & AUTOMATION: GITHUB ACTION -->
+      <section id="github-action" class="scroll-mt-20 space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <span>GitHub Actions Integration</span>
+        </h2>
+        <p class="text-sm text-slate-300">
+          Drop bundlecheck directly into your GitHub Actions workflow to post automated PR comments with delta summaries and fail oversized changes:
+        </p>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs leading-relaxed overflow-x-auto text-slate-200">
+<pre><code>name: Bundle Size Budget Check
+on: [pull_request]
+
+jobs:
+  bundlecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       
-      <div class="mb-12">
-        <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Designed for Angular applications</h2>
-        <p class="text-slate-400 text-sm">Everything needed for bundle optimization and CI budget verification.</p>
+      - run: npm ci
+      - run: npx ng build --stats-json
+      
+      - name: Run bundlecheck CI
+        uses: sonuKumar03/bundlecheck@v1
+        with:
+          stats-path: dist/my-app/stats.json
+          max-initial: '250kb'
+          post-comment: true</code></pre>
+        </div>
+      </section>
+
+      <!-- 8. CI & AUTOMATION: AI AGENT SKILL -->
+      <section id="agent-skill" class="scroll-mt-20 space-y-4 pb-16">
+        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <span>AI Agent Skill Integration</span>
+        </h2>
+        <p class="text-sm text-slate-300">
+          bundlecheck includes an official agent skill definition (<code class="text-indigo-300 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">SKILL.md</code>) compatible with Antigravity, Claude Code, and autonomous coding agents to automatically inspect, diagnose, and fix bundle regressions during coding loops.
+        </p>
+        <div class="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 text-xs text-indigo-200 space-y-1">
+          <div class="font-bold text-indigo-300">Agent Command Usage:</div>
+          <div>Install using <code class="bg-black/50 px-1.5 py-0.5 rounded text-white">bundlecheck install --with-skill</code> to equip your AI assistant with zero-config bundle analysis capabilities.</div>
+        </div>
+      </section>
+
+      <!-- FOOTER INSIDE MAIN -->
+      <footer role="contentinfo" class="border-t border-slate-800 bg-[#030712] py-8 text-xs text-slate-400 mt-16">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>Released under the MIT License • Written in Go for Angular esbuild.</div>
+          <nav aria-label="Footer links" class="flex items-center space-x-6">
+            <a href="https://github.com/sonuKumar03/bundlecheck" target="_blank" rel="noopener noreferrer" class="hover:text-slate-200 focus:outline-none focus:underline">GitHub</a>
+            <a href="https://github.com/sonuKumar03/bundlecheck/releases" target="_blank" rel="noopener noreferrer" class="hover:text-slate-200 focus:outline-none focus:underline">Releases</a>
+            <a href="https://github.com/sonuKumar03/bundlecheck/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="hover:text-slate-200 focus:outline-none focus:underline">License</a>
+          </nav>
+        </div>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- SEARCH MODAL (CMD + K) -->
+  <div id="search-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-start justify-center pt-16 px-4" onclick="handleModalBackdropClick(event)">
+    <div class="w-full max-w-lg rounded-2xl bg-[#090e1a] border border-slate-700 shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+      
+      <!-- Input Box -->
+      <div class="p-3 border-b border-slate-800 flex items-center space-x-2">
+        <svg class="w-4 h-4 text-slate-400 stroke-current ml-2" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="search-input" type="text" placeholder="Type a command or keyword..." oninput="filterSearchResults(this.value)" class="w-full bg-transparent border-none text-white text-sm focus:outline-none placeholder-slate-500 font-sans" autofocus>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-slate-800 border border-slate-700 text-slate-400 select-none">ESC</kbd>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">🔍 Dependency Tracer (<code class="text-indigo-400 text-xs font-mono">why</code>)</div>
-          <p class="text-slate-400 text-sm leading-relaxed">BFS static import graph traversal that pinpoints the exact chain of source files importing any library into initial JS.</p>
-        </div>
-
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">💡 Optimization Advisor (<code class="text-yellow-400 text-xs font-mono">suggest</code>)</div>
-          <p class="text-slate-400 text-sm leading-relaxed">Detects heavy third-party utilities, eager component routes, and duplicate packages with estimated byte reductions.</p>
-        </div>
-
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">🗜️ Real Gzip Wire Sizing (<code class="text-emerald-400 text-xs font-mono">--gzip</code>)</div>
-          <p class="text-slate-400 text-sm leading-relaxed">Calculates real physical file compression and projects actual over-the-network wire transfer sizes per NPM package.</p>
-        </div>
-
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">📊 Baseline & Measure (<code class="text-sky-400 text-xs font-mono">measure</code>)</div>
-          <p class="text-slate-400 text-sm leading-relaxed">One-command reference baseline in <code class="font-mono text-xs text-slate-300">.bundlecheck/baseline.json</code>. Track signed before/after deltas across refactors.</p>
-        </div>
-
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">🤖 Universal AI Agent Skill</div>
-          <p class="text-slate-400 text-sm leading-relaxed">Pre-configured agent skill for Antigravity, Claude Code, Cursor, and Codex with step-by-step optimization workflows.</p>
-        </div>
-
-        <div class="card-border p-6 rounded-2xl">
-          <div class="text-lg font-bold text-white mb-2">🛡️ CI Budgets & PR Comments</div>
-          <p class="text-slate-400 text-sm leading-relaxed">Official GitHub Action and markdown reporting engine that posts rich, sticky size diffs directly on pull requests.</p>
-        </div>
-
+      <!-- Quick Results List -->
+      <div id="search-results" class="max-h-80 overflow-y-auto p-2 space-y-1 text-xs font-mono">
+        <a href="#overview" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-indigo-400">⚡</span>
+            <span class="font-medium font-sans">Overview & Introduction</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Intro</span>
+        </a>
+        <a href="#the-problem" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-rose-400">⚠️</span>
+            <span class="font-medium font-sans">The Problem (Why Bundles Bloat)</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Problem</span>
+        </a>
+        <a href="#install" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-400">📦</span>
+            <span class="font-medium font-sans">Installation</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Setup</span>
+        </a>
+        <a href="#quickstart" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-sky-400">🚀</span>
+            <span class="font-medium font-sans">Quickstart</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Run</span>
+        </a>
+        <a href="#cmd-summary" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-indigo-400">$</span>
+            <span>bundlecheck summary</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Breakdown</span>
+        </a>
+        <a href="#cmd-why" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-sky-400">$</span>
+            <span>bundlecheck why &lt;pkg&gt;</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Trace</span>
+        </a>
+        <a href="#cmd-suggest" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-amber-400">$</span>
+            <span>bundlecheck suggest</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Tips</span>
+        </a>
+        <a href="#cmd-compare" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-400">$</span>
+            <span>bundlecheck compare</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Delta</span>
+        </a>
+        <a href="#cmd-check" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-rose-400">$</span>
+            <span>bundlecheck check (CI)</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Budget</span>
+        </a>
+        <a href="#config-file" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-400">⚙️</span>
+            <span class="font-medium font-sans">Config (.bundlecheck.yml)</span>
+          </div>
+          <span class="text-[10px] text-slate-500">YAML</span>
+        </a>
+        <a href="#github-action" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-purple-400">🛡️</span>
+            <span class="font-medium font-sans">GitHub Action Workflow</span>
+          </div>
+          <span class="text-[10px] text-slate-500">CI</span>
+        </a>
+        <a href="#agent-skill" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-400">🤖</span>
+            <span class="font-medium font-sans">AI Agent Skill</span>
+          </div>
+          <span class="text-[10px] text-slate-500">AI</span>
+        </a>
       </div>
+
+      <div class="p-2.5 border-t border-slate-800/80 text-[10px] text-slate-500 flex justify-between font-mono">
+        <span>Navigation: Jump to section</span>
+        <span>bundlecheck v0.1.1</span>
+      </div>
+
     </div>
-  </section>
+  </div>
 
-  <!-- GitHub Action Section -->
-  <section id="ci" class="py-16 z-10 relative border-t border-slate-800/80">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6">
-      <div class="card-border rounded-2xl p-8">
-        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">Official GitHub Action</h2>
-        <p class="text-slate-400 text-sm mb-6">Guard against bundle regressions on every PR automatically.</p>
+  <!-- FLOATING BACK TO TOP BUTTON -->
+  <button id="back-to-top" onclick="scrollToTop()" aria-label="Scroll to top of page" class="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-indigo-600/90 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/25 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-400 border border-indigo-400/30 backdrop-blur">
+    <svg class="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2.5">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
 
-        <div class="bg-[#070a12] border border-slate-800 rounded-xl p-4 font-mono text-xs sm:text-sm text-slate-300 overflow-x-auto">
-          <div class="text-slate-500 mb-1"># .github/workflows/bundle-guard.yml</div>
-          <div><span class="text-indigo-400">- name:</span> Run BundleCheck & Post PR Report</div>
-          <div>  <span class="text-indigo-400">uses:</span> sonuKumar03/bundlecheck@v0.1.1</div>
-          <div>  <span class="text-indigo-400">with:</span></div>
-          <div>    <span class="text-slate-400">post-comment:</span> <span class="text-emerald-400">'true'</span></div>
-          <div>    <span class="text-slate-400">max-initial:</span> <span class="text-emerald-400">'350KB'</span></div>
-          <div>    <span class="text-slate-400">max-total:</span> <span class="text-emerald-400">'1.2MB'</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="border-t border-slate-800/80 py-8 bg-[#090d16] z-10 relative text-xs text-slate-500 font-mono">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div>📦 bundlecheck • MIT License © 2026 Sonu Kumar</div>
-      <div class="flex space-x-6">
-        <a href="https://github.com/sonuKumar03/bundlecheck" class="hover:text-slate-300 transition-colors">GitHub</a>
-        <a href="https://github.com/sonuKumar03/bundlecheck/releases" class="hover:text-slate-300 transition-colors">Releases</a>
-      </div>
-    </div>
-  </footer>
-
+  <!-- SCRIPT -->
   <script>
-    function copyCommand() {
-      const input = document.getElementById('install-cmd');
-      navigator.clipboard.writeText(input.value);
-      const text = document.getElementById('copy-text');
-      text.innerText = 'Copied!';
-      setTimeout(() => {
-        text.innerText = 'Copy';
-      }, 2000);
+    // Copy helper
+    function copyText(text, btnId) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (btnId) {
+          const el = document.getElementById(btnId);
+          if (el) {
+            const orig = el.innerText;
+            el.innerText = 'Copied!';
+            setTimeout(() => { el.innerText = orig; }, 2000);
+          }
+        }
+      }).catch(err => {
+        console.error('Clipboard copy failed:', err);
+      });
     }
 
-    function switchDeck(tabId) {
-      document.querySelectorAll('.deck-btn').forEach(btn => {
-        btn.classList.remove('bg-indigo-600', 'text-white');
-        btn.classList.add('text-slate-400');
-      });
-      document.querySelectorAll('.deck-content').forEach(content => {
-        content.classList.add('hidden');
-      });
-
-      const activeBtn = document.getElementById('tab-' + tabId);
-      const activeContent = document.getElementById('deck-' + tabId);
-      if (activeBtn && activeContent) {
-        activeBtn.classList.remove('text-slate-400');
-        activeBtn.classList.add('bg-indigo-600', 'text-white');
-        activeContent.classList.remove('hidden');
+    // Mobile Sidebar Drawer
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
       }
     }
+
+    function closeMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (window.innerWidth < 1024) {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    // Search Modal (Cmd + K)
+    function openSearchModal() {
+      const modal = document.getElementById('search-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+        const input = document.getElementById('search-input');
+        input.focus();
+        input.value = '';
+        filterSearchResults('');
+      }, 50);
+    }
+
+    function closeSearchModal() {
+      const modal = document.getElementById('search-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleModalBackdropClick(e) {
+      closeSearchModal();
+    }
+
+    // Filter Search Modal Results
+    function filterSearchResults(query) {
+      const q = query.toLowerCase().trim();
+      const items = document.querySelectorAll('.search-item');
+      items.forEach(item => {
+        if (!q || item.innerText.toLowerCase().includes(q)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // Keyboard Shortcuts (Cmd+K, Ctrl+K, Escape)
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const modal = document.getElementById('search-modal');
+        if (modal.classList.contains('hidden')) {
+          openSearchModal();
+        } else {
+          closeSearchModal();
+        }
+      } else if (e.key === 'Escape') {
+        closeSearchModal();
+      }
+    });
+
+    // Scroll to Top Smooth Handler
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Show/Hide Floating Back-to-Top Button on Scroll
+    window.addEventListener('scroll', () => {
+      const btt = document.getElementById('back-to-top');
+      if (btt) {
+        if (window.scrollY > 300) {
+          btt.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+          btt.classList.add('opacity-100', 'translate-y-0');
+        } else {
+          btt.classList.remove('opacity-100', 'translate-y-0');
+          btt.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+        }
+      }
+    }, { passive: true });
   </script>
 </body>
 </html>
