@@ -80,10 +80,12 @@ flowchart TD
   - Foldable `<details>` breakdowns for changed and unchanged package contributions.
   - Automatic status badges for reductions, regressions, and threshold/budget failures.
 
-### 3. Named Baselines Worktree Synchronization
+### 3. Named Baselines Worktree Synchronization *(Completed)*
 - **Command**: `bundlecheck baseline create <name> --from-git <ref>`
 - **Capabilities**:
-  - Automatically spin up a temporary git worktree at a reference branch/tag (e.g. `origin/main`), build or read existing artifacts, record the named baseline, and tear down the worktree cleanly.
+  - Automatically spins up an isolated temporary git worktree at a reference branch/tag (e.g. `origin/main` or `HEAD`).
+  - Symlinks parent `node_modules` avoiding costly dependency installs.
+  - Builds (or reads existing artifacts via `--no-build`), records named baseline snapshot with commit SHA metadata, and tears down the worktree cleanly.
 
 ### 4. Multi-Bundler & Ecosystem Expansion
 - **Target**: Add first-class normalization adapters for:

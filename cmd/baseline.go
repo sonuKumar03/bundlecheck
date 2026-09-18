@@ -24,11 +24,19 @@ func baselineCommand() *cobra.Command {
 		format   string
 		output   string
 		ref      string
+		fromGit  string
 		name     string
 		buildCmd string
+		noBuild  bool
 	)
 
-	runSave := func(c *cobra.Command, _ []string) error {
+	runSave := func(c *cobra.Command, args []string) error {
+		if len(args) > 0 && name == "" {
+			name = args[0]
+		}
+		if ref == "" && fromGit != "" {
+			ref = fromGit
+		}
 		if format != "text" && format != "json" {
 			return fmt.Errorf("unsupported format %q: use text or json", format)
 		}
@@ -66,16 +74,18 @@ func baselineCommand() *cobra.Command {
 			}
 			defer cleanup()
 
-			if format != "json" {
-				cmdToRun := buildCmd
-				if cmdToRun == "" {
-					cmdToRun = "npm run build"
+			if !noBuild {
+				if format != "json" {
+					cmdToRun := buildCmd
+					if cmdToRun == "" {
+						cmdToRun = "npm run build"
+					}
+					fmt.Fprintf(c.OutOrStdout(), "Building %q in worktree (%s)...\n", ref, cmdToRun)
 				}
-				fmt.Fprintf(c.OutOrStdout(), "Building %q in worktree (%s)...\n", ref, cmdToRun)
-			}
 
-			if err := worktree.RunBuild(wtDir, buildCmd); err != nil {
-				return err
+				if err := worktree.RunBuild(wtDir, buildCmd); err != nil {
+					return err
+				}
 			}
 
 			sFile, dDir, err := resolveBuildArtifactsInDir(wtDir, stats, dist, project)
@@ -152,17 +162,28 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
 	c.Flags().StringVarP(&output, "output", "o", "", "Custom path to save baseline JSON file")
 	c.Flags().StringVarP(&ref, "ref", "r", "", "Git branch, tag, or commit ref to build in an isolated worktree")
+	c.Flags().StringVar(&fromGit, "from-git", "", "Git branch, tag, or commit ref to build in an isolated worktree (alias for --ref)")
 	c.Flags().StringVarP(&name, "name", "n", "", "Custom identifier name for the baseline snapshot")
 	c.Flags().StringVar(&buildCmd, "build-cmd", "", "Custom build command to execute in worktree (default: npm run build)")
+	c.Flags().BoolVar(&noBuild, "no-build", false, "Skip executing build command in worktree (use pre-existing artifacts)")
 
 	// Subcommand: save
 	saveCmd := &cobra.Command{
-		Use:   "save",
+		Use:   "save [name]",
 		Short: "Capture and save baseline metrics from current build or git branch",
-		Args:  cobra.NoArgs,
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runSave,
 	}
 	saveCmd.Flags().AddFlagSet(c.Flags())
+
+	// Subcommand: create
+	createCmd := &cobra.Command{
+		Use:   "create [name]",
+		Short: "Capture, build, and save a named baseline from current build or git ref",
+		Args:  cobra.MaximumNArgs(1),
+		RunE:  runSave,
+	}
+	createCmd.Flags().AddFlagSet(c.Flags())
 
 	// Subcommand: list / ls
 	listCmd := &cobra.Command{
@@ -341,7 +362,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 		},
 	}
 
-	c.AddCommand(saveCmd, listCmd, useCmd, rebuildCmd, showCmd, deleteCmd)
+	c.AddCommand(saveCmd, createCmd, listCmd, useCmd, rebuildCmd, showCmd, deleteCmd)
 
 	return c
 }

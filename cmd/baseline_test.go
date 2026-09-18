@@ -139,3 +139,75 @@ func TestBaselineLifecycleSubcommands(t *testing.T) {
 		t.Errorf("unexpected delete output: %s", out.String())
 	}
 }
+
+func TestBaselineCreateSubcommand(t *testing.T) {
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmpWd := t.TempDir()
+	if err := os.Chdir(tmpWd); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origWd) }()
+
+	base := filepath.Join(origWd, "..", "testdata", "minimal")
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		t.Fatalf("abs: %v", err)
+	}
+	statsFile := filepath.Join(absBase, "stats.json")
+	distDir := filepath.Join(absBase, "browser")
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{
+		"baseline", "create", "my-base",
+		"-s", statsFile,
+		"-d", distDir,
+	}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("baseline create failed: %s", errOut.String())
+	}
+	if !strings.Contains(out.String(), "Successfully captured and saved baseline") {
+		t.Errorf("unexpected create output: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Execute([]string{"baseline", "show", "my-base"}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("baseline show failed: %s", errOut.String())
+	}
+	if !strings.Contains(out.String(), "Name:       my-base") {
+		t.Errorf("expected Name: my-base in output: %s", out.String())
+	}
+}
+
+func TestBaselineFromGitWorktree(t *testing.T) {
+	defer func() {
+		_ = baseline.Delete(baseline.DefaultDir, "test-git-base")
+	}()
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{
+		"baseline", "create", "test-git-base",
+		"--from-git", "HEAD",
+		"--no-build",
+		"-s", "testdata/nx-workspace/dist/apps/admin-dashboard/stats.json",
+		"-d", "testdata/nx-workspace/dist/apps/admin-dashboard/browser",
+	}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("baseline create --from-git failed: %s", errOut.String())
+	}
+
+	snapshotFile, err := baseline.LoadSnapshot("test-git-base")
+	if err != nil {
+		t.Fatalf("load snapshot failed: %v", err)
+	}
+	if snapshotFile.Metadata == nil || snapshotFile.Metadata.GitRef != "HEAD" {
+		t.Errorf("expected GitRef 'HEAD', got %+v", snapshotFile.Metadata)
+	}
+	if snapshotFile.Metadata.CommitSHA == "" {
+		t.Errorf("expected CommitSHA to be recorded")
+	}
+}
