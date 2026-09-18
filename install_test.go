@@ -62,7 +62,19 @@ func TestInstall(t *testing.T) {
 				if len(extraArgs) > 0 {
 					argsToUse = extraArgs
 				}
-				c := exec.Command(filepath.Join(root, "install.sh"), argsToUse...)
+				var c *exec.Cmd
+				if strings.HasSuffix(strings.ToLower(os.Getenv("OS")), "windows") || filepath.Separator == '\\' {
+					shPath, err := exec.LookPath("sh")
+					if err != nil {
+						shPath, err = exec.LookPath("bash")
+					}
+					if err != nil {
+						t.Skip("sh/bash not available on Windows")
+					}
+					c = exec.Command(shPath, append([]string{filepath.ToSlash(filepath.Join(root, "install.sh"))}, argsToUse...)...)
+				} else {
+					c = exec.Command(filepath.Join(root, "install.sh"), argsToUse...)
+				}
 				c.Dir, c.Env = caller, env
 				out, err := c.CombinedOutput()
 				if err == nil {
@@ -78,7 +90,11 @@ func TestInstall(t *testing.T) {
 			if code != tt.exit {
 				t.Fatalf("exit %d, want %d: %s", code, tt.exit, out)
 			}
-			binary := filepath.Join(bin, "bundlecheck")
+			binName := "bundlecheck"
+			if filepath.Separator == '\\' {
+				binName = "bundlecheck.exe"
+			}
+			binary := filepath.Join(bin, binName)
 			_, err := os.Stat(binary)
 			if (err == nil) != tt.binary {
 				t.Fatalf("binary presence: %v", err)
@@ -119,7 +135,20 @@ func TestInstallCustomSkillDir(t *testing.T) {
 	customDir := filepath.Join(base, "custom", "skills", "bundlecheck")
 	bin := filepath.Join(base, "bin")
 
-	cmd := exec.Command(filepath.Join(root, "install.sh"), "--skill-dir", customDir)
+	var cmd *exec.Cmd
+	if filepath.Separator == '\\' {
+		shPath, err := exec.LookPath("sh")
+		if err != nil {
+			shPath, err = exec.LookPath("bash")
+		}
+		if err != nil {
+			t.Skip("sh/bash not available on Windows")
+		}
+		cmd = exec.Command(shPath, filepath.ToSlash(filepath.Join(root, "install.sh")), "--skill-dir", filepath.ToSlash(customDir))
+	} else {
+		cmd = exec.Command(filepath.Join(root, "install.sh"), "--skill-dir", customDir)
+	}
+
 	cmd.Env = append(os.Environ(), "GOBIN="+bin)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

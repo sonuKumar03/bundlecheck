@@ -92,8 +92,8 @@ func TestBrowserAbsolutePaths(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dist, "index.html"), []byte(`<script src="main.js"></script>`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	main := filepath.Join(dist, "main.js")
-	got, roots, err := BrowserOutputs([]snapshot.BundleOutput{{Path: main}, {Path: filepath.Join(dist, "lazy.js")}}, dist)
+	main := filepath.ToSlash(filepath.Join(dist, "main.js"))
+	got, roots, err := BrowserOutputs([]snapshot.BundleOutput{{Path: main}, {Path: filepath.ToSlash(filepath.Join(dist, "lazy.js"))}}, dist)
 	if err != nil || len(got) != 2 || !reflect.DeepEqual(roots, []string{main}) {
 		t.Fatalf("got %v, %v, %v", got, roots, err)
 	}
