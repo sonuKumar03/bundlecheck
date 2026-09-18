@@ -1,6 +1,7 @@
 package discovery_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,3 +121,29 @@ func TestDiscoveryNxWorkspace(t *testing.T) {
 		t.Errorf("unexpected admin dist: %s", adminDist)
 	}
 }
+
+func BenchmarkFindCandidatesScaling(b *testing.B) {
+	tmp := b.TempDir()
+	const numApps = 200
+
+	for i := 0; i < numApps; i++ {
+		appName := fmt.Sprintf("app-%d", i)
+		appDir := filepath.Join(tmp, "dist", appName)
+		browserDir := filepath.Join(appDir, "browser")
+		_ = os.MkdirAll(browserDir, 0755)
+		_ = os.WriteFile(filepath.Join(appDir, "stats.json"), []byte(`{}`), 0644)
+		_ = os.WriteFile(filepath.Join(browserDir, "index.html"), []byte(`<html></html>`), 0644)
+		_ = os.WriteFile(filepath.Join(browserDir, "main.js"), []byte(`console.log(1)`), 0644)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		candidates, err := discovery.FindCandidates(tmp)
+		if err != nil || len(candidates) != numApps {
+			b.Fatalf("unexpected result: count=%d, err=%v", len(candidates), err)
+		}
+	}
+}
+

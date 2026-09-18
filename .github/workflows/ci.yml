@@ -28,9 +28,13 @@ jobs:
       - name: Run Tests
         run: go test -v ./...
 
+      - name: Run Microbenchmarks
+        run: go test -bench=. -benchmem ./...
+
       - name: Build Binary
         run: go build -o bundlecheck .
 
       - name: Validate install.sh
         if: runner.os != 'Windows'
         run: sh -n install.sh
+

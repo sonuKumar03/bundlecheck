@@ -107,13 +107,30 @@ func FindCandidates(rootDir string) ([]Candidate, error) {
 	var candidates []Candidate
 	seen := make(map[string]bool)
 
+	// Index candidate browser directories by exact directory and parent directory for O(1) lookups
+	indexDirsByDir := make(map[string][]string, len(indexDirs))
+	indexDirsByParent := make(map[string][]string, len(indexDirs))
+
+	for _, dist := range indexDirs {
+		indexDirsByDir[dist] = append(indexDirsByDir[dist], dist)
+		parent := filepath.Dir(dist)
+		indexDirsByParent[parent] = append(indexDirsByParent[parent], dist)
+	}
+
 	for _, stats := range statsFiles {
 		statsDir := filepath.Dir(stats)
-		for _, dist := range indexDirs {
-			// Check if stats and dist are co-located or related
-			// Pattern 1: dist/<app>/stats.json & dist/<app>/browser
-			// Pattern 2: dist/<app>/stats.json & dist/<app> (where dist/<app> has index.html)
-			// Pattern 3: dist/stats.json & dist/browser
+		statsParent := filepath.Dir(statsDir)
+
+		// Collect related candidate directories from pre-indexed maps
+		var relatedDists []string
+		relatedDists = append(relatedDists, indexDirsByDir[statsDir]...)
+		relatedDists = append(relatedDists, indexDirsByParent[statsDir]...)
+		if statsParent != statsDir {
+			relatedDists = append(relatedDists, indexDirsByDir[statsParent]...)
+			relatedDists = append(relatedDists, indexDirsByParent[statsParent]...)
+		}
+
+		for _, dist := range relatedDists {
 			if isRelated(statsDir, dist) {
 				key := stats + "::" + dist
 				if !seen[key] {

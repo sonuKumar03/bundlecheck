@@ -25,7 +25,7 @@
 
 Modern Angular applications build with **esbuild** for incredible compilation speed. However, esbuild's raw `stats.json` files are massive, complex, and unreadable for quick human inspection or CI pull request reviews.
 
-`bundlecheck` is a compiled Go binary (`<5ms` execution) and zero-dependency npm tool that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**.
+`bundlecheck` is a compiled Go binary (sub-10ms native execution, <1ms graph query & attribution) and zero-dependency npm tool that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**.
 
 ```text
 $ bundlecheck summary dist/my-app/stats.json --gzip --suggest
@@ -56,7 +56,7 @@ TOP CONTRIBUTING NPM PACKAGES
 
 | Feature | `bundlecheck` | `webpack-bundle-analyzer` | `source-map-explorer` | Standard `angular.json` Budgets |
 | :--- | :---: | :---: | :---: | :---: |
-| **Execution Speed** | **`< 5ms` (Compiled Go)** | ~3–8 seconds (Node.js) | ~4–10 seconds (Node.js) | Integrated into build |
+| **Execution Speed** | **`< 10ms` (Compiled Go)** | ~3–8 seconds (Node.js) | ~4–10 seconds (Node.js) | Integrated into build |
 | **Runtime Dependencies** | **Zero** (Standalone Binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
 | **Import Chain Tracer (`why`)** | **Yes (ASCII Tree)** | ❌ No | ❌ No | ❌ No |
 | **Optimization Advisor (`suggest`)** | **Yes (Automated Rules)** | ❌ No (Visual only) | ❌ No | ❌ No |

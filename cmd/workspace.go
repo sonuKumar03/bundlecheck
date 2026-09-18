@@ -18,7 +18,7 @@ func workspaceCommand() *cobra.Command {
 	parent := &cobra.Command{Use: "workspace", Short: "Analyze existing Angular builds across an Nx workspace"}
 	var root, projects, target, configuration, format, output string
 	var top int
-	var all bool
+	var all, showGzip bool
 	c := &cobra.Command{Use: "summary", Short: "Compare app sizes and shared npm/library contributions", Args: cobra.NoArgs, RunE: func(c *cobra.Command, args []string) error {
 		if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
 			return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
@@ -127,7 +127,7 @@ func workspaceCommand() *cobra.Command {
 			if app.Status != "ready" {
 				continue
 			}
-			needCompression := format == "json"
+			needCompression := format == "json" || showGzip || output != ""
 			result, snap, analysisErr := runAnalysisWithOptions(app.Stats, app.Dist, needCompression)
 			if analysisErr == nil {
 				libraries[app.Name], analysisErr = workspace.Libraries(workspaceRoot, metadata.Graph.Nodes, snap)
@@ -187,6 +187,7 @@ func workspaceCommand() *cobra.Command {
 	c.Flags().StringVarP(&output, "output", "o", "", "Write report to a file instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of npm/library contributors to display")
 	c.Flags().BoolVar(&all, "all", false, "Display all contributors")
+	c.Flags().BoolVarP(&showGzip, "gzip", "g", false, "Include estimated Gzip wire transfer sizes in report")
 	parent.AddCommand(c)
 	return parent
 }

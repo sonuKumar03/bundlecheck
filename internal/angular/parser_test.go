@@ -104,3 +104,21 @@ func TestNormalizeAssetImport(t *testing.T) {
 		t.Fatal("file-loader references must not become static JS imports")
 	}
 }
+
+func BenchmarkParse(b *testing.B) {
+	fixturePath := filepath.Join("..", "..", "testdata", "minimal", "stats.json")
+	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
+		b.Skip("testdata fixture not present")
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(fixturePath)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+

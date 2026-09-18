@@ -1,6 +1,7 @@
 package angular
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,96 +10,137 @@ import (
 	"bundlecheck/internal/snapshot"
 )
 
+type rawInput struct {
+	Bytes   *int64   `json:"bytes"`
+	Imports []Import `json:"imports"`
+	Format  string   `json:"format,omitempty"`
+}
+
+type rawOutputInput struct {
+	BytesInOutput *int64 `json:"bytesInOutput"`
+}
+
+type rawOutput struct {
+	Bytes      *int64                    `json:"bytes"`
+	Inputs     map[string]*rawOutputInput `json:"inputs"`
+	Imports    []Import                  `json:"imports"`
+	Exports    []string                  `json:"exports"`
+	EntryPoint string                    `json:"entryPoint,omitempty"`
+	CSSBundle  string                    `json:"cssBundle,omitempty"`
+}
+
+type rawMetafile struct {
+	Inputs  map[string]*rawInput  `json:"inputs"`
+	Outputs map[string]*rawOutput `json:"outputs"`
+}
+
 func Parse(p string) (*Metafile, error) {
 	data, err := os.ReadFile(p)
 	if err != nil {
 		return nil, fmt.Errorf("read stats %q: %w", p, err)
 	}
-	var m Metafile
-	if err := json.Unmarshal(data, &m); err != nil {
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	var rm rawMetafile
+	if err := dec.Decode(&rm); err != nil {
 		return nil, fmt.Errorf("parse stats JSON %q: %w", p, err)
 	}
-	if err := validate(data, &m); err != nil {
-		return nil, fmt.Errorf("unsupported stats %q: %w", p, err)
+	if dec.More() {
+		return nil, fmt.Errorf("parse stats JSON %q: trailing document", p)
 	}
-	return &m, nil
-}
 
-func validate(data []byte, m *Metafile) error {
-	var root map[string]json.RawMessage
-	if err := json.Unmarshal(data, &root); err != nil {
-		return err
+	if rm.Inputs == nil {
+		return nil, fmt.Errorf("unsupported stats %q: inputs must be a non-null object", p)
 	}
-	known := make(map[string]bool)
-	for _, field := range []string{"inputs", "outputs"} {
-		entries, err := object(root[field], field)
-		if err != nil {
-			return err
+	if rm.Outputs == nil {
+		return nil, fmt.Errorf("unsupported stats %q: outputs must be a non-null object", p)
+	}
+
+	m := &Metafile{
+		Inputs:  make(map[string]Input, len(rm.Inputs)),
+		Outputs: make(map[string]Output, len(rm.Outputs)),
+	}
+
+	known := make(map[string]bool, len(rm.Inputs))
+
+	inputKeys := keys(rm.Inputs)
+	for _, k := range inputKeys {
+		if k == "" {
+			return nil, fmt.Errorf("unsupported stats %q: inputs contains an empty path", p)
 		}
-		for _, p := range keys(entries) {
-			if p == "" {
-				return fmt.Errorf("%s contains an empty path", field)
-			}
-			entry, err := object(entries[p], field+"["+p+"]")
-			if err != nil {
-				return err
-			}
-			if err := byteField(entry["bytes"], "bytes for "+p); err != nil {
-				return err
-			}
-			if field == "inputs" {
-				known[snapshot.CleanPath(p)] = true
-				continue
-			}
-			contributions, err := object(entry["inputs"], "output inputs for "+p)
-			if err != nil {
-				return err
-			}
-			for _, input := range keys(contributions) {
-				if !known[snapshot.CleanPath(input)] {
-					return fmt.Errorf("output %q references unknown input %q", p, input)
-				}
-				c, err := object(contributions[input], "contribution for "+input)
-				if err != nil {
-					return err
-				}
-				if err := byteField(c["bytesInOutput"], "bytesInOutput for "+input); err != nil {
-					return err
-				}
-			}
+		in := rm.Inputs[k]
+		if in == nil {
+			return nil, fmt.Errorf("unsupported stats %q: inputs[%s] must be a non-null object", p, k)
+		}
+		if in.Bytes == nil || *in.Bytes < 0 {
+			return nil, fmt.Errorf("unsupported stats %q: bytes for %s must be a nonnegative integer", p, k)
+		}
+		known[snapshot.CleanPath(k)] = true
+		m.Inputs[k] = Input{
+			Bytes:   *in.Bytes,
+			Imports: in.Imports,
+			Format:  in.Format,
 		}
 	}
-	for _, p := range keys(m.Outputs) {
-		for _, imp := range m.Outputs[p].Imports {
+
+	outputKeys := keys(rm.Outputs)
+	for _, k := range outputKeys {
+		if k == "" {
+			return nil, fmt.Errorf("unsupported stats %q: outputs contains an empty path", p)
+		}
+		out := rm.Outputs[k]
+		if out == nil {
+			return nil, fmt.Errorf("unsupported stats %q: outputs[%s] must be a non-null object", p, k)
+		}
+		if out.Bytes == nil || *out.Bytes < 0 {
+			return nil, fmt.Errorf("unsupported stats %q: bytes for %s must be a nonnegative integer", p, k)
+		}
+		if out.Inputs == nil {
+			return nil, fmt.Errorf("unsupported stats %q: output inputs for %s must be a non-null object", p, k)
+		}
+
+		outInputs := make(map[string]OutputInput, len(out.Inputs))
+		contributionKeys := keys(out.Inputs)
+		for _, inputPath := range contributionKeys {
+			if !known[snapshot.CleanPath(inputPath)] {
+				return nil, fmt.Errorf("unsupported stats %q: output %q references unknown input %q", p, k, inputPath)
+			}
+			c := out.Inputs[inputPath]
+			if c == nil {
+				return nil, fmt.Errorf("unsupported stats %q: contribution for %s must be a non-null object", p, inputPath)
+			}
+			if c.BytesInOutput == nil || *c.BytesInOutput < 0 {
+				return nil, fmt.Errorf("unsupported stats %q: bytesInOutput for %s must be a nonnegative integer", p, inputPath)
+			}
+			outInputs[inputPath] = OutputInput{
+				BytesInOutput: *c.BytesInOutput,
+			}
+		}
+
+		for _, imp := range out.Imports {
 			if imp.Path == "" || imp.Kind == "" {
-				return fmt.Errorf("output %q has an import missing path or kind", p)
+				return nil, fmt.Errorf("unsupported stats %q: output %q has an import missing path or kind", p, k)
 			}
 		}
-	}
-	return nil
-}
 
-func object(raw json.RawMessage, name string) (map[string]json.RawMessage, error) {
-	var result map[string]json.RawMessage
-	if len(raw) == 0 || json.Unmarshal(raw, &result) != nil || result == nil {
-		return nil, fmt.Errorf("%s must be a non-null object", name)
+		m.Outputs[k] = Output{
+			Bytes:      *out.Bytes,
+			Inputs:     outInputs,
+			Imports:    out.Imports,
+			Exports:    out.Exports,
+			EntryPoint: out.EntryPoint,
+			CSSBundle:  out.CSSBundle,
+		}
 	}
-	return result, nil
-}
 
-func byteField(raw json.RawMessage, name string) error {
-	var n *int64
-	if len(raw) == 0 || json.Unmarshal(raw, &n) != nil || n == nil || *n < 0 {
-		return fmt.Errorf("%s must be a nonnegative integer", name)
-	}
-	return nil
+	return m, nil
 }
 
 func keys[V any](m map[string]V) []string {
-	result := make([]string, 0, len(m))
-	for key := range m {
-		result = append(result, key)
+	res := make([]string, 0, len(m))
+	for k := range m {
+		res = append(res, k)
 	}
-	slices.Sort(result)
-	return result
+	slices.Sort(res)
+	return res
 }
