@@ -1,6 +1,7 @@
 package advisor_test
 
 import (
+	"strings"
 	"testing"
 
 	"bundlecheck/internal/advisor"
@@ -183,3 +184,182 @@ func BenchmarkAdvisorScaling(b *testing.B) {
 		_ = advisor.Analyze(snap, opts)
 	}
 }
+
+func TestAdvisorRootBootstrapSuggestion(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/app.config.ts"}},
+			},
+			{
+				Path:    "src/app/app.config.ts",
+				Bytes:   2000,
+				Imports: []snapshot.Import{{Path: "node_modules/@angular/animations/fesm2022/animations.mjs"}},
+			},
+			{
+				Path:  "node_modules/@angular/animations/fesm2022/animations.mjs",
+				Bytes: 25 * 1024,
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				Initial:    true,
+				EntryPoint: "src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+					{Input: "src/app/app.config.ts", Bytes: 2000},
+					{Input: "node_modules/@angular/animations/fesm2022/animations.mjs", Bytes: 25 * 1024},
+				},
+			},
+		},
+		Packages: []snapshot.Package{
+			{Name: "@angular/animations", InitialBytes: 25 * 1024, TotalBytes: 25 * 1024},
+		},
+	}
+
+	res := advisor.Analyze(snap, advisor.AdvisorOptions{MinSavings: 1024})
+	if len(res.Suggestions) == 0 {
+		t.Fatal("expected suggestion for root-imported package")
+	}
+
+	s := res.Suggestions[0]
+	if s.Target != "@angular/animations" {
+		t.Errorf("expected target @angular/animations, got %s", s.Target)
+	}
+	if s.File != "src/app/app.config.ts" {
+		t.Errorf("expected file src/app/app.config.ts, got %s", s.File)
+	}
+	// Verify title & action do NOT prescribe naive `const lib = await import`
+	if strings.Contains(s.Action, "const lib = await import") {
+		t.Errorf("unexpected naive dynamic import in action: %s", s.Action)
+	}
+	if !strings.Contains(s.Action, "provide...Async") && !strings.Contains(s.Action, "async providers") {
+		t.Errorf("expected action to mention async/deferred providers, got: %s", s.Action)
+	}
+	if !strings.Contains(s.Title, "Review root provider") {
+		t.Errorf("expected title to mention root provider, got: %s", s.Title)
+	}
+}
+
+func TestAdvisorRouteComponentSuggestion(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/app.routes.ts"}},
+			},
+			{
+				Path:    "src/app/app.routes.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/pages/movie-detail/movie-detail.component.ts"}},
+			},
+			{
+				Path:    "src/app/pages/movie-detail/movie-detail.component.ts",
+				Bytes:   5000,
+				Imports: []snapshot.Import{{Path: "node_modules/@push-based/ngx-fast-svg/index.js"}},
+			},
+			{
+				Path:  "node_modules/@push-based/ngx-fast-svg/index.js",
+				Bytes: 30 * 1024,
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				Initial:    true,
+				EntryPoint: "src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+					{Input: "src/app/app.routes.ts", Bytes: 1000},
+					{Input: "src/app/pages/movie-detail/movie-detail.component.ts", Bytes: 5000},
+					{Input: "node_modules/@push-based/ngx-fast-svg/index.js", Bytes: 30 * 1024},
+				},
+			},
+		},
+		Packages: []snapshot.Package{
+			{Name: "@push-based/ngx-fast-svg", InitialBytes: 30 * 1024, TotalBytes: 30 * 1024},
+		},
+	}
+
+	res := advisor.Analyze(snap, advisor.AdvisorOptions{MinSavings: 1024})
+	if len(res.Suggestions) == 0 {
+		t.Fatal("expected suggestion for package in route component")
+	}
+
+	s := res.Suggestions[0]
+	if s.Target != "@push-based/ngx-fast-svg" {
+		t.Errorf("expected target @push-based/ngx-fast-svg, got %s", s.Target)
+	}
+	if !strings.Contains(s.Title, "Lazy-load") {
+		t.Errorf("expected title to recommend lazy-loading parent route, got: %s", s.Title)
+	}
+	if !strings.Contains(s.Action, "loadComponent") {
+		t.Errorf("expected action to mention loadComponent, got: %s", s.Action)
+	}
+	if !strings.Contains(s.Description, "app.routes.ts") {
+		t.Errorf("expected description to mention app.routes.ts, got: %s", s.Description)
+	}
+}
+
+func TestAdvisorGeneralUtilitySuggestion(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/services/pdf-export.service.ts"}},
+			},
+			{
+				Path:    "src/app/services/pdf-export.service.ts",
+				Bytes:   2000,
+				Imports: []snapshot.Import{{Path: "node_modules/pdfjs-dist/index.js"}},
+			},
+			{
+				Path:  "node_modules/pdfjs-dist/index.js",
+				Bytes: 50 * 1024,
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				Initial:    true,
+				EntryPoint: "src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+					{Input: "src/app/services/pdf-export.service.ts", Bytes: 2000},
+					{Input: "node_modules/pdfjs-dist/index.js", Bytes: 50 * 1024},
+				},
+			},
+		},
+		Packages: []snapshot.Package{
+			{Name: "pdfjs-dist", InitialBytes: 50 * 1024, TotalBytes: 50 * 1024},
+		},
+	}
+
+	res := advisor.Analyze(snap, advisor.AdvisorOptions{MinSavings: 1024})
+	if len(res.Suggestions) == 0 {
+		t.Fatal("expected suggestion for service-imported package")
+	}
+
+	s := res.Suggestions[0]
+	if s.Target != "pdfjs-dist" {
+		t.Errorf("expected target pdfjs-dist, got %s", s.Target)
+	}
+	if !strings.Contains(s.Title, "pdf-export.service.ts") {
+		t.Errorf("expected title to reference importer file, got: %s", s.Title)
+	}
+	if !strings.Contains(s.Action, "@defer") || !strings.Contains(s.Action, "await import") {
+		t.Errorf("expected action to offer dynamic import or @defer options, got: %s", s.Action)
+	}
+}
+

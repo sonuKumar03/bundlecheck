@@ -89,22 +89,23 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		}
 
 		traceRes, _ := g.TracePackage(p.Name, true, 1)
-		importerFile := ""
-		if traceRes != nil && len(traceRes.Chains) > 0 && len(traceRes.Chains[0].Path) > 1 {
-			// Second to last in chain is the importer
-			importerFile = traceRes.Chains[0].Path[len(traceRes.Chains[0].Path)-2]
+		var chain []string
+		if traceRes != nil && len(traceRes.Chains) > 0 {
+			chain = traceRes.Chains[0].Path
 		}
+		topo := classifyTopology(chain)
+		title, desc, action := generatePackageSuggestion(p.Name, topo)
 
 		res.Suggestions = append(res.Suggestions, Suggestion{
 			Rule:        "heavy-initial-package",
 			Severity:    severity,
-			Title:       "Move '" + p.Name + "' behind a dynamic import",
+			Title:       title,
 			Target:      p.Name,
-			File:        importerFile,
+			File:        topo.importerFile,
 			Savings:     p.InitialBytes,
 			SavingsGzip: p.InitialGzipBytes,
-			Description: "Package '" + p.Name + "' is bundled in initial JS. If not critical for first paint, dynamic loading can directly reduce initial bundle size.",
-			Action:      "Replace static 'import ... from \"" + p.Name + "\"' with dynamic 'const lib = await import(\"" + p.Name + "\")'.",
+			Description: desc,
+			Action:      action,
 		})
 	}
 
@@ -244,3 +245,102 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 
 	return res
 }
+
+type importerContext struct {
+	role         string // "root-bootstrap", "route-component", "general-module"
+	importerFile string
+	routeFile    string
+}
+
+func classifyTopology(chain []string) importerContext {
+	ctx := importerContext{
+		role: "general-module",
+	}
+	if len(chain) < 2 {
+		return ctx
+	}
+
+	ctx.importerFile = chain[len(chain)-2]
+
+	// Check if any module in the chain is a routing file
+	for _, p := range chain {
+		base := strings.ToLower(path.Base(p))
+		if strings.Contains(base, "route") || strings.HasSuffix(base, ".routes.ts") || strings.HasSuffix(base, "-routing.module.ts") {
+			ctx.routeFile = p
+			break
+		}
+	}
+
+	importerBase := strings.ToLower(path.Base(ctx.importerFile))
+
+	// Check if the importer itself or route in chain indicates a route/page/feature component
+	isRouteFeature := ctx.routeFile != "" ||
+		strings.Contains(importerBase, "page") ||
+		strings.Contains(importerBase, "dialog") ||
+		strings.Contains(importerBase, "modal") ||
+		strings.Contains(importerBase, "detail") ||
+		strings.Contains(importerBase, "dashboard") ||
+		strings.Contains(importerBase, "feature") ||
+		strings.Contains(importerBase, "view") ||
+		strings.Contains(importerBase, "screen")
+
+	// If it's a component (and not root app.component.ts), treat as route/feature component
+	if strings.Contains(importerBase, "component") && !strings.HasPrefix(importerBase, "app.component") {
+		isRouteFeature = true
+	}
+
+	if isRouteFeature {
+		ctx.role = "route-component"
+		return ctx
+	}
+
+	// Check if importer is root bootstrap
+	if isRootBootstrap(importerBase) {
+		ctx.role = "root-bootstrap"
+		return ctx
+	}
+
+	return ctx
+}
+
+func isRootBootstrap(base string) bool {
+	base = strings.ToLower(base)
+	return strings.HasSuffix(base, ".config.ts") ||
+		strings.HasSuffix(base, ".config.server.ts") ||
+		base == "main.ts" ||
+		base == "main.server.ts" ||
+		base == "bootstrap.ts" ||
+		base == "polyfills.ts" ||
+		(strings.HasSuffix(base, ".module.ts") && (strings.HasPrefix(base, "app.") || strings.HasPrefix(base, "root.")))
+}
+
+func generatePackageSuggestion(pkgName string, topo importerContext) (title, desc, action string) {
+	switch topo.role {
+	case "root-bootstrap":
+		title = fmt.Sprintf("Review root provider or module import for '%s'", pkgName)
+		desc = fmt.Sprintf("Package '%s' is imported directly by root bootstrap (%s) and bundled into initial JS.", pkgName, topo.importerFile)
+		action = "If not required for first paint, consider async providers (e.g. provide...Async()), lazy initialization, or scoping to feature routes."
+
+	case "route-component":
+		title = fmt.Sprintf("Lazy-load route component '%s' to defer '%s'", path.Base(topo.importerFile), pkgName)
+		if topo.routeFile != "" && topo.routeFile != topo.importerFile {
+			desc = fmt.Sprintf("Package '%s' is pulled into initial JS because '%s' is eagerly imported via '%s'.", pkgName, topo.importerFile, topo.routeFile)
+		} else {
+			desc = fmt.Sprintf("Package '%s' is pulled into initial JS because '%s' is eagerly imported.", pkgName, topo.importerFile)
+		}
+		action = fmt.Sprintf("Lazy-load the parent route (e.g. 'loadComponent: () => import(...)') or wrap in an '@defer' block to move '%s' to a lazy chunk.", pkgName)
+
+	default: // "general-module"
+		if topo.importerFile != "" {
+			title = fmt.Sprintf("De-couple or lazy-load '%s' in %s", pkgName, path.Base(topo.importerFile))
+			desc = fmt.Sprintf("Package '%s' contributes to initial JS via %s. If not needed during initial render, defer its loading.", pkgName, topo.importerFile)
+			action = "Consider dynamic import ('const ... = await import(...)'), template '@defer' block, or tree-shakable subpath imports if only used for specific user interactions."
+		} else {
+			title = fmt.Sprintf("Move '%s' behind dynamic loading", pkgName)
+			desc = fmt.Sprintf("Package '%s' is bundled in initial JS. If not critical for first paint, dynamic loading can directly reduce initial bundle size.", pkgName)
+			action = "Consider dynamic import ('await import(...)'), '@defer', or moving non-critical logic to lazy routes."
+		}
+	}
+	return title, desc, action
+}
+
