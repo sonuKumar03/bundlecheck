@@ -77,12 +77,14 @@ and duplicated package contributions.`,
 			}
 			s.Outputs = outputs
 
-			// Run analysis and compression
+			// Run analysis and conditional compression
 			_, err = analysis.Analyze(s)
 			if err != nil {
 				return err
 			}
-			compression.AttachCompression(s, dDir)
+			if format == "json" || showGzip {
+				compression.AttachCompression(s, dDir)
+			}
 
 			advisorOpts := advisor.AdvisorOptions{
 				MinSavings:     minSavingsBytes,

@@ -118,3 +118,68 @@ func TestDuplicateAdviceUsesEmittedInitialContributions(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkAdvisorScaling(b *testing.B) {
+	const numPackages = 100
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 5000000, TotalJS: 5000000},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: make([]snapshot.Import, 0, numPackages),
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				EntryPoint: "src/main.ts",
+				Initial:    true,
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+				},
+			},
+		},
+	}
+
+	for i := 0; i < numPackages; i++ {
+		pkgName := "testpkg" + string(rune('a'+(i%26))) + string(rune('0'+(i/26)))
+		snap.Packages = append(snap.Packages, snapshot.Package{
+			Name:         pkgName,
+			InitialBytes: 20000,
+			TotalBytes:   20000,
+		})
+
+		entryPath := "node_modules/" + pkgName + "/index.js"
+		snap.Inputs[0].Imports = append(snap.Inputs[0].Imports, snapshot.Import{Path: entryPath})
+
+		var lastPath string
+		for j := 0; j < 10; j++ {
+			modPath := "node_modules/" + pkgName + "/mod" + string(rune('0'+j)) + ".js"
+			if j == 0 {
+				modPath = entryPath
+			}
+			snap.Inputs = append(snap.Inputs, snapshot.Module{
+				Path:  modPath,
+				Bytes: 2000,
+			})
+			if lastPath != "" {
+				snap.Inputs[len(snap.Inputs)-2].Imports = append(snap.Inputs[len(snap.Inputs)-2].Imports, snapshot.Import{Path: modPath})
+			}
+			lastPath = modPath
+			snap.Outputs[0].Inputs = append(snap.Outputs[0].Inputs, snapshot.Contribution{
+				Input: modPath,
+				Bytes: 2000,
+			})
+		}
+	}
+
+	opts := advisor.AdvisorOptions{MinSavings: 1024}
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = advisor.Analyze(snap, opts)
+	}
+}

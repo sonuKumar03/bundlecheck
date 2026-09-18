@@ -55,6 +55,9 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		minSavings = 1024 // 1 KB default
 	}
 
+	// Pre-build indexed graph once for the entire analysis
+	g := graph.NewGraph(s)
+
 	// Rule 1: Heavy Initial Third-Party Utilities
 	frameworkPackages := map[string]bool{
 		"@angular/core":             true,
@@ -79,7 +82,13 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 			severity = "LOW"
 		}
 
-		traceRes, _ := graph.TracePackage(s, p.Name, true, 1)
+		if opts.SeverityFilter != "" && opts.SeverityFilter != "ALL" {
+			if !strings.EqualFold(severity, opts.SeverityFilter) {
+				continue
+			}
+		}
+
+		traceRes, _ := g.TracePackage(p.Name, true, 1)
 		importerFile := ""
 		if traceRes != nil && len(traceRes.Chains) > 0 && len(traceRes.Chains[0].Path) > 1 {
 			// Second to last in chain is the importer

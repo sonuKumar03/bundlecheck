@@ -127,7 +127,8 @@ func workspaceCommand() *cobra.Command {
 			if app.Status != "ready" {
 				continue
 			}
-			result, snap, analysisErr := runAnalysisWithSnapshot(app.Stats, app.Dist)
+			needCompression := format == "json"
+			result, snap, analysisErr := runAnalysisWithOptions(app.Stats, app.Dist, needCompression)
 			if analysisErr == nil {
 				libraries[app.Name], analysisErr = workspace.Libraries(workspaceRoot, metadata.Graph.Nodes, snap)
 			}

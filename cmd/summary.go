@@ -54,7 +54,8 @@ func summaryCommand() *cobra.Command {
 				return err
 			}
 
-			result, snap, err := runAnalysisWithSnapshot(sFile, dDir)
+			needCompression := format == "json" || showGzip
+			result, snap, err := runAnalysisWithOptions(sFile, dDir, needCompression)
 			if err != nil {
 				return err
 			}
@@ -165,11 +166,15 @@ func resolveBuildArtifacts(stats, dist, project string) (string, string, error) 
 }
 
 func runAnalysis(stats, dist string) (*analysis.AnalysisResult, error) {
-	res, _, err := runAnalysisWithSnapshot(stats, dist)
+	res, _, err := runAnalysisWithOptions(stats, dist, true)
 	return res, err
 }
 
 func runAnalysisWithSnapshot(stats, dist string) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
+	return runAnalysisWithOptions(stats, dist, true)
+}
+
+func runAnalysisWithOptions(stats, dist string, withCompression bool) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
 	meta, err := angular.Parse(stats)
 	if err != nil {
 		return nil, nil, err
@@ -190,9 +195,11 @@ func runAnalysisWithSnapshot(stats, dist string) (*analysis.AnalysisResult, *sna
 	if err != nil {
 		return nil, nil, err
 	}
-	compression.AttachCompression(s, dist)
-	result.Summary = s.Totals
-	result.Packages = s.Packages
+	if withCompression {
+		compression.AttachCompression(s, dist)
+		result.Summary = s.Totals
+		result.Packages = s.Packages
+	}
 	return result, s, nil
 }
 

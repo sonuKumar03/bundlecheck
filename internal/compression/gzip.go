@@ -112,7 +112,38 @@ func AttachCompression(s *snapshot.BundleSnapshot, distDir string) {
 	s.Totals.LazyGzipJS = lazyGzip
 	s.Totals.TotalGzipJS = totalGzip
 
-	// Update package gzip estimates based on output contributions
+	// Update package gzip estimates based on output contributions in a single pass O(C)
+	type pkgGzipAcc struct {
+		initial int64
+		lazy    int64
+	}
+	pkgAcc := make(map[string]*pkgGzipAcc, len(s.Packages))
+
+	for _, o := range s.Outputs {
+		ratio, hasRatio := outputRatios[snapshot.CleanPath(o.Path)]
+		if !hasRatio {
+			ratio = DefaultFallbackRatio
+		}
+
+		for _, c := range o.Inputs {
+			inputPath := snapshot.CleanPath(c.Input)
+			if pName, isPkg := analysis.PackageName(inputPath); isPkg {
+				pNameKey := strings.ToLower(pName)
+				acc := pkgAcc[pNameKey]
+				if acc == nil {
+					acc = &pkgGzipAcc{}
+					pkgAcc[pNameKey] = acc
+				}
+				estGzip := int64(float64(c.Bytes) * ratio)
+				if o.Initial {
+					acc.initial += estGzip
+				} else {
+					acc.lazy += estGzip
+				}
+			}
+		}
+	}
+
 	for i := range s.Packages {
 		pkg := &s.Packages[i]
 		var (
@@ -120,23 +151,9 @@ func AttachCompression(s *snapshot.BundleSnapshot, distDir string) {
 			pkgLazyGzip    int64
 		)
 
-		for _, o := range s.Outputs {
-			ratio, hasRatio := outputRatios[snapshot.CleanPath(o.Path)]
-			if !hasRatio {
-				ratio = DefaultFallbackRatio
-			}
-
-			for _, c := range o.Inputs {
-				inputPath := snapshot.CleanPath(c.Input)
-				if belongsToPackage(inputPath, pkg.Name) {
-					estGzip := int64(float64(c.Bytes) * ratio)
-					if o.Initial {
-						pkgInitialGzip += estGzip
-					} else {
-						pkgLazyGzip += estGzip
-					}
-				}
-			}
+		if acc, ok := pkgAcc[strings.ToLower(pkg.Name)]; ok {
+			pkgInitialGzip = acc.initial
+			pkgLazyGzip = acc.lazy
 		}
 
 		if pkgInitialGzip == 0 && pkg.InitialBytes > 0 {
@@ -150,12 +167,4 @@ func AttachCompression(s *snapshot.BundleSnapshot, distDir string) {
 		pkg.LazyGzipBytes = pkgLazyGzip
 		pkg.TotalGzipBytes = pkgInitialGzip + pkgLazyGzip
 	}
-}
-
-func belongsToPackage(inputPath, pkgName string) bool {
-	if inputPath == "" || pkgName == "" {
-		return false
-	}
-	pName, isPkg := analysis.PackageName(inputPath)
-	return isPkg && strings.EqualFold(pName, pkgName)
 }

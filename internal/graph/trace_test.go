@@ -93,6 +93,64 @@ func TestTracePackageNotFound(t *testing.T) {
 	}
 }
 
+func TestTraceDependencyPathPreservesPackageOrder(t *testing.T) {
+	for _, s := range []*snapshot.BundleSnapshot{
+		{Inputs: []snapshot.Module{
+			{Path: "node_modules/abc/index.js"},
+			{Path: "node_modules/abd/index.js"},
+		}},
+		{Outputs: []snapshot.BundleOutput{{Inputs: []snapshot.Contribution{
+			{Input: "node_modules/abc/index.js", Bytes: 10},
+			{Input: "node_modules/abd/index.js", Bytes: 20},
+		}}}},
+	} {
+		g := graph.NewGraph(s)
+		for i := 0; i < 100; i++ {
+			result, err := g.TracePackage("node_modules/ab", false, 5)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.PackageName != "abc" {
+				t.Fatalf("package order changed: got %q, want abc", result.PackageName)
+			}
+		}
+	}
+}
+
+func TestIndexedTraceHandlesCyclesAndMultipleEntries(t *testing.T) {
+	s := &snapshot.BundleSnapshot{
+		Inputs: []snapshot.Module{
+			{Path: "src/a.ts", Imports: []snapshot.Import{{Path: "src/cycle.ts"}}},
+			{Path: "src/cycle.ts", Imports: []snapshot.Import{{Path: "src/a.ts"}, {Path: "node_modules/pkg/index.js"}}},
+			{Path: "src/z.ts", Imports: []snapshot.Import{{Path: "node_modules/pkg/index.js"}}},
+			{Path: "node_modules/pkg/index.js", Imports: []snapshot.Import{{Path: "src/cycle.ts"}}},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{Path: "main.js", EntryPoint: "src/a.ts", Initial: true, Inputs: []snapshot.Contribution{{Input: "node_modules/pkg/index.js", Bytes: 10}}},
+			{Path: "lazy.js", EntryPoint: "src/z.ts", Inputs: []snapshot.Contribution{{Input: "node_modules/pkg/index.js", Bytes: 20}}},
+		},
+	}
+	g := graph.NewGraph(s)
+	for _, initialOnly := range []bool{false, true} {
+		result, err := g.TracePackage("pkg", initialOnly, 5)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantChains := 2
+		if initialOnly {
+			wantChains = 1
+		}
+		if result.InitialBytes != 10 || result.LazyBytes != 20 || len(result.Chains) != wantChains {
+			t.Fatalf("unexpected trace totals or chains: %+v", result)
+		}
+		for _, chain := range result.Chains {
+			if len(chain.Path) != 2 || chain.Path[0] != "src/z.ts" || chain.Path[1] != "node_modules/pkg/index.js" {
+				t.Fatalf("expected shortest path from src/z.ts: %+v", chain)
+			}
+		}
+	}
+}
+
 func TestTraceExactDependencyFileAndPackageBoundaries(t *testing.T) {
 	s := &snapshot.BundleSnapshot{
 		Inputs: []snapshot.Module{

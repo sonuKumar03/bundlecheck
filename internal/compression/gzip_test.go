@@ -115,3 +115,70 @@ func TestCompressionUsesResolvedNestedBrowserFile(t *testing.T) {
 		t.Fatalf("gzip measured a different file: got %d, want %d", got, expected.Len())
 	}
 }
+
+func BenchmarkAttachCompressionScaling(b *testing.B) {
+	const numPackages = 100
+	const contributionsPerPackage = 10
+
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 2000000, TotalJS: 2000000},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:    "browser/main.js",
+				Bytes:   2000000,
+				Initial: true,
+			},
+		},
+	}
+
+	for i := 0; i < numPackages; i++ {
+		pkgName := strings.Repeat("pkg", 1) + string(rune('a'+(i%26))) + string(rune('0'+(i/26)))
+		snap.Packages = append(snap.Packages, snapshot.Package{
+			Name:         pkgName,
+			InitialBytes: 20000,
+			TotalBytes:   20000,
+		})
+		for j := 0; j < contributionsPerPackage; j++ {
+			snap.Outputs[0].Inputs = append(snap.Outputs[0].Inputs, snapshot.Contribution{
+				Input: "node_modules/" + pkgName + "/index" + string(rune('0'+j)) + ".js",
+				Bytes: 2000,
+			})
+		}
+	}
+
+	distDir := b.TempDir()
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		compression.AttachCompression(snap, distDir)
+	}
+}
+
+func TestPackageCompressionPreservesContributionRoundingAndFallback(t *testing.T) {
+	s := &snapshot.BundleSnapshot{
+		Outputs: []snapshot.BundleOutput{
+			{Path: "main.js", Bytes: 1000, Initial: true, Inputs: []snapshot.Contribution{
+				{Input: "node_modules/@scope/tool/a.js", Bytes: 31},
+				{Input: "node_modules/parent/node_modules/@scope/tool/b.js", Bytes: 31},
+				{Input: "node_modules/other/index.js", Bytes: 100},
+			}},
+			{Path: "lazy.js", Bytes: 1000, Inputs: []snapshot.Contribution{
+				{Input: "node_modules/@scope/tool/c.js", Bytes: 21},
+			}},
+		},
+		Packages: []snapshot.Package{
+			{Name: "@scope/tool", InitialBytes: 62, LazyBytes: 21, TotalBytes: 83},
+			{Name: "OTHER", InitialBytes: 100, TotalBytes: 100},
+			{Name: "missing", InitialBytes: 10, TotalBytes: 10},
+		},
+	}
+	compression.AttachCompression(s, t.TempDir())
+	for i, want := range [][3]int64{{18, 6, 24}, {32, 0, 32}, {3, 0, 3}} {
+		p := s.Packages[i]
+		if got := [3]int64{p.InitialGzipBytes, p.LazyGzipBytes, p.TotalGzipBytes}; got != want {
+			t.Fatalf("%s gzip totals: got %v, want %v", p.Name, got, want)
+		}
+	}
+}

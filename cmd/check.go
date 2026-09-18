@@ -120,7 +120,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 			if err != nil {
 				return err
 			}
-			currentResult, err := runAnalysis(sFile, dDir)
+			currentResult, _, err := runAnalysisWithOptions(sFile, dDir, false)
 			if err != nil {
 				return err
 			}
