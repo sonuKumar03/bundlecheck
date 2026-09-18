@@ -1,0 +1,5 @@
+/bundlecheck
+*.test
+/coverage.out
+.DS_Store
+/testdata/angular-esbuild/

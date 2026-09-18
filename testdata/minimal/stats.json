@@ -1,0 +1,18 @@
+{
+  "inputs": {
+    "src/main.ts": {"bytes": 4000, "imports": []},
+    "node_modules/lodash/lodash.js": {"bytes": 10000, "imports": []}
+  },
+  "outputs": {
+    "main.js": {
+      "bytes": 1024,
+      "entryPoint": "src/main.ts",
+      "imports": [],
+      "exports": [],
+      "inputs": {
+        "src/main.ts": {"bytesInOutput": 800},
+        "node_modules/lodash/lodash.js": {"bytesInOutput": 128}
+      }
+    }
+  }
+}

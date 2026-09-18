@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.1.0",
+  "command": "summary",
+  "summary": {"initialJs": 1100, "lazyJs": 700, "totalJs": 1800},
+  "packages": [
+    {"name": "@angular/core", "initialBytes": 100, "lazyBytes": 20, "totalBytes": 120},
+    {"name": "added", "initialBytes": 100, "lazyBytes": 0, "totalBytes": 100},
+    {"name": "moved", "initialBytes": 0, "lazyBytes": 100, "totalBytes": 100},
+    {"name": "shrink", "initialBytes": 100, "lazyBytes": 0, "totalBytes": 100},
+    {"name": "grow", "initialBytes": 400, "lazyBytes": 0, "totalBytes": 400},
+    {"name": "lazy-grow", "initialBytes": 0, "lazyBytes": 400, "totalBytes": 400}
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "inputs": {
+    "src/main.ts": {"bytes": 100000},
+    "src/lazy.ts": {"bytes": 50000},
+    "node_modules/@angular/core/core.mjs": {"bytes": 200000},
+    "node_modules/pdfjs-dist/a.js": {"bytes": 500000},
+    "node_modules/pdfjs-dist/b.js": {"bytes": 100000},
+    "node_modules/rxjs/index.js": {"bytes": 150000},
+    "node_modules/date-fns/index.js": {"bytes": 200000}
+  },
+  "outputs": {
+    "browser/main.js": {
+      "bytes": 102400,
+      "entryPoint": "src/main.ts",
+      "cssBundle": "browser/styles.css",
+      "imports": [{"path":"browser/chunk-A.js","kind":"import-statement"},{"path":"browser/chunk-C.js","kind":"dynamic-import"}],
+      "inputs": {"src/main.ts":{"bytesInOutput":51200},"node_modules/@angular/core/core.mjs":{"bytesInOutput":30720},"node_modules/pdfjs-dist/a.js":{"bytesInOutput":20480}}
+    },
+    "browser/chunk-A.js": {
+      "bytes": 51200,
+      "imports": [{"path":"browser/chunk-B.js","kind":"import-statement"},{"path":"browser/chunk-D.js","kind":"dynamic-import"}],
+      "inputs": {"node_modules/pdfjs-dist/b.js":{"bytesInOutput":30720},"node_modules/rxjs/index.js":{"bytesInOutput":15360},"src/main.ts":{"bytesInOutput":5120}}
+    },
+    "browser/chunk-B.js": {
+      "bytes": 10240,
+      "imports": [{"path":"browser/chunk-A.js","kind":"import-statement"}],
+      "inputs": {"node_modules/rxjs/index.js":{"bytesInOutput":10240}}
+    },
+    "browser/chunk-C.js": {
+      "bytes": 204800,
+      "imports": [],
+      "inputs": {"node_modules/pdfjs-dist/a.js":{"bytesInOutput":184320},"src/lazy.ts":{"bytesInOutput":20480}}
+    },
+    "browser/chunk-D.js": {
+      "bytes": 102400,
+      "imports": [],
+      "inputs": {"node_modules/date-fns/index.js":{"bytesInOutput":92160},"src/lazy.ts":{"bytesInOutput":10240}}
+    },
+    "browser/styles.css": {"bytes":9000,"imports":[],"inputs":{}},
+    "server/main.js": {"bytes":999999,"imports":[],"inputs":{}}
+  }
+}
