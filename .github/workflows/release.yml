@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Build Multi-Arch Binaries
+        id: build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DIST_DIR="dist-release"
+          mkdir -p "$DIST_DIR"
+
+          TARGETS=(
+            "darwin/amd64/bundlecheck_${VERSION}_darwin_amd64.tar.gz"
+            "darwin/arm64/bundlecheck_${VERSION}_darwin_arm64.tar.gz"
+            "linux/amd64/bundlecheck_${VERSION}_linux_amd64.tar.gz"
+            "linux/arm64/bundlecheck_${VERSION}_linux_arm64.tar.gz"
+            "windows/amd64/bundlecheck_${VERSION}_windows_amd64.zip"
+          )
+
+          for TARGET in "${TARGETS[@]}"; do
+            IFS='/' read -r GOOS GOARCH ARCHIVE_NAME <<< "$TARGET"
+            echo "Building $GOOS/$GOARCH -> $ARCHIVE_NAME..."
+
+            TMP_BUILD="build-${GOOS}-${GOARCH}"
+            mkdir -p "$TMP_BUILD"
+
+            EXE_NAME="bundlecheck"
+            if [ "$GOOS" = "windows" ]; then
+              EXE_NAME="bundlecheck.exe"
+            fi
+
+            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w" -o "${TMP_BUILD}/${EXE_NAME}" .
+            cp README.md LICENSE "${TMP_BUILD}/"
+
+            if [ "$GOOS" = "windows" ]; then
+              (cd "$TMP_BUILD" && zip -r "../${DIST_DIR}/${ARCHIVE_NAME}" .)
+            else
+              tar -czvf "${DIST_DIR}/${ARCHIVE_NAME}" -C "$TMP_BUILD" .
+            fi
+
+            rm -rf "$TMP_BUILD"
+          done
+
+          # Compute SHA256 checksums
+          cd "$DIST_DIR"
+          sha256sum * > checksums.txt
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist-release/*
+          generate_release_notes: true
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
