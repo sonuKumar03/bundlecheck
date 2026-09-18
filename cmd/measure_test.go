@@ -130,4 +130,33 @@ func TestMeasureNamedBaselineResolution(t *testing.T) {
 	}
 }
 
+func TestMeasureGitHubPR(t *testing.T) {
+	baselinePath := filepath.Join("..", "testdata", "comparison", "before.json")
+	afterBase := filepath.Join("..", "testdata", "lazy-import")
+
+	args := []string{
+		"measure",
+		"-s", filepath.Join(afterBase, "stats.json"),
+		"-d", filepath.Join(afterBase, "browser"),
+		"-b", baselinePath,
+		"-f", "github-pr",
+	}
+
+	var out, errOut bytes.Buffer
+	if code := Execute(args, &out, &errOut); code != 0 || errOut.Len() != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "<!-- bundlecheck-comment -->") {
+		t.Errorf("expected sticky comment marker in measure output, got: %s", output)
+	}
+	if !strings.Contains(output, "## 📦 BundleCheck PR Report") {
+		t.Errorf("expected PR report header in measure output, got: %s", output)
+	}
+	if !strings.Contains(output, "<code>[") {
+		t.Errorf("expected visual diff bar in measure output, got: %s", output)
+	}
+}
+
 

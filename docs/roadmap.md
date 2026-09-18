@@ -72,12 +72,13 @@ flowchart TD
   - Interactive drill-down from initial vs lazy chunks down to individual NPM packages and source files.
   - Built-in Gzip vs Raw toggle, search filter, and inline optimization recommendations.
 
-### 2. GitHub Actions PR Automation & Sticky Comment Mode
-- **Command**: `bundlecheck measure --format github-pr`
+### 2. GitHub Actions PR Automation & Sticky Comment Mode *(Completed)*
+- **Command**: `bundlecheck measure --format github-pr` (and `check --format github-pr`)
 - **Capabilities**:
-  - GitHub Action step generating visual before/after progress bars in PR comments.
-  - Foldable `<details>` breakdowns for shared library regressions in monorepos.
-  - Automatic threshold failure status checks with actionable mitigation hints.
+  - Embedded sticky comment marker (`<!-- bundlecheck-comment -->`) for seamless in-place PR comment updates.
+  - Visual Unicode/ASCII diff progress bars (`[████████░░]`) and % changes.
+  - Foldable `<details>` breakdowns for changed and unchanged package contributions.
+  - Automatic status badges for reductions, regressions, and threshold/budget failures.
 
 ### 3. Named Baselines Worktree Synchronization
 - **Command**: `bundlecheck baseline create <name> --from-git <ref>`

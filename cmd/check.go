@@ -43,8 +43,8 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 				dist = args[1]
 			}
 
-			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
-				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
+			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) && !report.IsGitHubPRFormat(format) {
+				return fmt.Errorf("unsupported format %q: use text, json, markdown, or github-pr", format)
 			}
 
 			// 1. Load config file if present or specified
@@ -160,6 +160,10 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 				if err := report.JSON(w, checkResult); err != nil {
 					return err
 				}
+			} else if report.IsGitHubPRFormat(format) {
+				if err := report.CheckGitHubPR(w, checkResult); err != nil {
+					return err
+				}
 			} else if report.IsMarkdownFormat(format) {
 				if err := report.CheckMarkdown(w, checkResult); err != nil {
 					return err
@@ -183,7 +187,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
 	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundlecheck.yml configuration file")
-	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
+	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, markdown, or github-pr")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to file instead of stdout")
 	c.Flags().StringVar(&maxInitial, "max-initial", "", "Maximum allowed initial JS size (e.g. 250KB, 1MB)")
 	c.Flags().StringVar(&maxLazy, "max-lazy", "", "Maximum allowed lazy JS size (e.g. 500KB)")

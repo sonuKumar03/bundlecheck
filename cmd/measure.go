@@ -34,8 +34,8 @@ Reports initial/lazy/total JS deltas and package movements.
 Optionally verifies that size regressions do not exceed specified limits.`,
 		Args: cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
-			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
-				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
+			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) && !report.IsGitHubPRFormat(format) {
+				return fmt.Errorf("unsupported format %q: use text, json, markdown, or github-pr", format)
 			}
 
 			// 1. Load baseline
@@ -95,6 +95,10 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 				if err := report.JSON(w, compResult); err != nil {
 					return err
 				}
+			} else if report.IsGitHubPRFormat(format) {
+				if err := report.ComparisonGitHubPR(w, compResult, budgetCheck, opts); err != nil {
+					return err
+				}
 			} else if report.IsMarkdownFormat(format) {
 				if err := report.ComparisonMarkdown(w, compResult, opts); err != nil {
 					return err
@@ -121,7 +125,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", baseline.DefaultBaselineFilename, "Path to baseline summary JSON")
-	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
+	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, markdown, or github-pr")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of top package changes to display in text mode")
 	c.Flags().StringVar(&filter, "filter", "", "Filter package changes by name substring in text mode")

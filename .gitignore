@@ -9,3 +9,4 @@
 .nx/
 node_modules/
 /.superpowers/
+/.bundlecheck/
