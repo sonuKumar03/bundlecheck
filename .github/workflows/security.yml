@@ -1,14 +1,12 @@
 name: Security
 
 on:
-  schedule:
-    - cron: '0 4 * * 1' # Every Monday at 04:00 UTC
+  push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - '**.go'
+  schedule:
+    - cron: '0 4 * * 1' # Every Monday at 04:00 UTC
   workflow_dispatch:
 
 jobs:
