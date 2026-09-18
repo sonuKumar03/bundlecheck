@@ -34,7 +34,7 @@
       "priceCurrency": "USD"
     },
     "description": "Fast Angular esbuild bundle inspector and CI budget gate written in Go with zero runtime dependencies.",
-    "softwareVersion": "0.1.0",
+    "softwareVersion": "0.1.2",
     "url": "https://sonukumar03.github.io/bundlecheck/",
     "codeRepository": "https://github.com/sonuKumar03/bundlecheck",
     "license": "https://opensource.org/licenses/MIT",
@@ -144,7 +144,7 @@
             ⚡
           </div>
           <span class="font-bold text-base text-white tracking-tight group-hover:text-indigo-300 transition-colors">bundlecheck</span>
-          <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">v0.1.0</span>
+          <span data-version-badge class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">v0.1.2</span>
         </a>
       </div>
 
@@ -757,7 +757,7 @@ jobs:
 
       <div class="p-2.5 border-t border-slate-800/80 text-[10px] text-slate-500 flex justify-between font-mono">
         <span>Navigation: Jump to section</span>
-        <span>bundlecheck v0.1.0</span>
+        <span data-version-badge>bundlecheck v0.1.2</span>
       </div>
 
     </div>
@@ -772,6 +772,34 @@ jobs:
 
   <!-- SCRIPT -->
   <script>
+    // Live Version Sync from GitHub Releases API
+    (function syncLatestRelease() {
+      const cached = sessionStorage.getItem('bundlecheck_latest_ver');
+      if (cached) {
+        updateBadges(cached);
+        return;
+      }
+      fetch('https://api.github.com/repos/sonuKumar03/bundlecheck/releases/latest')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.tag_name) {
+            sessionStorage.setItem('bundlecheck_latest_ver', data.tag_name);
+            updateBadges(data.tag_name);
+          }
+        })
+        .catch(() => {});
+
+      function updateBadges(tag) {
+        document.querySelectorAll('[data-version-badge]').forEach(el => {
+          if (el.textContent.includes('bundlecheck')) {
+            el.textContent = `bundlecheck ${tag}`;
+          } else {
+            el.textContent = tag;
+          }
+        });
+      }
+    })();
+
     // Copy helper
     function copyText(text, btnId) {
       navigator.clipboard.writeText(text).then(() => {
