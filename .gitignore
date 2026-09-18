@@ -6,3 +6,4 @@
 /testdata/nx-workspace/
 .nx/
 node_modules/
+/.superpowers/
