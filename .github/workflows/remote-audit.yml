@@ -8,9 +8,9 @@ on:
         required: true
         type: string
       ref:
-        description: 'Git branch, tag, or commit SHA'
+        description: 'Git branch, tag, or commit SHA (leave blank for repository default branch)'
         required: false
-        default: 'main'
+        default: ''
         type: string
       sub_dir:
         description: 'Subdirectory where Angular project resides (optional, for monorepos)'
@@ -18,7 +18,7 @@ on:
         default: '.'
         type: string
       build_cmd:
-        description: 'Custom build command (e.g. npm run build -- --stats-json)'
+        description: 'Custom build command (e.g. npx nx build shop --configuration production --stats-json)'
         required: false
         default: ''
         type: string
@@ -45,38 +45,53 @@ jobs:
         run: |
           REPO_URL="${{ inputs.repo_url }}"
           REF="${{ inputs.ref }}"
-          echo "Cloning $REPO_URL at ref $REF..."
-          if git clone --depth 1 --branch "$REF" "$REPO_URL" target-repo 2>/dev/null; then
+          echo "Cloning $REPO_URL (ref: ${REF:-default})..."
+          if [ -z "$REF" ] || [ "$REF" = "HEAD" ]; then
+            git clone --depth 1 "$REPO_URL" target-repo
+          elif git clone --depth 1 --branch "$REF" "$REPO_URL" target-repo 2>/dev/null; then
             echo "Successfully shallow-cloned branch/tag $REF"
           else
-            echo "Falling back to full clone for commit SHA / ref checkout..."
+            echo "Falling back to full clone..."
             git clone "$REPO_URL" target-repo
             cd target-repo
-            git checkout "$REF"
+            if ! git checkout "$REF" 2>/dev/null; then
+              echo "Warning: ref '$REF' not found; using default branch ($(git rev-parse --abbrev-ref HEAD))"
+            fi
           fi
 
       - name: Build Target Project
         working-directory: target-repo/${{ inputs.sub_dir }}
         run: |
+          # 1. Ensure dependencies are installed
+          if [ ! -d "node_modules" ]; then
+            echo "Installing dependencies..."
+            if [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile || pnpm install
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install || yarn install --immutable 2>/dev/null
+            elif [ -f package-lock.json ]; then
+              npm ci || npm install
+            else
+              npm install
+            fi
+          fi
+
+          # 2. Execute build command
           CUSTOM_CMD="${{ inputs.build_cmd }}"
           if [ -n "$CUSTOM_CMD" ]; then
             echo "Running custom build command: $CUSTOM_CMD"
             eval "$CUSTOM_CMD"
           else
-            echo "Auto-detecting package manager and running build with --stats-json..."
-            if [ -f pnpm-lock.yaml ]; then
-              corepack enable
-              pnpm install --frozen-lockfile
+            echo "Auto-detecting build command with --stats-json..."
+            if [ -f nx.json ] || npx --no-install nx --version >/dev/null 2>&1; then
+              npx nx run-many -t build --configuration production --stats-json || npx nx build --configuration production --stats-json
+            elif [ -f pnpm-lock.yaml ]; then
               pnpm ng build --configuration production --stats-json || pnpm run build -- --stats-json
             elif [ -f yarn.lock ]; then
-              corepack enable
-              yarn install --frozen-lockfile
               yarn ng build --configuration production --stats-json || yarn run build -- --stats-json
-            elif [ -f package-lock.json ]; then
-              npm ci
-              npx ng build --configuration production --stats-json || npm run build -- --stats-json
             else
-              npm install
               npx ng build --configuration production --stats-json || npm run build -- --stats-json
             fi
           fi
