@@ -82,21 +82,15 @@ func TracePackage(s *snapshot.BundleSnapshot, target string, initialOnly bool, m
 	targetInputs := make(map[string]bool)
 	var matchedPkgName string
 
+	// Pass 1: exact package match
 	for _, m := range s.Inputs {
 		p := snapshot.CleanPath(m.Path)
 		pkg, isPkg := analysis.PackageName(p)
 		if isPkg && strings.EqualFold(pkg, target) {
 			targetInputs[p] = true
 			matchedPkgName = pkg
-		} else if strings.EqualFold(p, target) || strings.Contains(strings.ToLower(p), strings.ToLower(target)) {
-			targetInputs[p] = true
-			if isPkg && matchedPkgName == "" {
-				matchedPkgName = pkg
-			}
 		}
 	}
-
-	// Also check output inputs in case Inputs list was sparse
 	for _, o := range s.Outputs {
 		for _, c := range o.Inputs {
 			p := snapshot.CleanPath(c.Input)
@@ -106,8 +100,40 @@ func TracePackage(s *snapshot.BundleSnapshot, target string, initialOnly bool, m
 				if matchedPkgName == "" {
 					matchedPkgName = pkg
 				}
-			} else if strings.EqualFold(p, target) || strings.Contains(strings.ToLower(p), strings.ToLower(target)) {
-				targetInputs[p] = true
+			}
+		}
+	}
+
+	// Pass 2: if no package matched, match file paths without pulling in other third-party packages
+	if len(targetInputs) == 0 {
+		targetLower := strings.ToLower(target)
+		isDependencyPath := strings.Contains(snapshot.CleanPath(target), "node_modules/")
+		for _, m := range s.Inputs {
+			p := snapshot.CleanPath(m.Path)
+			pLower := strings.ToLower(p)
+			if pLower == targetLower || strings.Contains(pLower, targetLower) {
+				pkg, isPkg := analysis.PackageName(p)
+				if !isPkg || pLower == targetLower || isDependencyPath {
+					targetInputs[p] = true
+					if isPkg && matchedPkgName == "" {
+						matchedPkgName = pkg
+					}
+				}
+			}
+		}
+		for _, o := range s.Outputs {
+			for _, c := range o.Inputs {
+				p := snapshot.CleanPath(c.Input)
+				pLower := strings.ToLower(p)
+				if pLower == targetLower || strings.Contains(pLower, targetLower) {
+					pkg, isPkg := analysis.PackageName(p)
+					if !isPkg || pLower == targetLower || isDependencyPath {
+						targetInputs[p] = true
+						if isPkg && matchedPkgName == "" {
+							matchedPkgName = pkg
+						}
+					}
+				}
 			}
 		}
 	}

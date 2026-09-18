@@ -1,10 +1,14 @@
 package main
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -158,5 +162,95 @@ func TestInstallCustomSkillDir(t *testing.T) {
 	skillFile := filepath.Join(customDir, "SKILL.md")
 	if _, err := os.Stat(skillFile); err != nil {
 		t.Fatalf("expected skill at %s, got err: %v", skillFile, err)
+	}
+}
+
+func TestPrecompiledInstallUsesLatestVersionAndPlatformArchive(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX installer transport fixture")
+	}
+	source, err := os.ReadFile("install.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, osName, ext, binary string }{
+		{"Linux", "Linux", "tar.gz", "bundlecheck"},
+		{"Windows", "MINGW64_NT", "zip", "bundlecheck.exe"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.ext == "zip" {
+				if _, err := exec.LookPath("unzip"); err != nil {
+					t.Skip("unzip unavailable")
+				}
+			}
+			root := t.TempDir()
+			installer := filepath.Join(root, "install.sh")
+			if err := os.WriteFile(installer, source, 0755); err != nil {
+				t.Fatal(err)
+			}
+			body := []byte("#!/bin/sh\necho bundlecheck version 9.8.7\n")
+			var archive bytes.Buffer
+			if tc.ext == "zip" {
+				w := zip.NewWriter(&archive)
+				f, err := w.Create(tc.binary)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := f.Write(body); err != nil {
+					t.Fatal(err)
+				}
+				if err := w.Close(); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				gz := gzip.NewWriter(&archive)
+				w := tar.NewWriter(gz)
+				if err := w.WriteHeader(&tar.Header{Name: tc.binary, Mode: 0755, Size: int64(len(body))}); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := w.Write(body); err != nil {
+					t.Fatal(err)
+				}
+				if err := w.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if err := gz.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			archivePath := filepath.Join(root, "release."+tc.ext)
+			if err := os.WriteFile(archivePath, archive.Bytes(), 0644); err != nil {
+				t.Fatal(err)
+			}
+			mockBin := filepath.Join(root, "transport")
+			if err := os.MkdirAll(mockBin, 0755); err != nil {
+				t.Fatal(err)
+			}
+			for name, script := range map[string]string{
+				"uname": "#!/bin/sh\nif [ \"$1\" = -s ]; then echo \"$BUNDLECHECK_TEST_OS\"; else echo x86_64; fi\n",
+				"curl":  "#!/bin/sh\ncase \"$2\" in\nhttps://api.github.com/repos/sonuKumar03/bundlecheck/releases/latest) printf '{\"tag_name\":\"v9.8.7\"}' > \"$4\" ;;\n\"$BUNDLECHECK_TEST_RELEASE_URL\") cp \"$BUNDLECHECK_TEST_ARCHIVE\" \"$4\" ;;\n*) exit 22 ;;\nesac\n",
+				"go":    "#!/bin/sh\nexit 42\n",
+			} {
+				if err := os.WriteFile(filepath.Join(mockBin, name), []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			osName := "linux"
+			if tc.ext == "zip" {
+				osName = "windows"
+			}
+			bin := filepath.Join(root, "installed")
+			cmd := exec.Command("sh", installer)
+			cmd.Env = append(os.Environ(), "PATH="+mockBin+string(os.PathListSeparator)+os.Getenv("PATH"), "GOBIN="+bin,
+				"BUNDLECHECK_TEST_OS="+tc.osName, "BUNDLECHECK_TEST_ARCHIVE="+archivePath,
+				"BUNDLECHECK_TEST_RELEASE_URL=https://github.com/sonuKumar03/bundlecheck/releases/download/v9.8.7/bundlecheck_9.8.7_"+osName+"_amd64."+tc.ext)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("precompiled installation failed: %v\n%s", err, out)
+			}
+			installed, err := os.ReadFile(filepath.Join(bin, tc.binary))
+			if err != nil || !bytes.Equal(installed, body) {
+				t.Fatalf("release binary was not installed to GOBIN: err=%v", err)
+			}
+		})
 	}
 }

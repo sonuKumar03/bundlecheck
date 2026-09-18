@@ -81,3 +81,40 @@ func TestAdvisorEagerComponent(t *testing.T) {
 		t.Errorf("expected rule eager-feature-component, got %s", res.Suggestions[0].Rule)
 	}
 }
+
+func TestDuplicateAdviceUsesEmittedInitialContributions(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		initial        bool
+		contribution   int64
+		wantDuplicates int
+		wantSavings    int64
+	}{
+		{"tree shaken", true, 0, 0, 0},
+		{"lazy only", false, 2000, 0, 0},
+		{"bundled initial copies", true, 2000, 1, 2000},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &snapshot.BundleSnapshot{Inputs: []snapshot.Module{
+				{Path: "node_modules/unused/index.js", Bytes: 20000},
+				{Path: "node_modules/host/node_modules/unused/index.js", Bytes: 20000},
+			}, Outputs: []snapshot.BundleOutput{{Path: "chunk.js", Initial: tc.initial, Inputs: []snapshot.Contribution{
+				{Input: "node_modules/unused/index.js", Bytes: tc.contribution},
+				{Input: "node_modules/host/node_modules/unused/index.js", Bytes: tc.contribution},
+			}}}}
+			result := advisor.Analyze(s, advisor.AdvisorOptions{})
+			count := 0
+			for _, suggestion := range result.Suggestions {
+				if suggestion.Rule == "duplicate-package" {
+					count++
+					if suggestion.Savings != tc.wantSavings {
+						t.Errorf("duplicate savings = %d, want %d", suggestion.Savings, tc.wantSavings)
+					}
+				}
+			}
+			if count != tc.wantDuplicates {
+				t.Errorf("duplicate suggestions = %d, want %d", count, tc.wantDuplicates)
+			}
+		})
+	}
+}

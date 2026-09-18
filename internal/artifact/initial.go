@@ -71,6 +71,7 @@ func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.Bu
 		}
 		byFile[rel] = p
 		o.Path = p
+		o.DiskPath = filepath.Join(abs, filepath.FromSlash(rel))
 		selected = append(selected, o)
 	}
 	refs, err := scriptPaths(doc)

@@ -136,7 +136,7 @@ func TestSummaryErrors(t *testing.T) {
 		{"invalid format", append(append([]string{}, valid...), "--format", "yaml"), "format"},
 		{"missing stats", []string{"summary", "--stats", "missing.json", "--dist", filepath.Join(base, "browser"), "--format", "json"}, "stats"},
 		{"missing index", []string{"summary", "--stats", filepath.Join(base, "stats.json"), "--dist", t.TempDir(), "--format", "json"}, "index.html"},
-		{"positional args", append(append([]string{}, valid...), "extra"), "unknown command"},
+		{"too many positional args", append(append([]string{}, valid...), "extra1", "extra2", "extra3"), "accepts at most 2 arg(s)"},
 		{"unknown command", []string{"nonexistent"}, "unknown command"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,5 +153,25 @@ func TestSummaryErrors(t *testing.T) {
 	var out, errOut bytes.Buffer
 	if Execute([]string{"summary", "--stats", p, "--dist", filepath.Join(base, "browser"), "--format", "json"}, &out, &errOut) == 0 || out.Len() != 0 || !strings.Contains(errOut.String(), "JSON") {
 		t.Fatalf("malformed stats: %q, %q", out.String(), errOut.String())
+	}
+}
+
+func TestSummaryPositionalArguments(t *testing.T) {
+	base := filepath.Join("..", "testdata", "minimal")
+	statsFile := filepath.Join(base, "stats.json")
+	distDir := filepath.Join(base, "browser")
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"summary", statsFile, distDir, "-f", "json"}, &out, &errOut)
+	if code != 0 || errOut.Len() != 0 {
+		t.Fatalf("summary positional args failed: %s", errOut.String())
+	}
+
+	var res analysis.AnalysisResult
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if res.Summary.InitialJS != 1024 {
+		t.Errorf("expected InitialJS 1024, got %d", res.Summary.InitialJS)
 	}
 }

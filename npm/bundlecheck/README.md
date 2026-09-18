@@ -8,7 +8,7 @@
 
 [![Release](https://img.shields.io/github/v/release/sonuKumar03/bundlecheck?color=indigo&label=release&logo=github)](https://github.com/sonuKumar03/bundlecheck/releases)
 [![CI Status](https://img.shields.io/github/actions/workflow/status/sonuKumar03/bundlecheck/ci.yml?branch=master&label=CI&logo=githubactions)](https://github.com/sonuKumar03/bundlecheck/actions)
-[![Go Report](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Go Report](https://img.shields.io/badge/Go-1.27.1+-00ADD8?style=flat&logo=go)](https://go.dev)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/sonuKumar03/bundlecheck/releases)
 [![Agent Skill](https://img.shields.io/badge/AI%20Skill-Ready-8A2BE2?style=flat&logo=anthropic)](.agents/skills/bundlecheck/SKILL.md)
 [![License](https://img.shields.io/github/license/sonuKumar03/bundlecheck?color=emerald)](LICENSE)
@@ -46,8 +46,8 @@ TOP CONTRIBUTING NPM PACKAGES
 
 [!] 2 OPTIMIZATION OPPORTUNITIES DETECTED
 -------------------------------------------------------------
-• moment (72.4 KB): Found in initial bundle. Replace with native Intl.DateTimeFormat (-65 KB).
-• Duplicate package 'tslib': Bundled versions v2.4.0 and v2.6.2 simultaneously. Deduplicate in package.json.
+• moment (72.4 KB): Found in initial JS. Move behind a dynamic import if not critical for first paint.
+• Duplicate package 'tslib': Multiple installed copies contribute to initial JS. Run npm dedupe.
 ```
 
 ---
@@ -60,7 +60,7 @@ TOP CONTRIBUTING NPM PACKAGES
 | **Runtime Dependencies** | **Zero** (Standalone Binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
 | **Import Chain Tracer (`why`)** | **Yes (ASCII Tree)** | ❌ No | ❌ No | ❌ No |
 | **Optimization Advisor (`suggest`)** | **Yes (Automated Rules)** | ❌ No (Visual only) | ❌ No | ❌ No |
-| **Gzip / Brotli Wire Modeling** | **Yes (`--gzip`)** | Yes | Yes | ❌ Raw bytes only |
+| **Gzip Wire Modeling** | **Yes (`--gzip`)** | Yes | Yes | ❌ Raw bytes only |
 | **PR Delta Diffs (`compare`)** | **Yes (Signed +/- KB)** | ❌ No | ❌ No | ❌ No |
 | **Headless CI Gating** | **Yes (Exit 0/1)** | ❌ GUI Required | ❌ GUI / HTML | Yes (Limited) |
 | **AI Coding Agent Skill** | **Yes (`SKILL.md`)** | ❌ No | ❌ No | ❌ No |
@@ -83,15 +83,15 @@ npm install -D bundlecheck
 
 ### Option 2: 1-Line Standalone Shell Installer
 
-Installs the precompiled native binary to `/usr/local/bin` (or `~/.local/bin`):
+Downloads the latest precompiled native binary to `$GOBIN` when set, otherwise `/usr/local/bin` (or `~/.local/bin`). No Go installation is needed for release binaries. Running the installer from a source checkout builds that checkout using Go:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
 ```
 
 *To install the binary alongside the AI Agent skill:*
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
 ### Option 3: Precompiled Multi-Arch Binaries
@@ -191,8 +191,8 @@ bundlecheck suggest dist/my-app/stats.json
 ```
 
 **Built-in Optimization Rules:**
-- 🚫 **Heavy Legacy Libraries**: Detects non-tree-shakeable packages (e.g. `moment`, `lodash`, `xlsx`) in initial JS and suggests lighter native alternatives (e.g. `Intl.DateTimeFormat`, `lodash-es`, `@defer`).
-- 🧩 **Duplicate Bundled Versions**: Detects duplicate versions of packages (e.g. `tslib` v2.4 vs v2.6) bundled simultaneously.
+- 🚫 **Initial Third-Party Packages**: Identifies packages in initial JS and suggests dynamic imports when they are not critical for first paint.
+- 🧩 **Duplicate Package Copies**: Identifies distinct installed copies contributing to initial JS and suggests deduplication. Stats do not identify package version numbers.
 - ⚡ **Eager Feature Routes**: Identifies routed components bundled directly into `main.js` that should use `loadComponent: () => import(...)`.
 
 ---
@@ -229,7 +229,7 @@ Total Bundle Size:   4.52 MB  -> 4.13 MB  (-390.00 KB / -8.6%)  🎉
 ---
 
 ### 5. `bundlecheck compare`
-Compares two exported JSON summary files directly:
+Compares saved JSON summary snapshots, or a baseline snapshot against Angular build stats:
 
 ```bash
 bundlecheck compare .bundlecheck/baseline.json dist/my-app/stats.json
@@ -281,7 +281,7 @@ jobs:
       - name: Run bundlecheck & Post PR Report
         uses: sonuKumar03/bundlecheck@v0.1.2
         with:
-          stats-path: dist/my-app/stats.json
+          stats: dist/my-app/stats.json
           max-initial: '250kb'
           max-total: '1.2mb'
           post-comment: true
@@ -291,7 +291,7 @@ jobs:
 
 ## ⚙️ Configuration (`.bundlecheck.yml`)
 
-Persist repository-level budgets and linting rules at the root of your project:
+Persist size budgets and disallowed-package rules at the root of your project. `check` loads the nearest configuration in the current directory or a parent directory; CLI budgets override corresponding configuration budgets. Invalid YAML and unsupported settings fail the check:
 
 ```yaml
 # .bundlecheck.yml
@@ -304,8 +304,6 @@ rules:
   disallow_packages:
     - moment
     - lodash
-  warn_duplicates: true
-  suggest_defer: true
 ```
 
 ---
@@ -316,7 +314,7 @@ rules:
 
 ### Install Agent Skill:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
 Autonomous agents use `bundlecheck` in their inner coding loop to:

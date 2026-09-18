@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
+	"bundlecheck/internal/analysis"
 	"bundlecheck/internal/baseline"
 	"bundlecheck/internal/comparison"
 	"bundlecheck/internal/report"
@@ -23,12 +25,25 @@ func compareCommand() *cobra.Command {
 	)
 
 	c := &cobra.Command{
-		Use:   "compare",
-		Short: "Compare two saved summary JSON snapshots",
-		Args:  cobra.NoArgs,
-		RunE: func(c *cobra.Command, _ []string) error {
+		Use:   "compare [before.json] <after.json|stats.json>",
+		Short: "Compare two saved summary snapshots or a baseline against a build",
+		Long: `Compare two bundle snapshots (or an active baseline against a build) and calculate exact byte and percentage deltas.
+Supports both saved summary JSON files and raw Angular/esbuild build directories or stats.json files.`,
+		Args: cobra.MaximumNArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			if len(args) == 2 {
+				before = args[0]
+				after = args[1]
+			} else if len(args) == 1 {
+				if before == "" {
+					after = args[0]
+				} else {
+					after = args[0]
+				}
+			}
+
 			if before == "" {
-				// Try default baseline if exists
+				// Try default active baseline if exists
 				def := baseline.ResolvePath("")
 				if fi, err := os.Stat(def); err == nil && !fi.IsDir() {
 					before = def
@@ -36,19 +51,19 @@ func compareCommand() *cobra.Command {
 			}
 
 			if before == "" || after == "" {
-				return fmt.Errorf("--before and --after require nonempty paths")
+				return fmt.Errorf("both before and after paths are required (e.g. 'bundlecheck compare baseline.json current.json' or -b and -a)")
 			}
 			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
 				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}
 
-			b, err := comparison.Parse(before)
+			b, err := loadSnapshotOrBuild(before)
 			if err != nil {
-				return fmt.Errorf("--before: %w", err)
+				return fmt.Errorf("before (%q): %w", before, err)
 			}
-			a, err := comparison.Parse(after)
+			a, err := loadSnapshotOrBuild(after)
 			if err != nil {
-				return fmt.Errorf("--after: %w", err)
+				return fmt.Errorf("after (%q): %w", after, err)
 			}
 
 			r := comparison.Compare(b, a)
@@ -75,8 +90,8 @@ func compareCommand() *cobra.Command {
 		},
 	}
 
-	c.Flags().StringVarP(&before, "before", "b", "", "Path to saved summary JSON before the change (defaults to .bundlecheck/baseline.json if present)")
-	c.Flags().StringVarP(&after, "after", "a", "", "Path to saved summary JSON after the change (required)")
+	c.Flags().StringVarP(&before, "before", "b", "", "Path to saved summary JSON before the change (defaults to active baseline if omitted)")
+	c.Flags().StringVarP(&after, "after", "a", "", "Path to saved summary JSON or stats.json after the change")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of top package changes to display in text mode")
@@ -84,4 +99,43 @@ func compareCommand() *cobra.Command {
 	c.Flags().BoolVar(&all, "all", false, "Display all package changes in text mode")
 
 	return c
+}
+
+func loadSnapshotOrBuild(pathOrName string) (*analysis.AnalysisResult, error) {
+	// 1. Try resolving via baseline manager
+	resolved := baseline.ResolvePath(pathOrName)
+	if fi, err := os.Stat(resolved); err == nil && !fi.IsDir() {
+		res, err := comparison.Parse(resolved)
+		if err == nil {
+			return res, nil
+		}
+	}
+
+	// 2. If it is a directory, locate stats and dist in directory
+	fi, err := os.Stat(pathOrName)
+	if err != nil {
+		return nil, fmt.Errorf("read path %q: %w", pathOrName, err)
+	}
+
+	if fi.IsDir() {
+		sFile, dDir, err := resolveBuildArtifactsInDir(pathOrName, "", "", "")
+		if err != nil {
+			return nil, err
+		}
+		return runAnalysis(sFile, dDir)
+	}
+
+	// 3. If it is a file (e.g. stats.json), parse as stats or summary
+	res, err := comparison.Parse(pathOrName)
+	if err == nil {
+		return res, nil
+	}
+
+	// Try running build analysis on raw stats.json
+	distDir := filepath.Dir(pathOrName)
+	browserDir := filepath.Join(distDir, "browser")
+	if bfi, err := os.Stat(browserDir); err == nil && bfi.IsDir() {
+		distDir = browserDir
+	}
+	return runAnalysis(pathOrName, distDir)
 }

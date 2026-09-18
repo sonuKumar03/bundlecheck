@@ -78,6 +78,19 @@ function extractArchive(archivePath, destDir) {
   }
 }
 
+function isSelfOrWrapper(binPath) {
+  try {
+    const realBin = fs.realpathSync(binPath);
+    const realScript = fs.realpathSync(__filename);
+    if (realBin === realScript) return true;
+    if (realBin.endsWith('.js') || realBin.includes('node_modules')) return true;
+    // Check if the binary is a node script
+    const head = fs.readFileSync(realBin, { encoding: 'utf8', flag: 'r' }).slice(0, 50);
+    if (head.includes('node') || head.includes('javascript')) return true;
+  } catch (_) {}
+  return false;
+}
+
 async function ensureBinary() {
   const binaryName = getBinaryName();
   const cacheDir = getCacheDir();
@@ -87,10 +100,10 @@ async function ensureBinary() {
     return binaryPath;
   }
 
-  // Check if binary is installed locally in PATH
+  // Check if native binary is installed in PATH (excluding this JS wrapper)
   try {
     const localBin = execSync(process.platform === 'win32' ? 'where bundlecheck' : 'which bundlecheck', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim().split('\n')[0];
-    if (localBin && fs.existsSync(localBin)) {
+    if (localBin && fs.existsSync(localBin) && !isSelfOrWrapper(localBin)) {
       return localBin;
     }
   } catch (_) {}
@@ -122,7 +135,14 @@ async function main() {
     const result = spawnSync(binaryPath, process.argv.slice(2), {
       stdio: 'inherit'
     });
-    process.exit(result.status ?? 0);
+    if (result.error) {
+      console.error(`\x1b[31mError:\x1b[0m ${result.error.message}`);
+      process.exit(1);
+    }
+    if (result.signal) {
+      process.exit(1);
+    }
+    process.exit(typeof result.status === 'number' ? result.status : 1);
   } catch (err) {
     console.error(`\x1b[31mError:\x1b[0m ${err.message}`);
     process.exit(1);

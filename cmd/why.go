@@ -24,18 +24,23 @@ func whyCommand() *cobra.Command {
 	)
 
 	c := &cobra.Command{
-		Use:   "why [package-or-module]",
+		Use:   "why [stats.json] <package>",
 		Short: "Trace why a package or module is included in the bundle",
 		Long: `Trace the static import chains from bootstrap root entrypoints to a target package or module.
 Explains whether the package is pulled into initial or lazy JavaScript and shows exact source file import paths.`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.MaximumNArgs(2),
 		RunE: func(c *cobra.Command, args []string) error {
 			target := pkgName
-			if len(args) > 0 {
+			if len(args) == 1 {
 				target = args[0]
+			} else if len(args) == 2 {
+				if stats == "" {
+					stats = args[0]
+				}
+				target = args[1]
 			}
 			if target == "" {
-				return fmt.Errorf("target package or file path required (e.g. 'bundlecheck why lodash' or --package lodash)")
+				return fmt.Errorf("target package or file path required (e.g. 'bundlecheck why lodash' or 'bundlecheck why dist/stats.json lodash')")
 			}
 			if format != "text" && format != "json" {
 				return fmt.Errorf("unsupported format %q: use text or json", format)

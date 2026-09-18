@@ -3,6 +3,7 @@ package advisor
 
 import (
 	"cmp"
+	"fmt"
 	"path"
 	"slices"
 	"strings"
@@ -13,15 +14,15 @@ import (
 )
 
 type Suggestion struct {
-	Rule        string   `json:"rule"`
-	Severity    string   `json:"severity"` // "HIGH", "MEDIUM", "LOW"
-	Title       string   `json:"title"`
-	Target      string   `json:"target"`
-	File        string   `json:"file,omitempty"`
-	Savings     int64    `json:"savingsBytes"`
-	SavingsGzip int64    `json:"savingsGzipBytes"`
-	Description string   `json:"description"`
-	Action      string   `json:"action"`
+	Rule        string `json:"rule"`
+	Severity    string `json:"severity"` // "HIGH", "MEDIUM", "LOW"
+	Title       string `json:"title"`
+	Target      string `json:"target"`
+	File        string `json:"file,omitempty"`
+	Savings     int64  `json:"savingsBytes"`
+	SavingsGzip int64  `json:"savingsGzipBytes"`
+	Description string `json:"description"`
+	Action      string `json:"action"`
 }
 
 type AdvisorResult struct {
@@ -150,6 +151,51 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		}
 	}
 
+	// Rule 4: Distinct package copies contributing to initial JS.
+	pkgRootDirs := make(map[string]map[string]int64)
+	for _, output := range s.Outputs {
+		if !output.Initial {
+			continue
+		}
+		for _, contribution := range output.Inputs {
+			p := snapshot.CleanPath(contribution.Input)
+			pkgName, isPkg := analysis.PackageName(p)
+			if !isPkg || contribution.Bytes <= 0 {
+				continue
+			}
+			idx := strings.LastIndex(p, "node_modules/"+pkgName)
+			pkgRoot := p[:idx+len("node_modules/"+pkgName)]
+			if pkgRootDirs[pkgName] == nil {
+				pkgRootDirs[pkgName] = make(map[string]int64)
+			}
+			pkgRootDirs[pkgName][pkgRoot] += contribution.Bytes
+		}
+	}
+
+	for pkgName, roots := range pkgRootDirs {
+		if len(roots) > 1 {
+			var dupBytes int64
+			var largestCopy int64
+			for _, b := range roots {
+				dupBytes += b
+				largestCopy = max(largestCopy, b)
+			}
+			estSavings := dupBytes - largestCopy
+			if estSavings >= minSavings {
+				res.Suggestions = append(res.Suggestions, Suggestion{
+					Rule:        "duplicate-package",
+					Severity:    "MEDIUM",
+					Title:       fmt.Sprintf("Deduplicate bundled package '%s' (%d copies found)", pkgName, len(roots)),
+					Target:      pkgName,
+					Savings:     estSavings,
+					SavingsGzip: int64(float64(estSavings) * 0.32),
+					Description: fmt.Sprintf("Multiple distinct copies of '%s' contribute to initial JS; deduplication savings are an estimate.", pkgName),
+					Action:      "Run 'npm dedupe' or align package version constraints in package.json.",
+				})
+			}
+		}
+	}
+
 	// Filter by severity if requested
 	if opts.SeverityFilter != "" && opts.SeverityFilter != "ALL" {
 		targetSev := strings.ToUpper(opts.SeverityFilter)
@@ -170,9 +216,20 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		return cmp.Compare(a.Title, b.Title)
 	})
 
+	// Compute deduplicated total potential savings without overlapping double-counts
+	claimedTargetSavings := make(map[string]int64)
+	for _, sugg := range res.Suggestions {
+		if currentClaim, exists := claimedTargetSavings[sugg.Target]; !exists || sugg.Savings > currentClaim {
+			claimedTargetSavings[sugg.Target] = sugg.Savings
+		}
+	}
+
 	var totalSavings int64
-	for _, s := range res.Suggestions {
-		totalSavings += s.Savings
+	for _, savings := range claimedTargetSavings {
+		totalSavings += savings
+	}
+	if s.Totals.InitialJS > 0 && totalSavings > s.Totals.InitialJS {
+		totalSavings = s.Totals.InitialJS
 	}
 	res.TotalPotentialSavings = totalSavings
 

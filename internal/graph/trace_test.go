@@ -92,3 +92,25 @@ func TestTracePackageNotFound(t *testing.T) {
 		t.Error("expected found to be false")
 	}
 }
+
+func TestTraceExactDependencyFileAndPackageBoundaries(t *testing.T) {
+	s := &snapshot.BundleSnapshot{
+		Inputs: []snapshot.Module{
+			{Path: "src/main.ts", Imports: []snapshot.Import{{Path: "node_modules/lodash/index.js"}, {Path: "node_modules/lodash-es/index.js"}}},
+			{Path: "node_modules/lodash/index.js"},
+			{Path: "node_modules/lodash-es/index.js"},
+		},
+		Outputs: []snapshot.BundleOutput{{Path: "main.js", EntryPoint: "src/main.ts", Initial: true, Inputs: []snapshot.Contribution{
+			{Input: "node_modules/lodash/index.js", Bytes: 2000},
+			{Input: "node_modules/lodash-es/index.js", Bytes: 3000},
+		}}},
+	}
+	for _, target := range []string{"lodash", "node_modules/lodash/index.js"} {
+		t.Run(target, func(t *testing.T) {
+			result, err := graph.TracePackage(s, target, false, 5)
+			if err != nil || !result.Found || result.InitialBytes != 2000 || len(result.Chains) != 1 {
+				t.Fatalf("wrong target attribution: result=%+v err=%v", result, err)
+			}
+		})
+	}
+}

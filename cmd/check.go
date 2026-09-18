@@ -8,6 +8,7 @@ import (
 	"bundlecheck/internal/baseline"
 	"bundlecheck/internal/budget"
 	"bundlecheck/internal/comparison"
+	"bundlecheck/internal/config"
 	"bundlecheck/internal/report"
 )
 
@@ -17,6 +18,7 @@ func checkCommand() *cobra.Command {
 		dist            string
 		project         string
 		baselinePath    string
+		configFile      string
 		format          string
 		output          string
 		maxInitial      string
@@ -27,17 +29,41 @@ func checkCommand() *cobra.Command {
 	)
 
 	c := &cobra.Command{
-		Use:   "check",
-		Short: "Validate bundle sizes or regressions against budget thresholds",
+		Use:   "check [stats.json] [dist]",
+		Short: "Validate bundle sizes, regressions, and repository rules against budget thresholds",
 		Long: `Validate bundle sizes or regressions against specified budget thresholds for CI and local verification.
-Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is breached.`,
-		Args: cobra.NoArgs,
-		RunE: func(c *cobra.Command, _ []string) error {
+Automatically loads project budgets and package rules from .bundlecheck.yml if present.
+Returns exit code 0 if all budgets and rules pass, or exit code 1 if any threshold is breached.`,
+		Args: cobra.MaximumNArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			if len(args) > 0 && stats == "" {
+				stats = args[0]
+			}
+			if len(args) > 1 && dist == "" {
+				dist = args[1]
+			}
+
 			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
 				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}
 
-			// Parse limits
+			// 1. Load config file if present or specified
+			var cfg *config.Config
+			if configFile != "" {
+				var err error
+				cfg, err = config.LoadFile(configFile)
+				if err != nil {
+					return fmt.Errorf("load config %q: %w", configFile, err)
+				}
+			} else {
+				var err error
+				cfg, configFile, err = config.FindAndLoad("")
+				if err != nil {
+					return fmt.Errorf("load config %q: %w", configFile, err)
+				}
+			}
+
+			// 2. Parse CLI limits
 			var limits budget.Limits
 			if maxInitial != "" {
 				val, err := budget.ParseBytes(maxInitial)
@@ -75,12 +101,21 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 				limits.MaxTotalDelta = &val
 			}
 
-			if limits.MaxInitial == nil && limits.MaxLazy == nil && limits.MaxTotal == nil &&
-				limits.MaxInitialDelta == nil && limits.MaxTotalDelta == nil {
-				return fmt.Errorf("at least one budget threshold must be specified (e.g. --max-initial 200KB)")
+			// 3. Apply config file defaults to limits
+			if cfg != nil {
+				if err := cfg.ApplyToLimits(&limits); err != nil {
+					return err
+				}
 			}
 
-			// Analyze current build
+			// If no limits and no rules, require at least one budget threshold
+			hasRules := cfg != nil && len(cfg.Rules.DisallowPackages) > 0
+			if limits.MaxInitial == nil && limits.MaxLazy == nil && limits.MaxTotal == nil &&
+				limits.MaxInitialDelta == nil && limits.MaxTotalDelta == nil && !hasRules {
+				return fmt.Errorf("at least one budget threshold must be specified (e.g. --max-initial 200KB or .bundlecheck.yml)")
+			}
+
+			// 4. Analyze current build
 			sFile, dDir, err := resolveBuildArtifacts(stats, dist, project)
 			if err != nil {
 				return err
@@ -92,7 +127,7 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 
 			var checkResult budget.CheckResult
 
-			// If delta limits are specified or baseline is passed, perform comparison check
+			// 5. Run budget check (absolute or delta)
 			if limits.MaxInitialDelta != nil || limits.MaxTotalDelta != nil || baselinePath != "" {
 				baseResult, err := baseline.Load(baselinePath)
 				if err != nil {
@@ -102,6 +137,15 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 				checkResult = budget.CheckComparison(compResult, limits)
 			} else {
 				checkResult = budget.CheckSummary(currentResult.Summary, limits)
+			}
+
+			// 6. Check repository package rules from config
+			if cfg != nil {
+				ruleViolations := cfg.CheckRules(currentResult)
+				if len(ruleViolations) > 0 {
+					checkResult.Passed = false
+					checkResult.Violations = append(checkResult.Violations, ruleViolations...)
+				}
 			}
 
 			w, cleanup, err := getOutputWriter(c, output)
@@ -136,6 +180,7 @@ Returns exit code 0 if all budgets pass, or exit code 1 if any threshold is brea
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
+	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundlecheck.yml configuration file")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to file instead of stdout")
 	c.Flags().StringVar(&maxInitial, "max-initial", "", "Maximum allowed initial JS size (e.g. 250KB, 1MB)")

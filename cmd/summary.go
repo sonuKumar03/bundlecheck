@@ -34,10 +34,17 @@ func summaryCommand() *cobra.Command {
 	)
 
 	c := &cobra.Command{
-		Use:   "summary",
+		Use:   "summary [stats.json] [dist]",
 		Short: "Report initial and lazy JS sizes and npm contributors",
-		Args:  cobra.NoArgs,
-		RunE: func(c *cobra.Command, _ []string) error {
+		Args:  cobra.MaximumNArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			if len(args) > 0 && stats == "" {
+				stats = args[0]
+			}
+			if len(args) > 1 && dist == "" {
+				dist = args[1]
+			}
+
 			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
 				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}

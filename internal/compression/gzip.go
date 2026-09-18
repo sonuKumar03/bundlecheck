@@ -7,7 +7,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"bundlecheck/internal/analysis"
 	"bundlecheck/internal/snapshot"
 )
 
@@ -73,8 +75,10 @@ func AttachCompression(s *snapshot.BundleSnapshot, distDir string) {
 		}
 
 		var gzSize int64
-		// Try to read physical file in distDir
-		diskPath := filepath.Join(distDir, o.Path)
+		diskPath := o.DiskPath
+		if diskPath == "" {
+			diskPath = filepath.Join(distDir, o.Path)
+		}
 		if fi, err := os.Stat(diskPath); err == nil && !fi.IsDir() && fi.Size() > 0 {
 			if measured, err := MeasureFile(diskPath); err == nil && measured > 0 {
 				gzSize = measured
@@ -149,5 +153,9 @@ func AttachCompression(s *snapshot.BundleSnapshot, distDir string) {
 }
 
 func belongsToPackage(inputPath, pkgName string) bool {
-	return filepath.ToSlash(inputPath) != "" && pkgName != ""
+	if inputPath == "" || pkgName == "" {
+		return false
+	}
+	pName, isPkg := analysis.PackageName(inputPath)
+	return isPkg && strings.EqualFold(pName, pkgName)
 }

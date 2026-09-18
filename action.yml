@@ -112,9 +112,9 @@ runs:
 
         # Extract structured metrics via JSON
         JSON_OUT=$(bundlecheck summary "${ARGS[@]}" -f json)
-        INITIAL=$(echo "$JSON_OUT" | grep -o '"initialJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
-        LAZY=$(echo "$JSON_OUT" | grep -o '"lazyJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
-        TOTAL=$(echo "$JSON_OUT" | grep -o '"totalJs":[0-9]*' | head -1 | cut -d':' -f2 || echo "0")
+        INITIAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.initialJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"initialJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
+        LAZY=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.lazyJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"lazyJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
+        TOTAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.totalJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"totalJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
 
         echo "initial_bytes=$INITIAL" >> $GITHUB_OUTPUT
         echo "lazy_bytes=$LAZY" >> $GITHUB_OUTPUT

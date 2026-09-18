@@ -1,11 +1,14 @@
 package compression_test
 
 import (
+	"bytes"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"bundlecheck/internal/artifact"
 	"bundlecheck/internal/compression"
 	"bundlecheck/internal/snapshot"
 )
@@ -76,5 +79,39 @@ func TestAttachCompression(t *testing.T) {
 	}
 	if len(snap.Packages) > 0 && snap.Packages[0].InitialGzipBytes <= 0 {
 		t.Errorf("expected package InitialGzipBytes > 0, got %d", snap.Packages[0].InitialGzipBytes)
+	}
+}
+
+func TestCompressionUsesResolvedNestedBrowserFile(t *testing.T) {
+	dist := filepath.Join(t.TempDir(), "browser")
+	if err := os.MkdirAll(filepath.Join(dist, "chunks"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	data := []byte(strings.Repeat("console.log('nested chunk');", 100))
+	for name, content := range map[string][]byte{
+		"index.html":     []byte(`<script type="module" src="chunks/main.js"></script>`),
+		"chunks/main.js": data,
+		"main.js":        []byte(strings.Repeat("x", len(data))),
+	} {
+		if err := os.WriteFile(filepath.Join(dist, name), content, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	outputs, _, err := artifact.BrowserOutputs([]snapshot.BundleOutput{{Path: "dist/app/browser/chunks/main.js", Bytes: int64(len(data))}}, dist)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expected bytes.Buffer
+	w := gzip.NewWriter(&expected)
+	if _, err := w.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s := &snapshot.BundleSnapshot{Outputs: outputs}
+	compression.AttachCompression(s, dist)
+	if got := s.Outputs[0].GzipBytes; got != int64(expected.Len()) {
+		t.Fatalf("gzip measured a different file: got %d, want %d", got, expected.Len())
 	}
 }

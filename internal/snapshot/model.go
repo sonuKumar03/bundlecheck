@@ -31,6 +31,7 @@ type Module struct {
 
 type BundleOutput struct {
 	Path       string         `json:"path"`
+	DiskPath   string         `json:"-"` // Resolved emitted file; excluded from portable reports.
 	Bytes      int64          `json:"bytes"`
 	GzipBytes  int64          `json:"gzipBytes,omitempty"`
 	Initial    bool           `json:"initial"`

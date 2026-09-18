@@ -28,13 +28,20 @@ func suggestCommand() *cobra.Command {
 	)
 
 	c := &cobra.Command{
-		Use:   "suggest",
+		Use:   "suggest [stats.json] [dist]",
 		Short: "Analyze bundle and generate prioritized size optimization recommendations",
 		Long: `Analyze the bundle graph and input import chains to discover actionable optimization opportunities.
 Detects heavy third-party libraries suitable for dynamic imports, eager route components,
 and duplicated package contributions.`,
-		Args: cobra.NoArgs,
-		RunE: func(c *cobra.Command, _ []string) error {
+		Args: cobra.MaximumNArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			if len(args) > 0 && stats == "" {
+				stats = args[0]
+			}
+			if len(args) > 1 && dist == "" {
+				dist = args[1]
+			}
+
 			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
 				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
 			}

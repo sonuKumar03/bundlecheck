@@ -161,10 +161,26 @@ func SaveWithMetadata(path string, r *analysis.AnalysisResult, meta *Metadata) e
 	return nil
 }
 
+// ValidateBaselineName ensures baseline names do not contain path traversal characters.
+func ValidateBaselineName(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fmt.Errorf("baseline name cannot be empty")
+	}
+	if name == "." || name == ".." || strings.Contains(name, "/") || strings.Contains(name, "\\") || strings.Contains(name, "..") || filepath.Base(name) != name {
+		return fmt.Errorf("invalid baseline name %q: must not contain path separators or traversal characters", name)
+	}
+	return nil
+}
+
 // SaveNamed saves a baseline into the named baselines directory and optionally marks it as active.
 func SaveNamed(baseDir string, name string, r *analysis.AnalysisResult, meta *Metadata) (string, error) {
-	if strings.TrimSpace(name) == "" {
+	name = strings.TrimSpace(name)
+	if name == "" {
 		name = "default"
+	}
+	if err := ValidateBaselineName(name); err != nil {
+		return "", err
 	}
 	if baseDir == "" {
 		baseDir = DefaultDir
@@ -195,10 +211,13 @@ func SaveNamed(baseDir string, name string, r *analysis.AnalysisResult, meta *Me
 
 // SetActive sets the active baseline name and syncs DefaultBaselineFilename.
 func SetActive(baseDir string, name string) error {
+	name = strings.TrimSpace(name)
+	if err := ValidateBaselineName(name); err != nil {
+		return err
+	}
 	if baseDir == "" {
 		baseDir = DefaultDir
 	}
-	name = strings.TrimSpace(name)
 	namedPath := filepath.Join(baseDir, DefaultBaselinesSubdir, name+".json")
 	data, err := os.ReadFile(namedPath)
 	if err != nil {
@@ -327,12 +346,12 @@ func List(baseDir string) ([]BaselineInfo, string, error) {
 
 // Delete removes a saved named baseline.
 func Delete(baseDir string, name string) error {
+	name = strings.TrimSpace(name)
+	if err := ValidateBaselineName(name); err != nil {
+		return err
+	}
 	if baseDir == "" {
 		baseDir = DefaultDir
-	}
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return fmt.Errorf("baseline name is required")
 	}
 
 	targetPath := filepath.Join(baseDir, DefaultBaselinesSubdir, name+".json")
@@ -346,6 +365,7 @@ func Delete(baseDir string, name string) error {
 	active, _ := GetActive(baseDir)
 	if active == name {
 		_ = os.Remove(filepath.Join(baseDir, DefaultActiveFilename))
+		_ = os.Remove(filepath.Join(baseDir, "baseline.json"))
 	}
 
 	return nil

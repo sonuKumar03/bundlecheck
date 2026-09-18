@@ -104,15 +104,15 @@ func TestCompareErrors(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"required flags", []string{"compare"}, "nonempty paths"},
-		{"missing before", []string{"compare", "--after", after, "--before", ""}, "nonempty paths"},
-		{"missing after", []string{"compare", "--before", before, "--after", ""}, "nonempty paths"},
-		{"empty path", []string{"compare", "--before", "", "--after", after}, "nonempty"},
+		{"required flags", []string{"compare"}, "paths are required"},
+		{"missing before", []string{"compare", "--after", after, "--before", ""}, "paths are required"},
+		{"missing after", []string{"compare", "--before", before, "--after", ""}, "paths are required"},
+		{"empty path", []string{"compare", "--before", "", "--after", after}, "paths are required"},
 		{"invalid format", []string{"compare", "--before", before, "--after", after, "--format", "yaml"}, "unsupported format"},
-		{"missing file", []string{"compare", "--before", "no-such-snapshot.json", "--after", after}, "--before"},
-		{"malformed before", []string{"compare", "--before", bad, "--after", after}, "--before"},
-		{"malformed after", []string{"compare", "--before", before, "--after", bad}, "--after"},
-		{"positional argument", []string{"compare", "extra", "--before", before, "--after", after}, "unknown command"},
+		{"missing file", []string{"compare", "--before", "no-such-snapshot.json", "--after", after}, "before"},
+		{"malformed before", []string{"compare", "--before", bad, "--after", after}, "before"},
+		{"malformed after", []string{"compare", "--before", before, "--after", bad}, "after"},
+		{"too many positional args", []string{"compare", before, after, "extra"}, "accepts at most 2 arg(s)"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var out, errOut bytes.Buffer
@@ -120,5 +120,24 @@ func TestCompareErrors(t *testing.T) {
 				t.Fatalf("exit %d, stdout %q, stderr %q", code, out.String(), errOut.String())
 			}
 		})
+	}
+}
+
+func TestComparePositionalArguments(t *testing.T) {
+	before := filepath.Join("..", "testdata", "comparison", "before.json")
+	after := filepath.Join("..", "testdata", "comparison", "after.json")
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"compare", before, after, "-f", "json"}, &out, &errOut)
+	if code != 0 || errOut.Len() != 0 {
+		t.Fatalf("compare positional args failed: %s", errOut.String())
+	}
+
+	var res comparison.Result
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if res.Summary.Delta.InitialJS != 100 {
+		t.Errorf("expected initial delta 100, got %d", res.Summary.Delta.InitialJS)
 	}
 }
