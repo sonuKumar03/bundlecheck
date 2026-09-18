@@ -76,9 +76,9 @@ jobs:
               corepack enable
               yarn install || yarn install --immutable 2>/dev/null
             elif [ -f package-lock.json ]; then
-              npm ci || npm install --legacy-peer-deps || npm install
+              npm ci || npm install --legacy-peer-deps || npm install --ignore-engines || npm install
             else
-              npm install --legacy-peer-deps || npm install
+              npm install --legacy-peer-deps || npm install --ignore-engines || npm install
             fi
           fi
 
