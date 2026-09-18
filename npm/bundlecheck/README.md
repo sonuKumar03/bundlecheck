@@ -197,21 +197,42 @@ bundlecheck suggest dist/my-app/stats.json
 
 ---
 
-### 4. `bundlecheck compare` & `measure`
-Compares two bundle snapshots and calculates exact byte and percentage deltas.
+### 4. `bundlecheck baseline` & `measure` (Git Worktrees & Snapshots)
+Capture, manage, switch, and compare baseline bundle metrics across git branches without manual branch switching or rebuilding.
 
 ```bash
-# Compare baseline snapshot against PR build
-bundlecheck compare .bundlecheck-baseline.json dist/my-app/stats.json
+# ─── 1. CAPTURE BASELINE FROM CURRENT BUILD OR GIT BRANCH ───
+bundlecheck baseline save                                     # Save current build as active baseline
+bundlecheck baseline save --ref release/v2.0 --name rel-v2   # Build branch in isolated worktree
+
+# ─── 2. LIST & SWITCH SAVED BASELINES ───
+bundlecheck baseline list                                     # List all saved baselines and active status
+bundlecheck baseline use rel-v2                               # Switch active baseline for 'measure'
+
+# ─── 3. REBUILD & UPDATE BASELINES ───
+bundlecheck baseline rebuild rel-v2                           # Re-runs worktree build for latest branch commits
+
+# ─── 4. CONTINUOUS LIVE DELTA MEASUREMENT ───
+bundlecheck measure                                           # Measure current build against active baseline
+bundlecheck measure -b rel-v2 --max-initial-delta 0B          # Fail in CI if initial bundle grows
 ```
 
-**Example Output:**
+**Example Output (`bundlecheck measure`):**
 ```text
-BRANCH DELTA COMPARISON
+MEASURING AGAINST ACTIVE BASELINE (rel-v2)
 -------------------------------------------------------------
-Initial JavaScript:  248.50 KB -> 232.10 KB (-16.40 KB / -6.6%) ✓
-Lazy Chunks:         812.20 KB -> 808.50 KB (-3.70 KB / -0.4%) ✓
-Total Bundle Size:   1.06 MB   -> 1.04 MB   (-20.10 KB / -1.8%) ✓
+Initial JavaScript:  1.42 MB  -> 1.18 MB  (-240.00 KB / -16.9%) 📉
+Lazy Chunks:         3.10 MB  -> 2.95 MB  (-150.00 KB / -4.8%)  📉
+Total Bundle Size:   4.52 MB  -> 4.13 MB  (-390.00 KB / -8.6%)  🎉
+```
+
+---
+
+### 5. `bundlecheck compare`
+Compares two exported JSON summary files directly:
+
+```bash
+bundlecheck compare .bundlecheck/baseline.json dist/my-app/stats.json
 ```
 
 ---

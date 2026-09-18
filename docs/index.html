@@ -228,9 +228,17 @@
               <span>suggest</span>
               <span class="text-[10px] text-slate-500">Tips</span>
             </a>
+            <a href="#cmd-baseline" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>baseline</span>
+              <span class="text-[10px] text-slate-500">Snapshots</span>
+            </a>
+            <a href="#cmd-measure" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>measure</span>
+              <span class="text-[10px] text-slate-500">Live delta</span>
+            </a>
             <a href="#cmd-compare" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>compare</span>
-              <span class="text-[10px] text-slate-500">Delta</span>
+              <span class="text-[10px] text-slate-500">JSON diff</span>
             </a>
             <a href="#cmd-check" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>check</span>
@@ -516,23 +524,78 @@
             </div>
           </div>
 
-          <!-- CMD 4: compare -->
-          <div id="cmd-compare" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <!-- CMD 4: baseline -->
+          <div id="cmd-baseline" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
-                <h3 class="text-base font-mono font-bold text-emerald-300">bundlecheck compare &lt;baseline.json&gt; &lt;stats.json&gt;</h3>
+                <span class="w-6 h-6 rounded-md bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
+                <h3 class="text-base font-mono font-bold text-purple-300">bundlecheck baseline [save | list | use | rebuild | show | delete]</h3>
               </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Delta Diff</span>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">Worktree & Snapshots</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Calculates exact byte and percentage deltas between a base branch snapshot and the current PR build.
+              Capture, manage, and inspect baseline bundle metrics from local builds or git branches (using isolated worktrees without branch-switching).
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck compare</span> .bundlecheck-baseline.json dist/my-app/stats.json</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck baseline save</span> --ref release/v2.0 --name release-v2</div>
+              <div class="text-purple-300 font-bold">Checking out git ref "release/v2.0" in temporary worktree...</div>
+              <div class="text-slate-300">Building "release/v2.0" in worktree (npm run build)...</div>
+              <div class="text-emerald-300 font-bold">✓ Successfully captured and saved baseline to .bundlecheck/baselines/release-v2.json</div>
+              <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundlecheck baseline list</span></div>
+              <div class="text-slate-200">
+Saved Baselines (.bundlecheck/baselines/):<br>
+  NAME          REF / SOURCE            INITIAL JS    TOTAL JS    CREATED        STATUS<br>
+  * release-v2  release/v2.0 (43eb721)  1.42 MB       4.52 MB     just now       ✓ active<br>
+    main        origin/main (a10c82f)   1.40 MB       4.48 MB     1 day ago
+              </div>
+            </div>
+          </div>
+
+          <!-- CMD 5: measure -->
+          <div id="cmd-measure" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-teal-500/20 text-teal-400 flex items-center justify-center font-mono font-bold text-xs">5</span>
+                <h3 class="text-base font-mono font-bold text-teal-300">bundlecheck measure [-b baseline-name]</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/30">Live Delta Benchmarking</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Measures current working branch changes against the active or named baseline with instant byte deltas and regression budget verification.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck measure</span></div>
+              <div class="text-white font-bold pt-1">MEASURING AGAINST ACTIVE BASELINE (release-v2)</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>Initial JavaScript:  1.42 MB  -&gt; 1.18 MB  (<span class="text-emerald-300 font-bold">-240.00 KB / -16.9%</span>) 📉</div>
+              <div>Lazy Chunks:         3.10 MB  -&gt; 2.95 MB  (<span class="text-emerald-300 font-bold">-150.00 KB / -4.8%</span>)  📉</div>
+              <div>Total Bundle Size:   4.52 MB  -&gt; 4.13 MB  (<span class="text-emerald-300 font-bold">-390.00 KB / -8.6%</span>)  🎉</div>
+            </div>
+          </div>
+
+          <!-- CMD 6: compare -->
+          <div id="cmd-compare" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">6</span>
+                <h3 class="text-base font-mono font-bold text-emerald-300">bundlecheck compare &lt;baseline.json&gt; &lt;stats.json&gt;</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">JSON File Diff</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Calculates exact byte and percentage deltas between two exported JSON snapshot summary files.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck compare</span> .bundlecheck/baseline.json dist/my-app/stats.json</div>
               <div class="text-white font-bold pt-1">BRANCH DELTA COMPARISON</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
               <div>Initial JavaScript:  248.50 KB -&gt; 232.10 KB (<span class="text-emerald-300 font-bold">-16.40 KB / -6.6%</span>) ✓</div>
@@ -541,11 +604,11 @@
             </div>
           </div>
 
-          <!-- CMD 5: check -->
+          <!-- CMD 7: check -->
           <div id="cmd-check" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">5</span>
+                <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">7</span>
                 <h3 class="text-base font-mono font-bold text-rose-300">bundlecheck check &lt;stats.json&gt; [flags]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30">CI Gate</span>
@@ -718,12 +781,26 @@ jobs:
           </div>
           <span class="text-[10px] text-slate-500">Tips</span>
         </a>
+        <a href="#cmd-baseline" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-purple-400">$</span>
+            <span>bundlecheck baseline [save|list|use|rebuild]</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Worktree</span>
+        </a>
+        <a href="#cmd-measure" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-teal-400">$</span>
+            <span>bundlecheck measure [-b name]</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Live delta</span>
+        </a>
         <a href="#cmd-compare" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">$</span>
             <span>bundlecheck compare</span>
           </div>
-          <span class="text-[10px] text-slate-500">Delta</span>
+          <span class="text-[10px] text-slate-500">JSON diff</span>
         </a>
         <a href="#cmd-check" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">

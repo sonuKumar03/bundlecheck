@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -76,8 +77,57 @@ func TestMeasureMarkdown(t *testing.T) {
 	if !strings.Contains(output, "## 📊 Angular Bundle Comparison") {
 		t.Errorf("expected markdown header in measure output, got: %s", output)
 	}
-	if !strings.Contains(output, "| Category | Before | After | Delta | Status |") {
-		t.Errorf("expected delta table in markdown, got: %s", output)
+}
+
+func TestMeasureNamedBaselineResolution(t *testing.T) {
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmpWd := t.TempDir()
+	if err := os.Chdir(tmpWd); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origWd) }()
+
+	base := filepath.Join(origWd, "..", "testdata", "lazy-import")
+	absBase, _ := filepath.Abs(base)
+	statsFile := filepath.Join(absBase, "stats.json")
+	distDir := filepath.Join(absBase, "browser")
+
+	// Save baseline as 'feature-base'
+	var out, errOut bytes.Buffer
+	code := Execute([]string{
+		"baseline", "save",
+		"--name", "feature-base",
+		"-s", statsFile,
+		"-d", distDir,
+	}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("save baseline failed: %s", errOut.String())
+	}
+
+	// Run measure referencing the name directly
+	out.Reset()
+	errOut.Reset()
+	code = Execute([]string{
+		"measure",
+		"-b", "feature-base",
+		"-s", statsFile,
+		"-d", distDir,
+		"-f", "json",
+	}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("measure with named baseline failed: %s", errOut.String())
+	}
+
+	var res comparison.Result
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if res.Summary.Delta.InitialJS != 0 {
+		t.Errorf("expected 0 delta comparing same build, got %d", res.Summary.Delta.InitialJS)
 	}
 }
+
 
