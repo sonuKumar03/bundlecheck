@@ -6,6 +6,10 @@ branding:
   color: 'blue'
 
 inputs:
+  working-directory:
+    description: 'Working directory to run bundlecheck in'
+    required: false
+    default: '.'
   stats:
     description: 'Path to Angular stats.json (auto-detected if omitted)'
     required: false
@@ -26,6 +30,10 @@ inputs:
     description: 'File path to write report output (e.g. pr-comment.md)'
     required: false
     default: 'bundle-report.md'
+  json-output:
+    description: 'Optional file path to write full JSON audit report'
+    required: false
+    default: ''
   gzip:
     description: 'Include Gzip wire transfer estimation'
     required: false
@@ -83,18 +91,26 @@ runs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.27.x'
+        go-version: 'stable'
 
     - name: Build & Install bundlecheck
       shell: bash
       run: |
         if ! command -v bundlecheck >/dev/null 2>&1; then
-          go install github.com/sonuKumar03/bundlecheck@latest
+          if [ -f "${{ github.action_path }}/main.go" ]; then
+            echo "Building bundlecheck from local action path: ${{ github.action_path }}"
+            cd "${{ github.action_path }}" && (go build -o /usr/local/bin/bundlecheck . 2>/dev/null || (mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/bundlecheck" . && echo "$HOME/.local/bin" >> $GITHUB_PATH))
+          else
+            echo "Installing bundlecheck via go install..."
+            go install github.com/sonuKumar03/bundlecheck@latest
+            echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          fi
         fi
 
     - name: Run bundlecheck Analysis & Budgets
       id: run-bundlecheck
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: |
         ARGS=()
         if [ -n "${{ inputs.stats }}" ]; then ARGS+=("-s" "${{ inputs.stats }}"); fi
@@ -110,8 +126,17 @@ runs:
         # Run summary report
         bundlecheck summary "${SUMMARY_FLAGS[@]}"
 
+        # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
+        if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "${{ inputs.output }}" ] && [ -f "${{ inputs.output }}" ]; then
+          cat "${{ inputs.output }}" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
         # Extract structured metrics via JSON
         JSON_OUT=$(bundlecheck summary "${ARGS[@]}" -f json)
+        if [ -n "${{ inputs.json-output }}" ]; then
+          echo "$JSON_OUT" > "${{ inputs.json-output }}"
+        fi
+
         INITIAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.initialJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"initialJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
         LAZY=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.lazyJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"lazyJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
         TOTAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.totalJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"totalJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
@@ -141,7 +166,9 @@ runs:
       with:
         script: |
           const fs = require('fs');
-          const reportPath = '${{ inputs.output }}';
+          const path = require('path');
+          const workingDir = '${{ inputs.working-directory }}' || '.';
+          const reportPath = path.resolve(workingDir, '${{ inputs.output }}');
           if (fs.existsSync(reportPath)) {
             const reportContent = fs.readFileSync(reportPath, 'utf8');
             const headerTag = '<!-- bundlecheck-report -->';

@@ -36,16 +36,6 @@ jobs:
       - name: Checkout bundlecheck
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-
-      - name: Build bundlecheck binary
-        run: |
-          go build -o /usr/local/bin/bundlecheck .
-          bundlecheck --version
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -91,8 +81,7 @@ jobs:
             fi
           fi
 
-      - name: Run bundlecheck Analysis
-        working-directory: target-repo/${{ inputs.sub_dir }}
+      - name: Annotate Remote Target
         run: |
           echo "## 📊 Remote Bundle Audit Report" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository**: [\`${{ inputs.repo_url }}\`](${{ inputs.repo_url }})" >> $GITHUB_STEP_SUMMARY
@@ -100,15 +89,21 @@ jobs:
           echo "- **Subdirectory**: \`${{ inputs.sub_dir }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Generate Markdown report directly into GitHub Actions Job Summary
-          bundlecheck summary --suggest --gzip --format markdown >> $GITHUB_STEP_SUMMARY
+      - name: Run BundleCheck Action
+        uses: ./
+        with:
+          working-directory: target-repo/${{ inputs.sub_dir }}
+          gzip: 'true'
+          suggest: 'true'
+          format: 'markdown'
+          output: 'bundle-report.md'
+          json-output: 'bundlecheck-audit.json'
 
-          # Export JSON artifact for download
-          bundlecheck summary --suggest --gzip --format json > bundlecheck-audit.json
-
-      - name: Upload Audit JSON Artifact
+      - name: Upload Audit Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bundlecheck-audit-result
-          path: target-repo/${{ inputs.sub_dir }}/bundlecheck-audit.json
+          path: |
+            target-repo/${{ inputs.sub_dir }}/bundle-report.md
+            target-repo/${{ inputs.sub_dir }}/bundlecheck-audit.json
           if-no-files-found: ignore
