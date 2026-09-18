@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -151,3 +152,64 @@ func TestReadMetadataStaticFallbackCases(t *testing.T) {
 		}
 	})
 }
+
+func TestReadMetadataEquivalence(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	testWorkspace := filepath.Join(repoRoot, "testdata", "nx-workspace")
+
+	if _, err := os.Stat(filepath.Join(testWorkspace, "node_modules", "nx")); os.IsNotExist(err) {
+		t.Skip("testdata/nx-workspace/node_modules/nx not installed")
+	}
+
+	cliMeta, err := readMetadataNxCli(context.Background(), testWorkspace)
+	if err != nil {
+		t.Skipf("Nx CLI unavailable: %v", err)
+	}
+
+	staticMeta, err := ReadMetadataStatic(testWorkspace)
+	if err != nil {
+		t.Fatalf("ReadMetadataStatic failed: %v", err)
+	}
+
+	for name, cliProj := range cliMeta.Graph.Nodes {
+		if !IsApplication(cliProj) {
+			continue
+		}
+		statProj, ok := staticMeta.Graph.Nodes[name]
+		if !ok {
+			t.Errorf("missing app %q in static metadata", name)
+			continue
+		}
+		if statProj.Data.Root != cliProj.Data.Root {
+			t.Errorf("app %q root mismatch: static=%q, cli=%q", name, statProj.Data.Root, cliProj.Data.Root)
+		}
+		if _, ok := statProj.Data.Targets["build"]; !ok {
+			t.Errorf("app %q missing build target in static metadata", name)
+		}
+	}
+}
+
+func TestReadMetadataTransparentFallback(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	testWorkspace := filepath.Join(repoRoot, "testdata", "nx-workspace")
+
+	m, err := ReadMetadata(context.Background(), testWorkspace)
+	if err != nil {
+		t.Fatalf("ReadMetadata failed: %v", err)
+	}
+	if len(m.Graph.Nodes) == 0 {
+		t.Fatalf("expected discovered nodes, got 0")
+	}
+	if _, ok := m.Graph.Nodes["admin-dashboard"]; !ok {
+		t.Fatalf("expected admin-dashboard in ReadMetadata results")
+	}
+}
+

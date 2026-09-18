@@ -51,6 +51,13 @@ func Root(start string, explicit bool) (string, error) {
 }
 
 func ReadMetadata(ctx context.Context, root string) (Metadata, error) {
+	if m, err := ReadMetadataStatic(root); err == nil && len(m.Graph.Nodes) > 0 {
+		return m, nil
+	}
+	return readMetadataNxCli(ctx, root)
+}
+
+func readMetadataNxCli(ctx context.Context, root string) (Metadata, error) {
 	var m Metadata
 	nxDir := filepath.Join(root, "node_modules", "nx")
 	manifest, err := os.ReadFile(filepath.Join(nxDir, "package.json"))
