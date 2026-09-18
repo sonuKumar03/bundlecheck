@@ -1,15 +1,21 @@
 <div align="center">
 
-# 📦 bundlecheck
+# ⚡ bundlecheck
 
-**Blazing-fast bundle analyzer, optimization advisor, dependency tracer, and CI budget tool for Angular.**
+**Lightning-fast bundle inspector, dependency tracer, optimization advisor, and CI budget gate for Angular esbuild.**
 
-[![CI](https://github.com/sonuKumar03/bundlecheck/actions/workflows/ci.yml/badge.svg)](https://github.com/sonuKumar03/bundlecheck/actions/workflows/ci.yml)
-[![Go Version](https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat&logo=go)](https://go.dev)
-[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-Ready-8A2BE2?style=flat)](.agents/skills/bundlecheck/SKILL.md)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<br>
 
-[Website](https://sonukumar03.github.io/bundlecheck/) • [Features](#-key-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Command Reference](#-command-reference) • [CI & PR Reporting](#-ci--github-actions-integration) • [AI Agent Skill](#-ai-agent-skill-integration)
+[![Release](https://img.shields.io/github/v/release/sonuKumar03/bundlecheck?color=indigo&label=release&logo=github)](https://github.com/sonuKumar03/bundlecheck/releases)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/sonuKumar03/bundlecheck/ci.yml?branch=master&label=CI&logo=githubactions)](https://github.com/sonuKumar03/bundlecheck/actions)
+[![Go Report](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/sonuKumar03/bundlecheck/releases)
+[![Agent Skill](https://img.shields.io/badge/AI%20Skill-Ready-8A2BE2?style=flat&logo=anthropic)](.agents/skills/bundlecheck/SKILL.md)
+[![License](https://img.shields.io/github/license/sonuKumar03/bundlecheck?color=emerald)](LICENSE)
+
+<br>
+
+[**Website & Live Docs**](https://sonukumar03.github.io/bundlecheck/) • [**Why bundlecheck?**](#-why-bundlecheck) • [**Installation**](#-installation) • [**Quick Start**](#-quick-start) • [**Command Reference**](#-command-reference) • [**CI & GitHub Actions**](#-ci--github-actions-integration) • [**AI Agent Skill**](#-ai-agent-skill-integration)
 
 </div>
 
@@ -17,101 +23,119 @@
 
 ## ⚡ Overview
 
-Angular's esbuild-based application builder produces rich `stats.json` metafiles, but interpreting them manually or catching bundle regressions in CI is tedious. 
+Modern Angular applications build with **esbuild** for incredible compilation speed. However, esbuild's raw `stats.json` files are massive, complex, and unreadable for quick human inspection or CI pull request reviews.
 
-`bundlecheck` is a native Go CLI and AI agent skill that turns raw Angular build artifacts into **actionable insights, root-cause dependency trees, automated optimization suggestions, and GitHub PR size diffs** in milliseconds.
+`bundlecheck` is a compiled Go binary (`<5ms` execution) and zero-dependency npm tool that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**.
 
 ```text
-$ bundlecheck summary --suggest --gzip
+$ bundlecheck summary dist/my-app/stats.json --gzip --suggest
 
-## 📦 Angular Bundle Summary
+BUNDLE SUMMARY
+-------------------------------------------------------------
+Initial JavaScript:   248.50 KB (3 files: main, polyfills, styles) [~74.20 KB gzip]
+Lazy Chunks:          812.20 KB (14 route-split chunks)
+Total Assets:         1.06 MB
 
-| Category | Raw Size | Wire Size (Gzip) |
-| :--- | :--- | :--- |
-| **Initial JS** | `160 KB` | `51.2 KB` |
-| **Lazy JS** | `300 KB` | `96.0 KB` |
-| **Total JS** | `460 KB` | `147.2 KB` |
+TOP CONTRIBUTING NPM PACKAGES
+-------------------------------------------------------------
+1. @angular/core       84.20 KB  (33.8% of initial)  [~25.10 KB gzip]
+2. rxjs                 42.10 KB  (16.9% of initial)  [~12.40 KB gzip]
+3. @angular/common     31.50 KB  (12.6% of initial)  [~9.20 KB gzip]
+4. lodash-es            18.40 KB  (7.4% of initial)   [~5.80 KB gzip]
+5. tslib                6.20 KB   (2.5% of initial)   [~1.90 KB gzip]
 
-### 💡 Bundle Optimization Recommendations
-> Potential Initial JS Reduction: ~100 KB across 2 opportunities
-
-[HIGH] #1: Move 'pdfjs-dist' behind a dynamic import
-  Potential Savings:  ~50 KB (~51.2 KB gzip)
-  Target / Importer:  src/main.ts
-  Action:             Replace 'import ... from "pdfjs-dist"' with 'const lib = await import("pdfjs-dist")'
+[!] 2 OPTIMIZATION OPPORTUNITIES DETECTED
+-------------------------------------------------------------
+• moment (72.4 KB): Found in initial bundle. Replace with native Intl.DateTimeFormat (-65 KB).
+• Duplicate package 'tslib': Bundled versions v2.4.0 and v2.6.2 simultaneously. Deduplicate in package.json.
 ```
 
 ---
 
-## ✨ Key Features
+## 🥊 Why bundlecheck?
 
-| Feature | Description |
-| :--- | :--- |
-| 🔍 **Dependency Tracer (`why`)** | Traces exact static import paths from entrypoints (`src/main.ts`) down to any module with clean ASCII trees. |
-| 💡 **Optimization Advisor (`suggest`)** | Detects heavy initial packages, eager feature routes, and duplicate packages with estimated byte savings. |
-| 🗜️ **Gzip Wire Sizing (`--gzip`)** | Measures real physical Gzip compression and projects accurate wire transfer sizes per package. |
-| 📊 **Baseline & Measure (`measure`)** | Captures baselines to `.bundlecheck/baseline.json` and tracks signed before/after deltas across refactors. |
-| 🛡️ **CI Size Budgets (`check`)** | Enforces maximum bundle budgets and regression limits (`--max-initial-delta 0B`) in CI pipelines. |
-| 📝 **PR Markdown Reporter (`-f md`)** | Generates formatted GitHub Pull Request comments with collapsible sections and visual status badges. |
-| 🤖 **AI Agent Skill (`$bundlecheck`)** | Ships with universal agent skill definitions for Antigravity CLI, Claude Code, Cursor, and Codex. |
-| ⚡ **Zero-Config Auto-Discovery** | Automatically detects Angular `stats.json` and matching `browser/index.html` across workspaces. |
+| Feature | `bundlecheck` | `webpack-bundle-analyzer` | `source-map-explorer` | Standard `angular.json` Budgets |
+| :--- | :---: | :---: | :---: | :---: |
+| **Execution Speed** | **`< 5ms` (Compiled Go)** | ~3–8 seconds (Node.js) | ~4–10 seconds (Node.js) | Integrated into build |
+| **Runtime Dependencies** | **Zero** (Standalone Binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
+| **Import Chain Tracer (`why`)** | **Yes (ASCII Tree)** | ❌ No | ❌ No | ❌ No |
+| **Optimization Advisor (`suggest`)** | **Yes (Automated Rules)** | ❌ No (Visual only) | ❌ No | ❌ No |
+| **Gzip / Brotli Wire Modeling** | **Yes (`--gzip`)** | Yes | Yes | ❌ Raw bytes only |
+| **PR Delta Diffs (`compare`)** | **Yes (Signed +/- KB)** | ❌ No | ❌ No | ❌ No |
+| **Headless CI Gating** | **Yes (Exit 0/1)** | ❌ GUI Required | ❌ GUI / HTML | Yes (Limited) |
+| **AI Coding Agent Skill** | **Yes (`SKILL.md`)** | ❌ No | ❌ No | ❌ No |
 
 ---
 
-## 🚀 Installation
+## 📦 Installation
 
-### Option 1: One-Line Installer (CLI + AI Agent Skill)
+### Option 1: NPX / Zero-Install Runner (Recommended for Frontend Devs)
 
-Install the CLI binary and the AI Agent skill in a single command without cloning:
+Run instantly without installing Go or compilers:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+# Run on demand
+npx bundlecheck summary dist/my-app/stats.json
+
+# Or add to project devDependencies
+npm install -D bundlecheck
 ```
 
-This installs `bundlecheck` to `$GOBIN` (or `$HOME/go/bin`) and installs the skill to `$HOME/.agents/skills/bundlecheck/SKILL.md` (and `$HOME/.gemini/antigravity-cli/skills/bundlecheck`).
+### Option 2: 1-Line Standalone Shell Installer
 
-### Option 2: Go Install
+Installs the precompiled native binary to `/usr/local/bin` (or `~/.local/bin`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh
+```
+
+*To install the binary alongside the AI Agent skill:*
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill
+```
+
+### Option 3: Precompiled Multi-Arch Binaries
+
+Download standalone binaries directly from the [**GitHub Releases**](https://github.com/sonuKumar03/bundlecheck/releases/latest):
+- 🍏 **macOS Apple Silicon (M1/M2/M3/M4)**: `bundlecheck_*_darwin_arm64.tar.gz`
+- 🍏 **macOS Intel**: `bundlecheck_*_darwin_amd64.tar.gz`
+- 🐧 **Linux x86_64**: `bundlecheck_*_linux_amd64.tar.gz`
+- 🐧 **Linux ARM64**: `bundlecheck_*_linux_arm64.tar.gz`
+- 🪟 **Windows x64**: `bundlecheck_*_windows_amd64.zip`
+
+### Option 4: Go Install
 
 ```bash
 go install github.com/sonuKumar03/bundlecheck@latest
 ```
 
-### Option 3: From Local Source
-
-```bash
-git clone https://github.com/sonuKumar03/bundlecheck.git
-cd bundlecheck
-./install.sh --with-skill
-```
-
 ---
 
-## 🚦 Quick Start
+## 🚀 Quick Start
 
 ### 1. Build your Angular application with stats
+
+Add `--stats-json` to your build command (or configure `"statsJson": true` in `angular.json`):
 
 ```bash
 ng build --configuration production --stats-json
 ```
+*This produces `dist/<project-name>/stats.json`.*
 
-### 2. Run bundlecheck
-
-`bundlecheck` auto-discovers build outputs in `dist/`:
+### 2. Inspect with bundlecheck
 
 ```bash
-# Summary with Gzip sizes and optimization suggestions
-bundlecheck summary --suggest --gzip
+# View initial JS vs lazy breakdown & top npm contributors
+bundlecheck summary dist/my-app/stats.json
 
-# Trace why a package is bundled in initial JS
-bundlecheck why lodash
+# Trace why a package was pulled into initial JS
+bundlecheck why dist/my-app/stats.json lodash-es
 
-# Capture a reference baseline
-bundlecheck baseline
+# Get automated optimization recommendations
+bundlecheck suggest dist/my-app/stats.json
 
-# Make your Angular refactorings (@defer, dynamic imports, lazy routes)...
-
-# Measure the exact byte delta against the baseline
-bundlecheck measure
+# Enforce CI size budget (fails with exit code 1 on violation)
+bundlecheck check dist/my-app/stats.json --max-initial 250kb --max-total 1.2mb
 ```
 
 ---
@@ -119,129 +143,101 @@ bundlecheck measure
 ## 📖 Command Reference
 
 ### 1. `bundlecheck summary`
-Analyzes initial vs. lazy chunks and attributes byte contributions to NPM packages.
+Calculates accurate initial vs. lazy JavaScript byte totals and ranks all contributing npm packages.
 
 ```bash
 # Basic summary
-bundlecheck summary
+bundlecheck summary dist/my-app/stats.json
 
-# Include Gzip wire transfer estimation
-bundlecheck summary --gzip
+# Include estimated Gzip wire transfer sizes
+bundlecheck summary dist/my-app/stats.json --gzip
 
-# Include immediate optimization recommendations
-bundlecheck summary --suggest --gzip
+# Show top 15 packages and filter by name
+bundlecheck summary dist/my-app/stats.json --top 15 --filter @angular
 
-# Filter packages and show top contributors
-bundlecheck summary --filter angular --top 10
-
-# Export clean JSON
-bundlecheck summary --format json -o bundle-summary.json
+# Export machine-readable JSON (ideal for scripts & agent loops)
+bundlecheck summary dist/my-app/stats.json --format json -o summary.json
 ```
 
 ---
 
-### 2. `bundlecheck suggest`
-Automated Optimization Advisor that identifies concrete refactoring opportunities to shrink initial JavaScript.
+### 2. `bundlecheck why <package>`
+Traces the exact import graph path from entrypoints (`src/main.ts`) down to any bundled file or package.
 
 ```bash
-# View prioritized optimization suggestions
-bundlecheck suggest
-
-# Filter suggestions with a minimum savings threshold
-bundlecheck suggest --min-savings 10KB --gzip
-
-# Structured JSON for AI coding agents
-bundlecheck suggest --format json
-```
-
-**Diagnostic Rules Included:**
-- `heavy-initial-package`: Identifies large third-party libraries (e.g. `lodash`, `moment`, `xlsx`, `pdfjs-dist`) in the initial bundle that should be dynamically loaded.
-- `eager-feature-component`: Flags feature components bundled in `main.js` that should use `loadComponent: () => import(...)`.
-- `split-package`: Identifies libraries duplicated across initial and lazy chunks.
-
----
-
-### 3. `bundlecheck why <package>`
-Traces the static import chain from entrypoints (`src/main.ts`) to the target package or file.
-
-```bash
-# Trace import paths
-bundlecheck why lodash
-
-# Trace only initial bundle import paths with JSON output
-bundlecheck why @angular/material --initial-only --format json
+# Find why lodash-es is inside your bundle
+bundlecheck why dist/my-app/stats.json lodash-es
 ```
 
 **Example ASCII Tree Output:**
 ```text
-Dependency Trace for "lodash"
-Initial JS:  128 B
-Lazy JS:     0 B
-Total JS:    128 B
-
-Import Chain(s) (1 found):
-
-#1 (chunk: main.js - INITIAL, size: 128 B)
+IMPORT CHAIN TRACE: 'lodash-es' (18.40 KB)
+-------------------------------------------------------------
 src/main.ts
-  └── src/app/app.component.ts
-        └── node_modules/lodash/lodash.js
+ └── src/app/app.config.ts
+      └── src/app/services/analytics.service.ts
+           └── node_modules/lodash-es/debounce.js [in chunk: main-C82D.js]
+
+✓ Direct dependency. Package enters through the initial entry point.
 ```
 
 ---
 
-### 4. `bundlecheck baseline` & `measure`
-Iterative refactoring workflow to measure the exact impact of code changes without manually managing temporary files.
+### 3. `bundlecheck suggest`
+Scans the bundle against optimization heuristics to suggest concrete refactoring opportunities.
 
 ```bash
-# Step 1: Capture baseline before refactoring
-bundlecheck baseline
+bundlecheck suggest dist/my-app/stats.json
+```
 
-# Step 2: Make code changes and rebuild
-ng build --configuration production --stats-json
+**Built-in Optimization Rules:**
+- 🚫 **Heavy Legacy Libraries**: Detects non-tree-shakeable packages (e.g. `moment`, `lodash`, `xlsx`) in initial JS and suggests lighter native alternatives (e.g. `Intl.DateTimeFormat`, `lodash-es`, `@defer`).
+- 🧩 **Duplicate Bundled Versions**: Detects duplicate versions of packages (e.g. `tslib` v2.4 vs v2.6) bundled simultaneously.
+- ⚡ **Eager Feature Routes**: Identifies routed components bundled directly into `main.js` that should use `loadComponent: () => import(...)`.
 
-# Step 3: Measure signed before/after deltas
-bundlecheck measure
+---
 
-# Enforce that initial JS did not grow (fails with exit code 1 on regression)
-bundlecheck measure --max-initial-delta 0B
+### 4. `bundlecheck compare` & `measure`
+Compares two bundle snapshots and calculates exact byte and percentage deltas.
+
+```bash
+# Compare baseline snapshot against PR build
+bundlecheck compare .bundlecheck-baseline.json dist/my-app/stats.json
+```
+
+**Example Output:**
+```text
+BRANCH DELTA COMPARISON
+-------------------------------------------------------------
+Initial JavaScript:  248.50 KB -> 232.10 KB (-16.40 KB / -6.6%) ✓
+Lazy Chunks:         812.20 KB -> 808.50 KB (-3.70 KB / -0.4%) ✓
+Total Bundle Size:   1.06 MB   -> 1.04 MB   (-20.10 KB / -1.8%) ✓
 ```
 
 ---
 
-### 5. `bundlecheck compare`
-Compares two arbitrary saved summary snapshots.
+### 5. `bundlecheck check`
+Strict CI budget gate with custom pass/fail exit codes.
 
 ```bash
-bundlecheck compare --before before.json --after after.json
-bundlecheck compare --before before.json --after after.json --format json
+# Enforce initial and total JS size limits
+bundlecheck check dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
+
+# Enforce regression limits against a baseline snapshot
+bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-delta 0kb
 ```
-
----
-
-### 6. `bundlecheck check`
-Validates static size budgets and regression thresholds in CI pipelines.
-
-```bash
-# Validate static size budgets
-bundlecheck check --max-initial 250KB --max-total 1MB
-
-# Validate against a saved baseline
-bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 10KB
-```
-
-*Returns exit code `0` on pass, exit code `1` on budget violation.*
+*Exits with status `0` on success, or status `1` when any budget is exceeded.*
 
 ---
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Method 1: Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.1.0`)
+### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.1.2`)
 
-The fastest way to add bundle analysis, size budgets, and automatic PR commenting to any Angular repository:
+Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
 ```yaml
 name: Bundle Size Guard
-
 on: [pull_request]
 
 permissions:
@@ -258,61 +254,62 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies & build
-        run: |
-          npm ci
-          npx ng build --configuration production --stats-json
+      - run: npm ci
+      - run: npx ng build --configuration production --stats-json
 
-      - name: Run BundleCheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.1.0
+      - name: Run bundlecheck & Post PR Report
+        uses: sonuKumar03/bundlecheck@v0.1.2
         with:
-          post-comment: 'true'
-          max-initial: '350KB'
-          max-total: '1.2MB'
+          stats-path: dist/my-app/stats.json
+          max-initial: '250kb'
+          max-total: '1.2mb'
+          post-comment: true
 ```
 
-### Method 2: Direct CLI in CI Scripts
+---
+
+## ⚙️ Configuration (`.bundlecheck.yml`)
+
+Persist repository-level budgets and linting rules at the root of your project:
 
 ```yaml
-- name: Install bundlecheck
-  run: |
-    curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
-    echo "$HOME/go/bin" >> $GITHUB_PATH
+# .bundlecheck.yml
+budgets:
+  initial_js_max: 250kb
+  total_max: 1.5mb
+  max_delta_increase: 25kb
 
-- name: Enforce Size Budget & Generate Report
-  run: |
-    bundlecheck summary --format markdown --gzip --suggest -o bundle-report.md
-    bundlecheck check --max-initial 350KB --max-total 1.2MB
+rules:
+  disallow_packages:
+    - moment
+    - lodash
+  warn_duplicates: true
+  suggest_defer: true
 ```
 
 ---
 
 ## 🤖 AI Agent Skill Integration
 
-`bundlecheck` is designed from the ground up for AI coding assistants (**Antigravity CLI**, **Claude Code**, **OpenAI Codex**, **Cursor**).
+`bundlecheck` includes an official agent skill definition ([`.agents/skills/bundlecheck/SKILL.md`](.agents/skills/bundlecheck/SKILL.md)) compatible with **Antigravity**, **Claude Code**, **OpenAI Codex**, and **Cursor**.
 
-### Install the Skill:
+### Install Agent Skill:
 ```bash
-./install.sh --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/main/install.sh | sh -s -- --with-skill
 ```
 
-### Example Prompt for Agents:
-```text
-Use $bundlecheck to baseline the Angular build, run suggestions, trace heavy initial imports with why, and measure the savings after refactoring.
-```
-
-The agent uses:
-1. `bundlecheck baseline` to record the initial state.
-2. `bundlecheck suggest --format json` to receive ranked refactoring targets with estimated savings.
-3. `bundlecheck why <package> --format json` to find the exact import paths to refactor.
-4. `bundlecheck measure --format json` to verify actual byte reductions.
+Autonomous agents use `bundlecheck` in their inner coding loop to:
+1. Capture a baseline before refactoring.
+2. Read `bundlecheck suggest --format json` for ranked targets.
+3. Trace exact files with `bundlecheck why <package> --format json`.
+4. Validate byte reductions before committing code.
 
 ---
 
 ## 🏗️ Architecture
 
 ```text
-Angular/esbuild stats.json ──────────┐
+Angular esbuild stats.json ──────────┐
                                      ▼
 browser/ dist + index.html ──► internal/discovery
                                      │
@@ -326,7 +323,7 @@ browser/ dist + index.html ──► internal/discovery
                              internal/graph (BFS Traversal & 'why' Tracer)
                                      │
                                      ▼
-                             internal/compression (Gzip Wire Sizing)
+                             internal/compression (Gzip Wire Estimation)
                                      │
                                      ▼
                              internal/advisor (Optimization Engine)
@@ -341,13 +338,11 @@ browser/ dist + index.html ──► internal/discovery
 
 ## 🧪 Development & Testing
 
-Requires Go 1.27.1 or newer.
-
 ```bash
-# Run all unit and integration tests (171 tests across 14 packages)
+# Run test suite (171 tests across 14 packages)
 go test -v ./...
 
-# Run static analysis
+# Run linter
 go vet ./...
 
 # Build binary
@@ -358,4 +353,4 @@ go build -o bundlecheck .
 
 ## 📄 License
 
-MIT © Sonu Kumar
+Released under the **MIT License**. Built with ❤️ for the Angular & developer performance community.
