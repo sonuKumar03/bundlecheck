@@ -3,3 +3,6 @@
 /coverage.out
 .DS_Store
 /testdata/angular-esbuild/
+/testdata/nx-workspace/
+.nx/
+node_modules/

@@ -1,6 +1,6 @@
 ---
 name: bundlecheck
-description: Use when inspecting Angular esbuild JavaScript sizes or npm contributions, getting optimization recommendations with 'suggest', tracing dependency import paths with 'why', capturing baselines, measuring subsequent changes, comparing saved summary snapshots, or validating size budgets in CI/agent loops.
+description: Use when inspecting Angular esbuild JavaScript sizes or npm contributions, getting optimization recommendations with 'suggest', tracing dependency import paths with 'why', capturing baselines, measuring subsequent changes, comparing saved summary snapshots, comparing Angular apps and shared-library/npm costs in Nx workspaces, or validating size budgets in CI/agent loops.
 ---
 
 # bundlecheck
@@ -78,6 +78,21 @@ bundlecheck summary --gzip
 # Summary with immediate optimization suggestions
 bundlecheck summary --suggest --gzip
 ```
+
+### Nx Workspace Summary (`bundlecheck workspace summary`)
+```sh
+# Build explicitly before inspecting; bundlecheck does not build apps
+nx run-many -t build --projects=shop,admin --configuration=production --stats-json
+bundlecheck workspace summary --projects shop,admin --format json
+```
+
+Requires local Node/Nx. Finds the nearest `nx.json`; `--root`, `--target`, and `--configuration` override defaults. Only Angular application/browser-esbuild builders are supported. Use reported exact stats/dist paths for single-app drill-down and baselines; workspace baseline management is not included.
+
+Human reports lead with key findings, readable sizes, and per-app startup shares; framework/runtime costs are separate context. Library sizes exclude imported npm dependencies. Use JSON for exact bytes.
+
+Inspect `apps[]`, `packages[]`, `libraries[]`, and `findings[]`. Library bytes come from emitted source contributions, not graph edges. Sums represent separate deployments, not deduplication savings. Build freshness/configuration are not verified. Keep unattributed/generated/compiled-library contributions unassigned.
+
+A partial report exits 1 with `complete: false`; JSON remains available. Failed apps have `null` matrix values, while absent contributions in analyzed apps have zero values. Do not discard partial JSON or treat missing apps as zero. Unsupported apps are skipped by default; selecting one explicitly fails.
 
 ### Optimization Suggestions (`bundlecheck suggest`)
 ```sh
@@ -173,7 +188,7 @@ bundlecheck check --max-initial 250KB --format markdown
 
 ## 5. Error Handling & Troubleshooting
 - Always capture exit status, stdout, and stderr separately.
-- On exit code `0`, parse stdout as JSON.
+- On exit code `0`, parse stdout as JSON. For workspace summaries, also parse available JSON on exit `1` and inspect `complete` and app diagnostics.
 - On nonzero exit code, report stderr and diagnose:
   - If artifacts are missing, run `ng build --configuration production --stats-json`.
   - In multi-project monorepos, specify `--project <name>`.

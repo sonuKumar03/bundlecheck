@@ -3,6 +3,7 @@ package discovery_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"bundlecheck/internal/discovery"
@@ -80,5 +81,42 @@ func TestDiscoveryMissing(t *testing.T) {
 	_, _, err := discovery.Locate(tmp, "")
 	if err == nil {
 		t.Fatal("expected error when no build artifacts exist")
+	}
+}
+
+func TestDiscoveryNxWorkspace(t *testing.T) {
+	nxRoot := filepath.Join("..", "..", "testdata", "nx-workspace")
+	if _, err := os.Stat(nxRoot); os.IsNotExist(err) {
+		t.Skip("testdata/nx-workspace fixture not present")
+	}
+
+	// Multi-project without filter should fail due to ambiguity
+	_, _, err := discovery.Locate(nxRoot, "")
+	if err == nil {
+		t.Fatal("expected error due to multiple applications in nx-workspace")
+	}
+
+	// Filter by portal
+	portalStats, portalDist, err := discovery.Locate(nxRoot, "portal")
+	if err != nil {
+		t.Fatalf("failed to locate portal: %v", err)
+	}
+	if !strings.Contains(portalStats, filepath.Join("dist", "apps", "portal", "stats.json")) {
+		t.Errorf("unexpected portal stats: %s", portalStats)
+	}
+	if !strings.Contains(portalDist, filepath.Join("dist", "apps", "portal", "browser")) {
+		t.Errorf("unexpected portal dist: %s", portalDist)
+	}
+
+	// Filter by admin-dashboard
+	adminStats, adminDist, err := discovery.Locate(nxRoot, "admin-dashboard")
+	if err != nil {
+		t.Fatalf("failed to locate admin-dashboard: %v", err)
+	}
+	if !strings.Contains(adminStats, filepath.Join("dist", "apps", "admin-dashboard", "stats.json")) {
+		t.Errorf("unexpected admin stats: %s", adminStats)
+	}
+	if !strings.Contains(adminDist, filepath.Join("dist", "apps", "admin-dashboard", "browser")) {
+		t.Errorf("unexpected admin dist: %s", adminDist)
 	}
 }

@@ -26,6 +26,7 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 	root.SetErr(stderr)
 	root.AddCommand(
 		summaryCommand(),
+		workspaceCommand(),
 		compareCommand(),
 		baselineCommand(),
 		measureCommand(),

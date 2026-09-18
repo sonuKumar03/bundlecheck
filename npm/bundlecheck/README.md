@@ -251,6 +251,32 @@ bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-
 
 ---
 
+### Nx workspace intelligence (`bundlecheck workspace summary`)
+
+Build the apps first using the workspace-installed Nx CLI, then compare their existing browser artifacts:
+
+```bash
+# Nx builds; bundlecheck never invokes build targets
+nx run-many -t build --projects=shop,admin --configuration=production --stats-json
+bundlecheck workspace summary --projects shop,admin
+bundlecheck workspace summary --format json --output workspace-report.json
+bundlecheck workspace summary --format markdown --all
+```
+
+The command finds the nearest `nx.json`, or accepts `--root <workspace>`. It uses local Node and the installed Nx package to read `nx graph --print`. Defaults are all supported Angular apps, `--target build`, and `--configuration production`; projects must define that configuration. No dependencies are downloaded by bundlecheck.
+
+Supported builders are `@nx/angular:application`, `@nx/angular:browser-esbuild`, `@angular-devkit/build-angular:application`, `@angular-devkit/build-angular:browser-esbuild`, and `@angular/build:application`. Output paths and configuration overrides determine each app's stats and browser directory, including custom application-builder `{base, browser}` paths. Stats must be directly in the output base or browser directory; ambiguous files fail that app.
+
+Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, artifact paths, and argument lists for `why`/`suggest` drill-down. Text and Markdown show ten contributors per category by default (`--top` or `--all` overrides); JSON includes every contributor. Library ownership uses emitted input paths and project-root boundaries. Generated files and compiled library paths without authoritative source ownership remain unattributed; contribution totals need not equal bundle totals.
+
+Human reports lead with key findings and use readable binary sizes (KiB/MiB) plus each package's share of app startup JS. Framework/runtime contributions appear separately as context; library entries show their own emitted code, excluding imported npm costs. Markdown collapses exact artifact commands into a drill-down section. JSON retains exact byte counts and its existing schema.
+
+Repeated contributions are summed **across app deployments**, not one user's transfer or deduplication savings. Artifacts are not verified as fresh or as matching the requested configuration.
+
+Missing or failed apps remain in a partial report with `complete: false` and exit code **1**. Their matrix values are `null`, never zero; a successful app with no contribution has zero values. Unsupported applications are listed and skipped by default, but explicitly selecting one fails. Unknown projects, absent configurations, and duplicate artifact ownership also fail. Capture the report even on exit 1; diagnostics go to stderr. Single-app commands and baseline formats are unchanged; workspace baseline management is not included.
+
+---
+
 ## 🛡️ CI & GitHub Actions Integration
 
 ### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.1.2`)
