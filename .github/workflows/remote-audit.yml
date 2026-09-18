@@ -1,0 +1,114 @@
+name: Remote Bundle Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_url:
+        description: 'Public Git Repository URL to audit (e.g. https://github.com/user/angular-app)'
+        required: true
+        type: string
+      ref:
+        description: 'Git branch, tag, or commit SHA'
+        required: false
+        default: 'main'
+        type: string
+      sub_dir:
+        description: 'Subdirectory where Angular project resides (optional, for monorepos)'
+        required: false
+        default: '.'
+        type: string
+      build_cmd:
+        description: 'Custom build command (e.g. npm run build -- --stats-json)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit Remote Repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout bundlecheck
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build bundlecheck binary
+        run: |
+          go build -o /usr/local/bin/bundlecheck .
+          bundlecheck --version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clone Target Repository
+        run: |
+          REPO_URL="${{ inputs.repo_url }}"
+          REF="${{ inputs.ref }}"
+          echo "Cloning $REPO_URL at ref $REF..."
+          if git clone --depth 1 --branch "$REF" "$REPO_URL" target-repo 2>/dev/null; then
+            echo "Successfully shallow-cloned branch/tag $REF"
+          else
+            echo "Falling back to full clone for commit SHA / ref checkout..."
+            git clone "$REPO_URL" target-repo
+            cd target-repo
+            git checkout "$REF"
+          fi
+
+      - name: Build Target Project
+        working-directory: target-repo/${{ inputs.sub_dir }}
+        run: |
+          CUSTOM_CMD="${{ inputs.build_cmd }}"
+          if [ -n "$CUSTOM_CMD" ]; then
+            echo "Running custom build command: $CUSTOM_CMD"
+            eval "$CUSTOM_CMD"
+          else
+            echo "Auto-detecting package manager and running build with --stats-json..."
+            if [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile
+              pnpm ng build --configuration production --stats-json || pnpm run build -- --stats-json
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install --frozen-lockfile
+              yarn ng build --configuration production --stats-json || yarn run build -- --stats-json
+            elif [ -f package-lock.json ]; then
+              npm ci
+              npx ng build --configuration production --stats-json || npm run build -- --stats-json
+            else
+              npm install
+              npx ng build --configuration production --stats-json || npm run build -- --stats-json
+            fi
+          fi
+
+      - name: Run bundlecheck Analysis
+        working-directory: target-repo/${{ inputs.sub_dir }}
+        run: |
+          echo "## 📊 Remote Bundle Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: [\`${{ inputs.repo_url }}\`](${{ inputs.repo_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ref**: \`${{ inputs.ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Subdirectory**: \`${{ inputs.sub_dir }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Generate Markdown report directly into GitHub Actions Job Summary
+          bundlecheck summary --suggest --gzip --format markdown >> $GITHUB_STEP_SUMMARY
+
+          # Export JSON artifact for download
+          bundlecheck summary --suggest --gzip --format json > bundlecheck-audit.json
+
+      - name: Upload Audit JSON Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundlecheck-audit-result
+          path: target-repo/${{ inputs.sub_dir }}/bundlecheck-audit.json
+          if-no-files-found: ignore

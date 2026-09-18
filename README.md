@@ -313,6 +313,12 @@ jobs:
           post-comment: true
 ```
 
+### ☁️ On-Demand Remote Audits
+Audit any public open-source Angular repository directly via GitHub Actions without local installation:
+1. Navigate to **Actions** → **Remote Bundle Audit**.
+2. Click **Run workflow** and input the public repository URL (e.g. `https://github.com/user/angular-app`).
+3. View the full bundle breakdown, top packages, and optimization recommendations directly in the **Job Summary**.
+
 ---
 
 ## ⚙️ Configuration (`.bundlecheck.yml`)
