@@ -69,6 +69,7 @@ jobs:
           # 1. Ensure dependencies are installed
           if [ ! -d "node_modules" ]; then
             echo "Installing dependencies..."
+            npm config set engine-strict false 2>/dev/null || true
             if [ -f pnpm-lock.yaml ]; then
               corepack enable
               pnpm install --frozen-lockfile || pnpm install
@@ -76,9 +77,9 @@ jobs:
               corepack enable
               yarn install || yarn install --immutable 2>/dev/null
             elif [ -f package-lock.json ]; then
-              npm ci || npm install --legacy-peer-deps || npm install --ignore-engines || npm install
+              npm ci --engine-strict=false || npm install --engine-strict=false --legacy-peer-deps || npm install
             else
-              npm install --legacy-peer-deps || npm install --ignore-engines || npm install
+              npm install --engine-strict=false --legacy-peer-deps || npm install
             fi
           fi
 
