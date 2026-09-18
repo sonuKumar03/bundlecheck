@@ -3,7 +3,9 @@
 /coverage.out
 .DS_Store
 /testdata/angular-esbuild/
-/testdata/nx-workspace/
+/testdata/nx-workspace/node_modules/
+/testdata/nx-workspace/.nx/
+/testdata/nx-workspace/.angular/
 .nx/
 node_modules/
 /.superpowers/

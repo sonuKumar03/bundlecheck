@@ -1,0 +1,8 @@
+{
+  "name": "ui-components",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/ui-components/src",
+  "prefix": "lib",
+  "targets": {}
+}

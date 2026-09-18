@@ -1,0 +1,34 @@
+{
+  "name": "admin-dashboard",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/admin-dashboard/src",
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/admin-dashboard",
+        "index": "apps/admin-dashboard/src/index.html",
+        "browser": "apps/admin-dashboard/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/admin-dashboard/tsconfig.app.json"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            }
+          ],
+          "outputHashing": "all",
+          "statsJson": true
+        }
+      },
+      "defaultConfiguration": "production"
+    }
+  }
+}

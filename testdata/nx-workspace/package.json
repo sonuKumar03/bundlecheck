@@ -1,0 +1,43 @@
+{
+  "name": "@nx-workspace/source",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nx run-many -t build --projects=portal,admin-dashboard --configuration=production --stats-json",
+    "build:portal": "nx build portal --stats-json",
+    "build:admin": "nx build admin-dashboard --stats-json"
+  },
+  "dependencies": {
+    "@angular/animations": "^21.0.0",
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/forms": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "@angular/platform-browser-dynamic": "^21.0.0",
+    "@angular/router": "^21.0.0",
+    "chart.js": "^4.4.4",
+    "d3": "^7.9.0",
+    "exceljs": "^4.4.0",
+    "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
+    "moment": "^2.30.1",
+    "pdfjs-dist": "^4.5.136",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.6.3",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^21.0.0",
+    "@angular/cli": "^21.0.0",
+    "@angular/compiler-cli": "^21.0.0",
+    "@nx/angular": "^22.0.0",
+    "@nx/devkit": "^22.0.0",
+    "@nx/js": "^22.0.0",
+    "@nx/workspace": "^22.0.0",
+    "nx": "^22.0.0",
+    "typescript": "~5.9.3",
+    "@types/lodash": "^4.17.0",
+    "@types/d3": "^7.4.0"
+  }
+}
