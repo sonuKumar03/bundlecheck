@@ -363,3 +363,71 @@ func TestAdvisorGeneralUtilitySuggestion(t *testing.T) {
 	}
 }
 
+func TestAdvisorTransitiveNodeModulesImporter(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals:        snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/app.config.ts"}},
+			},
+			{
+				Path:    "src/app/app.config.ts",
+				Bytes:   2000,
+				Imports: []snapshot.Import{{Path: "node_modules/intermediate-pkg/index.js"}},
+			},
+			{
+				Path:    "node_modules/intermediate-pkg/index.js",
+				Bytes:   5000,
+				Imports: []snapshot.Import{{Path: "node_modules/target-pkg/sub.js"}},
+			},
+			{
+				Path:    "node_modules/target-pkg/sub.js",
+				Bytes:   10000,
+				Imports: []snapshot.Import{{Path: "node_modules/target-pkg/index.js"}},
+			},
+			{
+				Path:  "node_modules/target-pkg/index.js",
+				Bytes: 15 * 1024,
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				Initial:    true,
+				EntryPoint: "src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+					{Input: "src/app/app.config.ts", Bytes: 2000},
+					{Input: "node_modules/intermediate-pkg/index.js", Bytes: 5000},
+					{Input: "node_modules/target-pkg/sub.js", Bytes: 10000},
+					{Input: "node_modules/target-pkg/index.js", Bytes: 15 * 1024},
+				},
+			},
+		},
+		Packages: []snapshot.Package{
+			{Name: "target-pkg", InitialBytes: 25 * 1024, TotalBytes: 25 * 1024},
+		},
+	}
+
+	res := advisor.Analyze(snap, advisor.AdvisorOptions{MinSavings: 1024})
+	if len(res.Suggestions) == 0 {
+		t.Fatal("expected suggestion for target-pkg")
+	}
+
+	s := res.Suggestions[0]
+	if s.Target != "target-pkg" {
+		t.Errorf("expected target target-pkg, got %s", s.Target)
+	}
+	// The application source file responsible should be src/app/app.config.ts, NOT node_modules/target-pkg/sub.js
+	if s.File != "src/app/app.config.ts" {
+		t.Errorf("expected application caller src/app/app.config.ts, got %s", s.File)
+	}
+	if !strings.Contains(s.Title, "Review root provider") {
+		t.Errorf("expected title to classify as root bootstrap, got: %s", s.Title)
+	}
+}
+
+

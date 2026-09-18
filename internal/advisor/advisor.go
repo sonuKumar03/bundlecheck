@@ -93,7 +93,7 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		if traceRes != nil && len(traceRes.Chains) > 0 {
 			chain = traceRes.Chains[0].Path
 		}
-		topo := classifyTopology(chain)
+		topo := classifyTopology(chain, p.Name)
 		title, desc, action := generatePackageSuggestion(p.Name, topo)
 
 		res.Suggestions = append(res.Suggestions, Suggestion{
@@ -252,15 +252,42 @@ type importerContext struct {
 	routeFile    string
 }
 
-func classifyTopology(chain []string) importerContext {
+func classifyTopology(chain []string, pkgName string) importerContext {
 	ctx := importerContext{
 		role: "general-module",
 	}
-	if len(chain) < 2 {
+	if len(chain) == 0 {
 		return ctx
 	}
 
-	ctx.importerFile = chain[len(chain)-2]
+	// 1. Find the last application file in chain (not in node_modules)
+	var appImporter string
+	for i := len(chain) - 1; i >= 0; i-- {
+		p := chain[i]
+		if !strings.Contains(p, "node_modules/") {
+			appImporter = p
+			break
+		}
+	}
+
+	// 2. Find the direct external caller (not in pkgName)
+	var directExternalCaller string
+	for i := len(chain) - 1; i >= 0; i-- {
+		p := chain[i]
+		if pkg, isPkg := analysis.PackageName(p); !isPkg || pkg != pkgName {
+			directExternalCaller = p
+			break
+		}
+	}
+
+	// Use application importer if available, otherwise direct external caller
+	if appImporter != "" {
+		ctx.importerFile = appImporter
+	} else if directExternalCaller != "" {
+		ctx.importerFile = directExternalCaller
+	} else if len(chain) > 1 {
+		ctx.importerFile = chain[len(chain)-2]
+	}
 
 	// Check if any module in the chain is a routing file
 	for _, p := range chain {
