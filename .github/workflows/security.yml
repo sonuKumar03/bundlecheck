@@ -1,0 +1,22 @@
+name: Security
+
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Every Monday at 04:00 UTC
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - '**.go'
+  workflow_dispatch:
+
+jobs:
+  vulncheck:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-file: 'go.mod'

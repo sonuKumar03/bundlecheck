@@ -24,15 +24,6 @@ jobs:
         with:
           version: v2.13.2
 
-  vulncheck:
-    name: Vulnerability Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run govulncheck
-        uses: golang/govulncheck-action@v1
-        with:
-          go-version-file: 'go.mod'
-
   test:
     strategy:
       matrix:
