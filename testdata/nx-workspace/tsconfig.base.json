@@ -21,8 +21,17 @@
       "@nx-workspace/charting": [
         "libs/charting/src/index.ts"
       ],
+      "@nx-workspace/document-editor": [
+        "libs/document-editor/src/index.ts"
+      ],
+      "@nx-workspace/pdf-studio": [
+        "libs/pdf-studio/src/index.ts"
+      ],
       "@nx-workspace/reports": [
         "libs/reports/src/index.ts"
+      ],
+      "@nx-workspace/spreadsheet-studio": [
+        "libs/spreadsheet-studio/src/index.ts"
       ],
       "@nx-workspace/ui": [
         "libs/ui-components/src/index.ts"

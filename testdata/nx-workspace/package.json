@@ -3,16 +3,22 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "start": "nx serve portal",
+    "serve": "nx serve portal",
+    "serve:portal": "nx serve portal",
+    "serve:admin": "nx serve admin-dashboard",
     "build": "nx run-many -t build --projects=portal,admin-dashboard --configuration=production --stats-json",
     "build:portal": "nx build portal --stats-json",
     "build:admin": "nx build admin-dashboard --stats-json"
   },
   "dependencies": {
     "@angular/animations": "^21.0.0",
+    "@angular/cdk": "^21.2.14",
     "@angular/common": "^21.0.0",
     "@angular/compiler": "^21.0.0",
     "@angular/core": "^21.0.0",
     "@angular/forms": "^21.0.0",
+    "@angular/material": "^21.2.14",
     "@angular/platform-browser": "^21.0.0",
     "@angular/platform-browser-dynamic": "^21.0.0",
     "@angular/router": "^21.0.0",
@@ -35,9 +41,9 @@
     "@nx/devkit": "^22.0.0",
     "@nx/js": "^22.0.0",
     "@nx/workspace": "^22.0.0",
-    "nx": "^22.0.0",
-    "typescript": "~5.9.3",
+    "@types/d3": "^7.4.0",
     "@types/lodash": "^4.17.0",
-    "@types/d3": "^7.4.0"
+    "nx": "^22.0.0",
+    "typescript": "~5.9.3"
   }
 }

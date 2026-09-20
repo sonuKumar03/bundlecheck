@@ -13,30 +13,46 @@
         "index": "apps/portal/src/index.html",
         "browser": "apps/portal/src/main.ts",
         "polyfills": ["zone.js"],
-        "tsConfig": "apps/portal/tsconfig.app.json"
+        "tsConfig": "apps/portal/tsconfig.app.json",
+        "styles": [
+          "node_modules/@angular/material/prebuilt-themes/azure-blue.css"
+        ]
       },
       "configurations": {
         "production": {
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "500kb",
-              "maximumError": "2mb"
+              "maximumWarning": "1mb",
+              "maximumError": "3mb"
             }
           ],
           "outputHashing": "all",
           "statsJson": true
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
         }
       },
       "defaultConfiguration": "production"
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "buildTarget": "portal:build",
+        "port": 3000
+      },
       "configurations": {
         "production": {
           "buildTarget": "portal:build:production"
+        },
+        "development": {
+          "buildTarget": "portal:build:development"
         }
-      }
+      },
+      "defaultConfiguration": "development"
     }
   }
 }

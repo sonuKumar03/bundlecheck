@@ -1130,7 +1130,47 @@ git commit -m "feat: implement DocuCraft studio shell with sidebar navigation an
 
 ---
 
-### Task 7: Full System Verification & Serving Check
+---
+
+### Task 7: Fix Gitignore for Testdata Source Tracking
+
+**Files:**
+- Modify: `.gitignore` (root)
+- Modify: `testdata/nx-workspace/.gitignore`
+
+**Objectives:**
+- Ensure all testdata source files (`testdata/nx-workspace/apps/**`, `testdata/nx-workspace/libs/**`, configs) and `testdata/angular-esbuild` source files are tracked in git.
+- Only ignore build caches and transient package installations:
+  - `node_modules/`
+  - `.nx/`
+  - `.angular/`
+  - `dist/` (transient builds, except fixtures needed for baseline test)
+  - `tmp/`
+
+---
+
+### Task 8: Mock Authentication & Login Entry Point (`apps/portal`)
+
+**Files:**
+- Create: `testdata/nx-workspace/apps/portal/src/app/auth.service.ts`
+- Create: `testdata/nx-workspace/apps/portal/src/app/login.component.ts`
+- Modify: `testdata/nx-workspace/apps/portal/src/app/app.routes.ts`
+- Modify: `testdata/nx-workspace/apps/portal/src/app/app.component.ts`
+
+**Interfaces:**
+- Consumes: `@angular/core`, `@angular/router`, `@angular/forms`
+- Produces:
+  - `AuthService` with `currentUser = signal<{ username: string; role: string } | null>`, `login(username, password)`, `logout()`, `isAuthenticated = computed(() => !!this.currentUser())`
+  - `LoginComponent` standalone component with professional branding, credentials input, 1-click quick login ("Sign In as Auditor"), and error validation.
+  - Route guard redirecting unauthenticated users to `/login`.
+
+- [ ] **Step 1: Implement AuthService and LoginComponent**
+- [ ] **Step 2: Wire `/login` into app.routes and app.component header**
+- [ ] **Step 3: Verify build and commit**
+
+---
+
+### Task 9: Full System Verification & Serving Check
 
 **Files:** None (verification commands)
 
@@ -1148,8 +1188,10 @@ Expected: PASS (all 245 tests pass, no regression in `cmd/nx_workspace_test.go`)
 
 Run: `npm start` in `testdata/nx-workspace`
 Check: `curl -s -I http://localhost:3000` returns `HTTP/1.1 200 OK`.
-Check: `curl -s http://localhost:3000 | grep "DocuCraft"` confirms studio HTML is served.
+Check: `curl -s http://localhost:3000 | grep "OmniReport"` confirms studio HTML is served.
 
 - [ ] **Step 4: Final commit and clean status**
 
 Ensure git status is clean and all changes are committed.
+
+

@@ -26,9 +26,30 @@
           ],
           "outputHashing": "all",
           "statsJson": true
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
         }
       },
       "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "buildTarget": "admin-dashboard:build",
+        "port": 3000
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "admin-dashboard:build:production"
+        },
+        "development": {
+          "buildTarget": "admin-dashboard:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
     }
   }
 }
