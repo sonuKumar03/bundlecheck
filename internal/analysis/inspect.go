@@ -6,7 +6,7 @@ import (
 	"path"
 	"slices"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 type Contributor struct {

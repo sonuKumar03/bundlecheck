@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestFreshnessReportsNewerBundleInput(t *testing.T) {

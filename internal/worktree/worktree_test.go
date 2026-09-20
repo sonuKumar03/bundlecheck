@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"bundlecheck/internal/worktree"
+	"github.com/sonuKumar03/bundlecheck/internal/worktree"
 )
 
 func TestIsGitRepo(t *testing.T) {

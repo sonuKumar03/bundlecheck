@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func benchmarkCommand() *cobra.Command {

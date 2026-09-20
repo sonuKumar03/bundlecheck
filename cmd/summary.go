@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/advisor"
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/build"
-	"bundlecheck/internal/compression"
-	"bundlecheck/internal/report"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/build"
+	"github.com/sonuKumar03/bundlecheck/internal/compression"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func summaryCommand() *cobra.Command {

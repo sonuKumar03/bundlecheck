@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestBrowserOutputs(t *testing.T) {

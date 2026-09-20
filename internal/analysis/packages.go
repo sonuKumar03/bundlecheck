@@ -3,7 +3,7 @@ package analysis
 import (
 	"strings"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 // PackageName selects the innermost node_modules owner, including pnpm layouts.

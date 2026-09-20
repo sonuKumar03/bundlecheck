@@ -6,8 +6,8 @@ import (
 	"math"
 	"strings"
 
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
 )
 
 // IsGitHubPRFormat returns true if format represents a GitHub PR comment format.

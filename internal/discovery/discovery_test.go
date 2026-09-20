@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/discovery"
+	"github.com/sonuKumar03/bundlecheck/internal/discovery"
 )
 
 func ensureNxWorkspaceBuilt(t *testing.T, nxRoot string) {

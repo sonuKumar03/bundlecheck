@@ -10,7 +10,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/mcp"
+	"github.com/sonuKumar03/bundlecheck/internal/mcp"
 )
 
 func mcpCommand() *cobra.Command {

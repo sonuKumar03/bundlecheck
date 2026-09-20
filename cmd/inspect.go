@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/build"
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/build"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func inspectCommand() *cobra.Command {

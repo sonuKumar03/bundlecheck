@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundlecheck/internal/advisor"
 )
 
 func SuggestText(w io.Writer, r *advisor.AdvisorResult, showGzip bool) error {

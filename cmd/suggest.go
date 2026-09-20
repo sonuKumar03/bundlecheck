@@ -5,12 +5,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/advisor"
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/build"
-	"bundlecheck/internal/compression"
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/build"
+	"github.com/sonuKumar03/bundlecheck/internal/compression"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func suggestCommand() *cobra.Command {

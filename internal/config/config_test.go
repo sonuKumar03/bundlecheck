@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/config"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/config"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestConfigLoadAndApply(t *testing.T) {

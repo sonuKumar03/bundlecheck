@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/baseline"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestBaselineSaveAndLoad(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 type Candidate struct {

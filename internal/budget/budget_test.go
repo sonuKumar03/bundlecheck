@@ -3,9 +3,9 @@ package budget_test
 import (
 	"testing"
 
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestParseBytes(t *testing.T) {

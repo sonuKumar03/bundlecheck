@@ -79,4 +79,15 @@ func TestVersionSyncContract(t *testing.T) {
 	} else if actionMatch[1] != rootVersion {
 		t.Errorf("README.md Action reference version mismatch: got %q, want %q", actionMatch[1], rootVersion)
 	}
+
+	// 5. Check go.mod declares the correct module path
+	goModFile := filepath.Join(repoRoot, "go.mod")
+	goModBytes, err := os.ReadFile(goModFile)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", goModFile, err)
+	}
+	expectedModule := "module github.com/sonuKumar03/bundlecheck"
+	if !strings.Contains(string(goModBytes), expectedModule) {
+		t.Errorf("go.mod missing expected module declaration %q", expectedModule)
+	}
 }

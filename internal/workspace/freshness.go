@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func CheckFreshness(root, projectRoot, stats string, s *snapshot.BundleSnapshot) *Freshness {

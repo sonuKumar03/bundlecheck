@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/report"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestIsGitHubPRFormat(t *testing.T) {

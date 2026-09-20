@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/baseline"
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func compareCommand() *cobra.Command {

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/snapshot"
-	"bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/workspace"
 )
 
 func TestWorkspaceHumanReport(t *testing.T) {

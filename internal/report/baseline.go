@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
 )
 
 // BaselineListText renders a tabular overview of saved baselines.

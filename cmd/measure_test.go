@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
 )
 
 func TestMeasureCommandSuccess(t *testing.T) {

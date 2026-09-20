@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestComparisonText(t *testing.T) {

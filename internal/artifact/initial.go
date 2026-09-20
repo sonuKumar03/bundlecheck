@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/net/html"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.BundleOutput, []string, error) {

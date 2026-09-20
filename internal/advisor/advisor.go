@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/graph"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 type Suggestion struct {

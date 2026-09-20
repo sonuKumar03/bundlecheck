@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestPackageName(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/advisor"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestAdvisorHeavyUtility(t *testing.T) {

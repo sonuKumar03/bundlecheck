@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
 )
 
 func Execute(args []string, stdout, stderr io.Writer) int {

@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 type wireTotals struct {

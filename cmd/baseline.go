@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/baseline"
-	"bundlecheck/internal/discovery"
-	"bundlecheck/internal/report"
-	"bundlecheck/internal/worktree"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/discovery"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/worktree"
 )
 
 func baselineCommand() *cobra.Command {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 type Limits struct {

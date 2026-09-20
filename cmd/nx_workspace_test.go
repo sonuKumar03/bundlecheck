@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
 )
 
 func ensureNxWorkspaceBuilt(t *testing.T, nxRoot string) {

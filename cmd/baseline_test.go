@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
 )
 
 func TestBaselineCommand(t *testing.T) {

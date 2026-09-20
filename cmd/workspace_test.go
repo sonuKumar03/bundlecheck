@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundlecheck/internal/workspace"
 )
 
 func TestWorkspaceSummaryWarnsAboutNewerBundleInput(t *testing.T) {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/mcp"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/mcp"
 )
 
 func TestMCPCommand_Help(t *testing.T) {

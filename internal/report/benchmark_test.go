@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func TestParseBenchmarkOutputAndMarkdown(t *testing.T) {

@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/baseline"
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/config"
-	"bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/config"
+	"github.com/sonuKumar03/bundlecheck/internal/report"
 )
 
 func checkCommand() *cobra.Command {

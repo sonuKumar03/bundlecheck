@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func Normalize(m *Metafile) (*snapshot.BundleSnapshot, error) {

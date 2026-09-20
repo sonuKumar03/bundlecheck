@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/graph"
 )
 
 func ensureAngularEsbuildBuilt(t *testing.T, base string) {

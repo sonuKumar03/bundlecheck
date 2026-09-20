@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundlecheck/internal/workspace"
 )
 
 // Workspace renders deployment costs without changing the machine-readable result.

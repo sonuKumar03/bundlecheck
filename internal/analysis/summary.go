@@ -7,7 +7,7 @@ import (
 	"math"
 	"slices"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 // ToolVersion is the bundlecheck version, which can be overridden at compile time via:

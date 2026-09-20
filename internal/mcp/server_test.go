@@ -10,12 +10,12 @@ import (
 
 	mcpspec "github.com/mark3labs/mcp-go/mcp"
 
-	"bundlecheck/internal/advisor"
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/budget"
-	"bundlecheck/internal/comparison"
-	"bundlecheck/internal/graph"
-	"bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundlecheck/internal/workspace"
 )
 
 func TestNewServer_Metadata(t *testing.T) {

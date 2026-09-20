@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"bundlecheck/internal/artifact"
-	"bundlecheck/internal/compression"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/artifact"
+	"github.com/sonuKumar03/bundlecheck/internal/compression"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestMeasureBytes(t *testing.T) {

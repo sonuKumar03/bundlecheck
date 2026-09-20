@@ -11,8 +11,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/budget"
 )
 
 type Config struct {

@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"slices"
 
-	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/build"
-	"bundlecheck/internal/compression"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/build"
+	"github.com/sonuKumar03/bundlecheck/internal/compression"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 // AnalyzeOptions provides configuration for workspace analysis.

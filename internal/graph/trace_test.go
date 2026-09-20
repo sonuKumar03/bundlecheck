@@ -3,8 +3,8 @@ package graph_test
 import (
 	"testing"
 
-	"bundlecheck/internal/graph"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestTracePackage(t *testing.T) {

@@ -1,10 +1,10 @@
 package build
 
 import (
-	"bundlecheck/internal/angular"
-	"bundlecheck/internal/artifact"
-	"bundlecheck/internal/graph"
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/angular"
+	"github.com/sonuKumar03/bundlecheck/internal/artifact"
+	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 // Load converts build artifacts into the bundler-independent snapshot model.

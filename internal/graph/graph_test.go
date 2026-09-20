@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func TestClassify(t *testing.T) {
