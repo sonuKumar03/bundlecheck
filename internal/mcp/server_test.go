@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -169,6 +170,9 @@ func TestHandleSummary(t *testing.T) {
 func TestHandleSummary_NxProject(t *testing.T) {
 	ctx := context.Background()
 	workspacePath, _ := filepath.Abs("../../testdata/nx-workspace")
+	if _, err := os.Stat(filepath.Join(workspacePath, "dist", "apps", "portal", "stats.json")); os.IsNotExist(err) {
+		t.Skip("portal build artifacts not present in testdata/nx-workspace")
+	}
 
 	t.Run("resolve by project name", func(t *testing.T) {
 		req := mcpspec.CallToolRequest{
@@ -217,6 +221,109 @@ func TestHandleSummary_NxProject(t *testing.T) {
 		}
 		if !res.IsError {
 			t.Errorf("expected error for nonexistent project, got success")
+		}
+	})
+}
+
+func TestHandleSummary_MultiProject(t *testing.T) {
+	ctx := context.Background()
+	tmp := t.TempDir()
+
+	minStats, err := os.ReadFile("../../testdata/minimal/stats.json")
+	if err != nil {
+		t.Fatalf("failed to read minimal stats fixture: %v", err)
+	}
+	minHTML, err := os.ReadFile("../../testdata/minimal/browser/index.html")
+	if err != nil {
+		t.Fatalf("failed to read minimal index.html fixture: %v", err)
+	}
+	minJS, err := os.ReadFile("../../testdata/minimal/browser/main.js")
+	if err != nil {
+		t.Fatalf("failed to read minimal main.js fixture: %v", err)
+	}
+
+	for _, app := range []string{"portal", "admin-dashboard"} {
+		appDist := filepath.Join(tmp, "dist", "apps", app, "browser")
+		if err := os.MkdirAll(appDist, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(tmp, "dist", "apps", app, "stats.json"), minStats, 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(appDist, "index.html"), minHTML, 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(appDist, "main.js"), minJS, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("resolve by project name", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_summary",
+				Arguments: map[string]any{
+					"path":    tmp,
+					"project": "portal",
+				},
+			},
+		}
+
+		res, err := handleSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.IsError {
+			textContent, _ := mcpspec.AsTextContent(res.Content[0])
+			t.Fatalf("expected success, got error: %s", textContent.Text)
+		}
+
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var summary analysis.AnalysisResult
+		if err := json.Unmarshal([]byte(textContent.Text), &summary); err != nil {
+			t.Fatalf("failed to unmarshal JSON summary: %v", err)
+		}
+		if summary.Summary.InitialJS <= 0 {
+			t.Errorf("expected portal InitialJS > 0, got %d", summary.Summary.InitialJS)
+		}
+	})
+
+	t.Run("invalid project name returns error", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_summary",
+				Arguments: map[string]any{
+					"path":    tmp,
+					"project": "nonexistent-app",
+				},
+			},
+		}
+
+		res, err := handleSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected error for nonexistent project, got success")
+		}
+	})
+
+	t.Run("ambiguous projects without project flag returns error", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_summary",
+				Arguments: map[string]any{
+					"path": tmp,
+				},
+			},
+		}
+
+		res, err := handleSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected error when multiple projects exist without project flag, got success")
 		}
 	})
 }
