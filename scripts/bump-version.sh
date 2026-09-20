@@ -11,12 +11,17 @@ cd "$REPO_ROOT"
 
 if [ $# -lt 1 ]; then
   CURRENT_VERSION="$(cat VERSION | tr -d '[:space:]')"
-  echo "Usage: ./scripts/bump-version.sh <new-version>"
+  echo "Usage: ./scripts/bump-version.sh <new-version> [--release]"
   echo "Current version: $CURRENT_VERSION"
   exit 1
 fi
 
 NEW_VER="${1#v}" # strip leading 'v' if provided
+DO_RELEASE=false
+
+if [ "${2:-}" = "--release" ] || [ "${2:-}" = "--tag" ]; then
+  DO_RELEASE=true
+fi
 
 # Validate semver format (e.g. 0.3.0 or 1.0.0-rc.1)
 if ! [[ "$NEW_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
@@ -99,7 +104,16 @@ echo "  ✓ All Go tests pass with version $NEW_VER"
 echo ""
 echo "🎉 Version successfully bumped to $NEW_VER across all targets!"
 echo ""
-echo "To commit and tag this release, run:"
-echo "  git commit -am \"chore(release): bump version to $NEW_VER\""
-echo "  git tag -a \"v$NEW_VER\" -m \"Release v$NEW_VER\""
-echo "  git push origin master --tags"
+
+if [ "$DO_RELEASE" = true ]; then
+  echo "🚀 Committing, tagging, and pushing release v$NEW_VER..."
+  git commit -am "chore(release): bump version to $NEW_VER"
+  git tag -a "v$NEW_VER" -m "Release v$NEW_VER"
+  git push origin master --tags
+  echo "  ✓ Release v$NEW_VER pushed to origin!"
+else
+  echo "To commit and tag this release manually, run:"
+  echo "  git commit -am \"chore(release): bump version to $NEW_VER\""
+  echo "  git tag -a \"v$NEW_VER\" -m \"Release v$NEW_VER\""
+  echo "  git push origin master --tags"
+fi
