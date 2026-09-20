@@ -30,3 +30,10 @@ func PackageName(p string) (string, bool) {
 	}
 	return "", false
 }
+
+// IsPackage reports whether a path belongs to a node_modules package.
+func IsPackage(p string) bool {
+	_, ok := PackageName(p)
+	return ok
+}
+

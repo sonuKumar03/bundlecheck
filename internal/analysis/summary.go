@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"fmt"
 	"math"
+	"path"
 	"slices"
 
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
@@ -14,20 +15,45 @@ import (
 // go build -ldflags "-X bundlecheck/internal/analysis.ToolVersion=vX.Y.Z"
 var ToolVersion = "0.4.1"
 
+type SourceContribution struct {
+	Name         string `json:"name"`
+	InitialBytes int64  `json:"initialBytes"`
+	LazyBytes    int64  `json:"lazyBytes"`
+	TotalBytes   int64  `json:"totalBytes"`
+}
+
 type AnalysisResult struct {
-	SchemaVersion string             `json:"schemaVersion"`
-	ToolVersion   string             `json:"toolVersion"`
-	Command       string             `json:"command"`
-	Summary       snapshot.Totals    `json:"summary"`
-	Packages      []snapshot.Package `json:"packages"`
+	SchemaVersion string               `json:"schemaVersion"`
+	ToolVersion   string               `json:"toolVersion"`
+	Command       string               `json:"command"`
+	Summary       snapshot.Totals      `json:"summary"`
+	Packages      []snapshot.Package   `json:"packages"`
+	Sources       []SourceContribution `json:"sources,omitempty"`
+}
+
+// SourceDir returns the logical component or source directory for an application file.
+func SourceDir(input string) string {
+	cleaned := snapshot.CleanPath(input)
+	dir := path.Dir(cleaned)
+	if dir == "." || dir == "" {
+		return cleaned
+	}
+	return dir
 }
 
 func Analyze(s *snapshot.BundleSnapshot) (*AnalysisResult, error) {
 	if s == nil {
 		return nil, fmt.Errorf("cannot analyze nil snapshot")
 	}
-	r := &AnalysisResult{SchemaVersion: s.SchemaVersion, ToolVersion: ToolVersion, Command: "summary", Packages: []snapshot.Package{}}
+	r := &AnalysisResult{
+		SchemaVersion: s.SchemaVersion,
+		ToolVersion:   ToolVersion,
+		Command:       "summary",
+		Packages:      []snapshot.Package{},
+		Sources:       []SourceContribution{},
+	}
 	packages := make(map[string]snapshot.Package)
+	sources := make(map[string]SourceContribution)
 	seenOutputs := make(map[string]bool)
 	for _, o := range s.Outputs {
 		id := snapshot.CleanPath(o.Path)
@@ -61,23 +87,39 @@ func Analyze(s *snapshot.BundleSnapshot) (*AnalysisResult, error) {
 				continue
 			}
 			seenInputs[input] = c.Bytes
-			name, ok := PackageName(input)
-			if !ok || c.Bytes == 0 {
+			if c.Bytes == 0 {
 				continue
 			}
-			p := packages[name]
-			p.Name = name
-			bucket := &p.LazyBytes
-			if o.Initial {
-				bucket = &p.InitialBytes
+			if name, ok := PackageName(input); ok {
+				p := packages[name]
+				p.Name = name
+				bucket := &p.LazyBytes
+				if o.Initial {
+					bucket = &p.InitialBytes
+				}
+				if err := add(bucket, c.Bytes); err != nil {
+					return nil, fmt.Errorf("package %q: %w", name, err)
+				}
+				if err := add(&p.TotalBytes, c.Bytes); err != nil {
+					return nil, fmt.Errorf("package %q: %w", name, err)
+				}
+				packages[name] = p
+			} else {
+				dir := SourceDir(input)
+				src := sources[dir]
+				src.Name = dir
+				bucket := &src.LazyBytes
+				if o.Initial {
+					bucket = &src.InitialBytes
+				}
+				if err := add(bucket, c.Bytes); err != nil {
+					return nil, fmt.Errorf("source %q: %w", dir, err)
+				}
+				if err := add(&src.TotalBytes, c.Bytes); err != nil {
+					return nil, fmt.Errorf("source %q: %w", dir, err)
+				}
+				sources[dir] = src
 			}
-			if err := add(bucket, c.Bytes); err != nil {
-				return nil, fmt.Errorf("package %q: %w", name, err)
-			}
-			if err := add(&p.TotalBytes, c.Bytes); err != nil {
-				return nil, fmt.Errorf("package %q: %w", name, err)
-			}
-			packages[name] = p
 		}
 	}
 	for _, p := range packages {
@@ -85,6 +127,18 @@ func Analyze(s *snapshot.BundleSnapshot) (*AnalysisResult, error) {
 	}
 	slices.SortFunc(r.Packages, func(a, b snapshot.Package) int {
 		if n := cmp.Compare(b.InitialBytes, a.InitialBytes); n != 0 {
+			return n
+		}
+		return cmp.Compare(a.Name, b.Name)
+	})
+	for _, src := range sources {
+		r.Sources = append(r.Sources, src)
+	}
+	slices.SortFunc(r.Sources, func(a, b SourceContribution) int {
+		if n := cmp.Compare(b.InitialBytes, a.InitialBytes); n != 0 {
+			return n
+		}
+		if n := cmp.Compare(b.TotalBytes, a.TotalBytes); n != 0 {
 			return n
 		}
 		return cmp.Compare(a.Name, b.Name)

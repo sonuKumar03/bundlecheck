@@ -3,6 +3,7 @@ package analysis
 import (
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
@@ -90,3 +91,84 @@ func TestAnalyzeInvalid(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyze_ApplicationSources(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:    "main.js",
+				Bytes:   50000,
+				Initial: true,
+				Inputs: []snapshot.Contribution{
+					{Input: "node_modules/@angular/core/fesm2022/core.mjs", Bytes: 30000},
+					{Input: "projects/movies/src/app/pages/movie-detail-page/movie-detail-page.component.ts", Bytes: 12000},
+					{Input: "projects/movies/src/app/pages/movie-detail-page/movie-detail-page.component.html", Bytes: 8000},
+				},
+			},
+			{
+				Path:    "chunk-lazy.js",
+				Bytes:   10000,
+				Initial: false,
+				Inputs: []snapshot.Contribution{
+					{Input: "projects/movies/src/app/pages/person-page/person.component.ts", Bytes: 10000},
+				},
+			},
+		},
+	}
+
+	res, err := Analyze(snap)
+	if err != nil {
+		t.Fatalf("Analyze failed: %v", err)
+	}
+
+	if len(res.Sources) == 0 {
+		t.Fatalf("expected application sources to be populated, got 0")
+	}
+
+	// Verify grouping by directory / component root
+	foundMovieDetail := false
+	foundPerson := false
+	for _, s := range res.Sources {
+		if strings.Contains(s.Name, "movie-detail-page") {
+			foundMovieDetail = true
+			if s.InitialBytes != 20000 {
+				t.Errorf("expected 20000 initial bytes for movie-detail-page, got %d", s.InitialBytes)
+			}
+			if s.LazyBytes != 0 {
+				t.Errorf("expected 0 lazy bytes for movie-detail-page, got %d", s.LazyBytes)
+			}
+			if s.TotalBytes != 20000 {
+				t.Errorf("expected 20000 total bytes for movie-detail-page, got %d", s.TotalBytes)
+			}
+		}
+		if strings.Contains(s.Name, "person-page") {
+			foundPerson = true
+			if s.InitialBytes != 0 {
+				t.Errorf("expected 0 initial bytes for person-page, got %d", s.InitialBytes)
+			}
+			if s.LazyBytes != 10000 {
+				t.Errorf("expected 10000 lazy bytes for person-page, got %d", s.LazyBytes)
+			}
+			if s.TotalBytes != 10000 {
+				t.Errorf("expected 10000 total bytes for person-page, got %d", s.TotalBytes)
+			}
+		}
+	}
+	if !foundMovieDetail {
+		t.Errorf("expected movie-detail-page in sources, got: %+v", res.Sources)
+	}
+	if !foundPerson {
+		t.Errorf("expected person-page in sources, got: %+v", res.Sources)
+	}
+}
+
+func TestIsPackage(t *testing.T) {
+	if !IsPackage("node_modules/lodash/index.js") {
+		t.Errorf("expected node_modules/lodash/index.js to be a package")
+	}
+	if IsPackage("projects/movies/src/app/pages/movie-detail-page/movie-detail-page.component.ts") {
+		t.Errorf("expected application source not to be a package")
+	}
+}
+
