@@ -7,11 +7,9 @@ import (
 
 	"bundlecheck/internal/advisor"
 	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/angular"
-	"bundlecheck/internal/artifact"
 	"bundlecheck/internal/budget"
+	"bundlecheck/internal/build"
 	"bundlecheck/internal/compression"
-	"bundlecheck/internal/graph"
 	"bundlecheck/internal/report"
 )
 
@@ -60,22 +58,10 @@ and duplicated package contributions.`,
 				return err
 			}
 
-			meta, err := angular.Parse(sFile)
+			s, err := build.Load(sFile, dDir)
 			if err != nil {
 				return err
 			}
-			s, err := angular.Normalize(meta)
-			if err != nil {
-				return err
-			}
-			outputs, roots, err := artifact.BrowserOutputs(s.Outputs, dDir)
-			if err != nil {
-				return err
-			}
-			if err := graph.Classify(outputs, roots); err != nil {
-				return err
-			}
-			s.Outputs = outputs
 
 			// Run analysis and conditional compression
 			_, err = analysis.Analyze(s)

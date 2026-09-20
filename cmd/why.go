@@ -5,8 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bundlecheck/internal/angular"
-	"bundlecheck/internal/artifact"
+	"bundlecheck/internal/build"
 	"bundlecheck/internal/graph"
 	"bundlecheck/internal/report"
 )
@@ -51,22 +50,10 @@ Explains whether the package is pulled into initial or lazy JavaScript and shows
 				return err
 			}
 
-			meta, err := angular.Parse(sFile)
+			s, err := build.Load(sFile, dDir)
 			if err != nil {
 				return err
 			}
-			s, err := angular.Normalize(meta)
-			if err != nil {
-				return err
-			}
-			outputs, roots, err := artifact.BrowserOutputs(s.Outputs, dDir)
-			if err != nil {
-				return err
-			}
-			if err := graph.Classify(outputs, roots); err != nil {
-				return err
-			}
-			s.Outputs = outputs
 
 			whyResult, err := graph.TracePackage(s, target, initialOnly, maxChains)
 			if err != nil {

@@ -10,11 +10,9 @@ import (
 
 	"bundlecheck/internal/advisor"
 	"bundlecheck/internal/analysis"
-	"bundlecheck/internal/angular"
-	"bundlecheck/internal/artifact"
+	"bundlecheck/internal/build"
 	"bundlecheck/internal/compression"
 	"bundlecheck/internal/discovery"
-	"bundlecheck/internal/graph"
 	"bundlecheck/internal/report"
 	"bundlecheck/internal/snapshot"
 )
@@ -173,22 +171,10 @@ func runAnalysis(stats, dist string) (*analysis.AnalysisResult, error) {
 }
 
 func runAnalysisWithOptions(stats, dist string, withCompression bool) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
-	meta, err := angular.Parse(stats)
+	s, err := build.Load(stats, dist)
 	if err != nil {
 		return nil, nil, err
 	}
-	s, err := angular.Normalize(meta)
-	if err != nil {
-		return nil, nil, err
-	}
-	outputs, roots, err := artifact.BrowserOutputs(s.Outputs, dist)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err := graph.Classify(outputs, roots); err != nil {
-		return nil, nil, err
-	}
-	s.Outputs = outputs
 	result, err := analysis.Analyze(s)
 	if err != nil {
 		return nil, nil, err
