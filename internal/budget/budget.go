@@ -89,6 +89,25 @@ func ParseBytes(s string) (int64, error) {
 	return res, nil
 }
 
+// FormatBytes formats byte counts into concise human-readable strings (e.g. 1024 -> "1KB", 1536 -> "1.5KB").
+func FormatBytes(n int64) string {
+	if n < 0 {
+		return "-" + FormatBytes(-n)
+	}
+	if n < 1024 {
+		return fmt.Sprintf("%dB", n)
+	}
+	units := []string{"B", "KB", "MB", "GB"}
+	val := float64(n)
+	unit := 0
+	for val >= 1024 && unit < len(units)-1 {
+		val /= 1024
+		unit++
+	}
+	formatted := strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", val), "0"), ".")
+	return formatted + units[unit]
+}
+
 // CheckSummary verifies absolute bundle metrics against limits.
 func CheckSummary(totals snapshot.Totals, limits Limits) CheckResult {
 	res := CheckResult{Passed: true, Violations: []Violation{}, Summary: &totals}

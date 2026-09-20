@@ -124,3 +124,84 @@ rules:
 		t.Errorf("expected disallow_packages [moment, lodash], got %v", cfg.Rules.DisallowPackages)
 	}
 }
+
+func TestRenderYAMLAndLoadRoundTrip(t *testing.T) {
+	orig := &config.Config{
+		Budgets: config.ConfigBudgets{
+			InitialJSMax: "500KB",
+			TotalMax:     "1.5MB",
+		},
+		Rules: config.ConfigRules{
+			DisallowPackages: []string{"moment", "lodash"},
+		},
+	}
+
+	yamlData, err := config.RenderYAML(orig)
+	if err != nil {
+		t.Fatalf("render yaml: %v", err)
+	}
+
+	tmpFile := filepath.Join(t.TempDir(), ".bundlecheck.yml")
+	if err := os.WriteFile(tmpFile, yamlData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := config.LoadFile(tmpFile)
+	if err != nil {
+		t.Fatalf("load rendered yaml: %v", err)
+	}
+
+	if loaded.Budgets.InitialJSMax != orig.Budgets.InitialJSMax {
+		t.Errorf("expected %s, got %s", orig.Budgets.InitialJSMax, loaded.Budgets.InitialJSMax)
+	}
+	if loaded.Budgets.TotalMax != orig.Budgets.TotalMax {
+		t.Errorf("expected %s, got %s", orig.Budgets.TotalMax, loaded.Budgets.TotalMax)
+	}
+	if len(loaded.Rules.DisallowPackages) != 2 {
+		t.Errorf("expected 2 disallowed packages, got %v", loaded.Rules.DisallowPackages)
+	}
+}
+
+func TestLoadFromAngularJSON(t *testing.T) {
+	angularJSON := `{
+		"projects": {
+			"portal": {
+				"architect": {
+					"build": {
+						"configurations": {
+							"production": {
+								"budgets": [
+									{
+										"type": "initial",
+										"maximumError": "500kb"
+									},
+									{
+										"type": "all",
+										"maximumError": "1.2mb"
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	}`
+
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "angular.json")
+	if err := os.WriteFile(path, []byte(angularJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.LoadFromAngularJSON(path, "portal")
+	if err != nil {
+		t.Fatalf("LoadFromAngularJSON: %v", err)
+	}
+	if cfg.Budgets.InitialJSMax != "500KB" {
+		t.Errorf("expected 500KB, got %q", cfg.Budgets.InitialJSMax)
+	}
+	if cfg.Budgets.TotalMax != "1.2MB" {
+		t.Errorf("expected 1.2MB, got %q", cfg.Budgets.TotalMax)
+	}
+}

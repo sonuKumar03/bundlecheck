@@ -117,6 +117,7 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 		suggestCommand(),
 		benchmarkCommand(),
 		mcpCommand(),
+		initCommand(),
 	)
 	return root
 }

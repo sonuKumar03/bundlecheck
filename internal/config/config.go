@@ -3,6 +3,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,21 +17,158 @@ import (
 )
 
 type Config struct {
-	Budgets ConfigBudgets `yaml:"budgets"`
-	Rules   ConfigRules   `yaml:"rules"`
+	Budgets ConfigBudgets `yaml:"budgets,omitempty"`
+	Rules   ConfigRules   `yaml:"rules,omitempty"`
 }
 
 type ConfigBudgets struct {
-	InitialJSMax     string `yaml:"initial_js_max"`
-	LazyJSMax        string `yaml:"lazy_js_max"`
-	TotalMax         string `yaml:"total_max"`
-	MaxInitialDelta  string `yaml:"max_initial_delta"`
-	MaxTotalDelta    string `yaml:"max_total_delta"`
-	MaxDeltaIncrease string `yaml:"max_delta_increase"`
+	InitialJSMax     string `yaml:"initial_js_max,omitempty"`
+	LazyJSMax        string `yaml:"lazy_js_max,omitempty"`
+	TotalMax         string `yaml:"total_max,omitempty"`
+	MaxInitialDelta  string `yaml:"max_initial_delta,omitempty"`
+	MaxTotalDelta    string `yaml:"max_total_delta,omitempty"`
+	MaxDeltaIncrease string `yaml:"max_delta_increase,omitempty"`
 }
 
 type ConfigRules struct {
-	DisallowPackages []string `yaml:"disallow_packages"`
+	DisallowPackages []string `yaml:"disallow_packages,omitempty"`
+}
+
+// RenderYAML serializes a Config struct into clean YAML bytes.
+func RenderYAML(cfg *Config) ([]byte, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("cannot render nil config")
+	}
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(cfg); err != nil {
+		return nil, fmt.Errorf("encode config YAML: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+// AngularBudget represents a budget entry in angular.json or project.json.
+type AngularBudget struct {
+	Type           string `json:"type"`
+	Name           string `json:"name,omitempty"`
+	MaximumWarning string `json:"maximumWarning,omitempty"`
+	MaximumError   string `json:"maximumError,omitempty"`
+}
+
+// LoadFromAngularJSON extracts bundle budgets from an angular.json or project.json file.
+func LoadFromAngularJSON(jsonPath string, projectName string) (*Config, error) {
+	data, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return nil, fmt.Errorf("read %q: %w", jsonPath, err)
+	}
+
+	var root struct {
+		Projects map[string]struct {
+			Architect map[string]struct {
+				Configurations map[string]struct {
+					Budgets []AngularBudget `json:"budgets"`
+				} `json:"configurations"`
+			} `json:"architect"`
+			Targets map[string]struct {
+				Configurations map[string]struct {
+					Budgets []AngularBudget `json:"budgets"`
+				} `json:"configurations"`
+			} `json:"targets"`
+		} `json:"projects"`
+		Targets map[string]struct {
+			Configurations map[string]struct {
+				Budgets []AngularBudget `json:"budgets"`
+			} `json:"configurations"`
+		} `json:"targets"`
+	}
+
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("parse angular/project JSON: %w", err)
+	}
+
+	var budgets []AngularBudget
+	if len(root.Projects) > 0 {
+		var proj struct {
+			Architect map[string]struct {
+				Configurations map[string]struct {
+					Budgets []AngularBudget `json:"budgets"`
+				} `json:"configurations"`
+			} `json:"architect"`
+			Targets map[string]struct {
+				Configurations map[string]struct {
+					Budgets []AngularBudget `json:"budgets"`
+				} `json:"configurations"`
+			} `json:"targets"`
+		}
+		if projectName != "" {
+			var ok bool
+			proj, ok = root.Projects[projectName]
+			if !ok {
+				return nil, fmt.Errorf("project %q not found in %q", projectName, jsonPath)
+			}
+		} else {
+			for _, p := range root.Projects {
+				proj = p
+				break
+			}
+		}
+		if buildTarget, ok := proj.Architect["build"]; ok {
+			if prod, ok := buildTarget.Configurations["production"]; ok {
+				budgets = prod.Budgets
+			}
+		}
+		if len(budgets) == 0 {
+			if buildTarget, ok := proj.Targets["build"]; ok {
+				if prod, ok := buildTarget.Configurations["production"]; ok {
+					budgets = prod.Budgets
+				}
+			}
+		}
+	} else if len(root.Targets) > 0 {
+		if buildTarget, ok := root.Targets["build"]; ok {
+			if prod, ok := buildTarget.Configurations["production"]; ok {
+				budgets = prod.Budgets
+			}
+		}
+	}
+
+	if len(budgets) == 0 {
+		return nil, fmt.Errorf("no production build budgets found in %q", jsonPath)
+	}
+
+	cfg := &Config{}
+	for _, b := range budgets {
+		limitStr := b.MaximumError
+		if limitStr == "" {
+			limitStr = b.MaximumWarning
+		}
+		if limitStr == "" {
+			continue
+		}
+		val, err := budget.ParseBytes(limitStr)
+		if err != nil {
+			continue
+		}
+		formatted := budget.FormatBytes(val)
+
+		switch strings.ToLower(b.Type) {
+		case "initial", "allscript":
+			cfg.Budgets.InitialJSMax = formatted
+		case "bundle":
+			if strings.EqualFold(b.Name, "main") {
+				if cfg.Budgets.InitialJSMax == "" {
+					cfg.Budgets.InitialJSMax = formatted
+				}
+			} else if cfg.Budgets.TotalMax == "" {
+				cfg.Budgets.TotalMax = formatted
+			}
+		case "all", "total":
+			cfg.Budgets.TotalMax = formatted
+		}
+	}
+
+	return cfg, nil
 }
 
 // FindAndLoad looks for .bundlecheck.yml or .bundlecheck.yaml in rootDir or parent directories.

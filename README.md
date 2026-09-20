@@ -265,7 +265,24 @@ bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-
 
 ---
 
-### 8. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
+### 8. `bundlecheck init`
+Assisted setup to generate or propose a reviewable `.bundlecheck.yml` configuration:
+
+```bash
+# Preview proposed budgets with 5% headroom over measured size
+bundlecheck init
+
+# Import budgets directly from angular.json
+bundlecheck init --from-angular-budgets
+
+# Save proposed configuration to .bundlecheck.yml
+bundlecheck init --write --headroom 10
+```
+*Creates `.bundlecheck.yml` only if it does not already exist.*
+
+---
+
+### 9. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
 
 Compare app sizes, shared library costs, and duplicate npm dependencies across an Nx or Angular multi-app workspace:
 
@@ -285,7 +302,7 @@ Supported builders include `@nx/angular:application`, `@nx/angular:browser-esbui
 
 ---
 
-### 9. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
+### 10. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
 
 Launch a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server over standard I/O for AI coding assistants (**Claude Code**, **Antigravity**, **Cursor**, **Claude Desktop**).
 
