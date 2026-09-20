@@ -1,6 +1,6 @@
 {
   "name": "bundlecheck",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Fast Angular esbuild bundle inspector and CI budget gate",
   "main": "bin/bundlecheck.js",
   "bin": {

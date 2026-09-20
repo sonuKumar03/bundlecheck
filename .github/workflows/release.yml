@@ -23,6 +23,21 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Set up Node for NPM Publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify release version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./npm/bundlecheck/package.json').version")"
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match npm package version $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+
       - name: Run Tests
         run: go test -v ./...
 
@@ -79,12 +94,6 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-
-      - name: Setup Node for NPM Publish
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to NPM (if NPM_TOKEN configured)
         env:

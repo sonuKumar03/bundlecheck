@@ -294,7 +294,7 @@ Missing or failed apps remain in a partial report with `complete: false` and exi
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.1.2`)
+### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.2.0`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -320,7 +320,7 @@ jobs:
       - run: npx ng build --configuration production --stats-json
 
       - name: Run bundlecheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.1.2
+        uses: sonuKumar03/bundlecheck@v0.2.0
         with:
           stats: dist/my-app/stats.json
           max-initial: '250kb'

@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-09-20T15:01:23.338Z",
+        "reason": "Existing intentional hero treatment; unrelated to the version-only release update."
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-09-20T15:02:09.428Z",
+        "reason": "Existing intentional documentation typography pairing Inter with JetBrains Mono."
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-09-20T15:02:09.516Z",
+        "reason": "Existing consistent indigo and purple documentation brand palette; unrelated to the version-only update."
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "docs/index.html"
+        ],
+        "createdAt": "2026-09-20T15:02:09.605Z",
+        "reason": "Existing intentional subtle technical grid on the CLI documentation surface."
+      }
+    ]
+  }
+}
