@@ -3,12 +3,35 @@ package discovery_test
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"bundlecheck/internal/discovery"
 )
+
+func ensureNxWorkspaceBuilt(t *testing.T, nxRoot string) {
+	t.Helper()
+	portalStats := filepath.Join(nxRoot, "dist", "apps", "portal", "stats.json")
+	adminStats := filepath.Join(nxRoot, "dist", "apps", "admin-dashboard", "stats.json")
+	if _, err1 := os.Stat(portalStats); err1 == nil {
+		if _, err2 := os.Stat(adminStats); err2 == nil {
+			return
+		}
+	}
+
+	nxBin := filepath.Join(nxRoot, "node_modules", ".bin", "nx")
+	if _, err := os.Stat(nxBin); os.IsNotExist(err) {
+		t.Skip("testdata/nx-workspace dist and dependencies not present")
+	}
+
+	cmd := exec.Command(nxBin, "run-many", "-t", "build", "--configuration=production")
+	cmd.Dir = nxRoot
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Skipf("nx build failed or could not run in current environment: %v\nOutput: %s", err, string(out))
+	}
+}
 
 func TestDiscoverySingleProject(t *testing.T) {
 	tmp := t.TempDir()
@@ -90,9 +113,7 @@ func TestDiscoveryNxWorkspace(t *testing.T) {
 	if _, err := os.Stat(nxRoot); os.IsNotExist(err) {
 		t.Skip("testdata/nx-workspace fixture not present")
 	}
-	if _, err := os.Stat(filepath.Join(nxRoot, "dist")); os.IsNotExist(err) {
-		t.Skip("testdata/nx-workspace/dist build artifacts not present")
-	}
+	ensureNxWorkspaceBuilt(t, nxRoot)
 
 	// Multi-project without filter should fail due to ambiguity
 	_, _, err := discovery.Locate(nxRoot, "")
