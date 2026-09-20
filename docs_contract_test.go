@@ -88,7 +88,7 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 	}
 
 	mdYamlRegex := regexp.MustCompile("(?s)```ya?ml\\s*\n(# \\.bundlecheck\\.yml.*?)```")
-	htmlYamlRegex := regexp.MustCompile("(?s)<pre><code>(# \\.bundlecheck\\.yml.*?)</code></pre>")
+	htmlYamlRegex := regexp.MustCompile(`(?s)<pre><code>(# \.bundlecheck\.yml.*?)</code></pre>`)
 
 	for _, docFile := range docFiles {
 		content, err := os.ReadFile(docFile)
