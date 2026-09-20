@@ -13,7 +13,7 @@ import (
 
 // ToolVersion is the bundlecheck version, which can be overridden at compile time via:
 // go build -ldflags "-X bundlecheck/internal/analysis.ToolVersion=vX.Y.Z"
-var ToolVersion = "0.4.1"
+var ToolVersion = "0.4.2"
 
 type SourceContribution struct {
 	Name         string `json:"name"`
