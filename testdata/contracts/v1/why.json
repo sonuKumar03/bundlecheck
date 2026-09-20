@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.3.0",
+  "command": "why",
+  "target": "lodash",
+  "packageName": "lodash",
+  "found": true,
+  "initialBytes": 128,
+  "lazyBytes": 0,
+  "totalBytes": 128,
+  "chains": [
+    {
+      "output": "main.js",
+      "initial": true,
+      "path": [
+        "src/main.ts",
+        "node_modules/lodash/lodash.js"
+      ],
+      "bytesInChunk": 128
+    }
+  ]
+}

@@ -230,8 +230,29 @@ bundlecheck measure -b pre-refactor --max-initial-delta 0B
 | `summary.before`, `summary.after`, `summary.delta` | Each holds `initialJs`, `lazyJs`, and `totalJs`. |
 | `packages[].before`, `packages[].after`, `packages[].delta` | Each holds `initialBytes`, `lazyBytes`, and `totalBytes`. |
 | `packages[].status` | `"added"`, `"removed"`, `"changed"`, or `"unchanged"`. |
+| `findings[]` | Optional deterministic regression findings (`name`, `deltaBytes`, `kind`, `chunks`, `tracePath`, `reason`). |
 
 ---
+
+## 🔢 CLI Exit Codes Contract
+
+Integrations and CI scripts can rely on stable, numeric exit codes:
+
+| Code | Name | Meaning |
+| :---: | :--- | :--- |
+| `0` | Success | Analysis completed successfully, policy satisfied, or report-only check. |
+| `1` | Policy Violation | Configured budget threshold was breached or disallowed package detected. |
+| `2` | Usage / Config Error | Invalid CLI flags, missing required arguments, or invalid configuration YAML. |
+| `3` | Execution Failure | Runtime failure, missing build artifacts, I/O errors, or incomplete workspace report. |
+
+---
+
+## 🛡️ Schema Compatibility & Versioning Guarantees
+
+- **`schemaVersion: "1"`**: Guarantees backwards compatibility for external automation, CI pipelines, and MCP clients.
+- **Additive Changes**: New optional fields (such as `findings`, `initialGzipJs`, `gzipBytes`, `drillDown`) may be introduced in minor updates. Automation consumers must accept additive keys without breaking.
+- **Breaking Changes**: Modifying existing keys, changing field types, or removing fields will increment `schemaVersion` (e.g., `"2"`).
+- **Deterministic Ordering**: Packages, outputs, findings, and trace chains are sorted deterministically with stable secondary tie-breakers across repeated runs.
 
 ## 🛠️ Troubleshooting
 

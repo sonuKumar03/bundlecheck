@@ -125,7 +125,7 @@ func TestWorkspaceSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, code, _ = run()
-	if code != 1 || r.Complete || r.Apps[0].Status != "missing-artifacts" || r.Packages[0].Apps["admin"] != nil || len(r.Findings) != 0 {
+	if code != ExitCodeExecution || r.Complete || r.Apps[0].Status != "missing-artifacts" || r.Packages[0].Apps["admin"] != nil || len(r.Findings) != 0 {
 		t.Fatalf("partial: %+v exit %d", r, code)
 	}
 	r, code, _ = run("--projects", "shop")
@@ -133,15 +133,15 @@ func TestWorkspaceSummary(t *testing.T) {
 		t.Fatalf("selection: %+v exit %d", r, code)
 	}
 	r, code, _ = run("--projects", "legacy")
-	if code != 1 || r.Complete {
+	if code != ExitCodeExecution || r.Complete {
 		t.Fatalf("unsupported explicit: %+v exit %d", r, code)
 	}
 	r, code, _ = run("--projects", "unknown")
-	if code != 1 || r.Apps[0].Status != "unknown-project" {
+	if code != ExitCodeExecution || r.Apps[0].Status != "unknown-project" {
 		t.Fatalf("unknown: %+v exit %d", r, code)
 	}
 	r, code, _ = run("--projects", "shop", "--configuration", "missing")
-	if code != 1 || r.Apps[0].Status != "configuration-error" {
+	if code != ExitCodeExecution || r.Apps[0].Status != "configuration-error" {
 		t.Fatalf("configuration: %+v exit %d", r, code)
 	}
 }
@@ -185,7 +185,7 @@ func TestWorkspaceArtifactsAndMetadataErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, code, _ = run()
-	if code != 1 || r.Apps[0].Status != "ambiguous-artifacts" || r.Apps[2].Status != "ambiguous-artifacts" || len(r.Packages) != 0 {
+	if code != ExitCodeExecution || r.Apps[0].Status != "ambiguous-artifacts" || r.Apps[2].Status != "ambiguous-artifacts" || len(r.Packages) != 0 {
 		t.Fatalf("duplicate ownership: %+v", r)
 	}
 	if err := os.WriteFile(cli, data, 0600); err != nil {
@@ -195,24 +195,25 @@ func TestWorkspaceArtifactsAndMetadataErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, code, _ = run()
-	if code != 1 || r.Apps[0].Status != "analyzed" || r.Apps[2].Status != "analysis-error" || r.Packages[0].Apps["shop"] != nil {
+	if code != ExitCodeExecution || r.Apps[0].Status != "analyzed" || r.Apps[2].Status != "analysis-error" || r.Packages[0].Apps["shop"] != nil {
 		t.Fatalf("analysis failure: %+v", r)
 	}
 	if err := os.WriteFile(cli, []byte(`console.log('not JSON');`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	_, code, stderr = run()
-	if code != 1 || !strings.Contains(stderr, "invalid Nx graph JSON") {
+	if code != ExitCodeExecution || !strings.Contains(stderr, "invalid Nx graph JSON") {
 		t.Fatalf("metadata failure: %d %s", code, stderr)
 	}
 }
 
 func TestWorkspaceFileOutput(t *testing.T) {
 	root := nxFixture(t)
-	path := filepath.Join(t.TempDir(), "report.json")
+	dir := t.TempDir()
+	path := filepath.Join(dir, "report.json")
 	var out, stderr bytes.Buffer
 	if code := Execute([]string{"workspace", "summary", "--root", root, "-f", "json", "-o", path}, &out, &stderr); code != 0 || out.Len() != 0 {
-		t.Fatalf("file output: %d %s", code, stderr.String())
+		t.Fatalf("write file: %d %s", code, stderr.String())
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -225,7 +226,7 @@ func TestWorkspaceFileOutput(t *testing.T) {
 	for _, args := range [][]string{{"--format", "yaml"}, {"--top", "0"}, {"--projects", ""}, {"--target", ""}, {"--configuration", ""}} {
 		out.Reset()
 		stderr.Reset()
-		if Execute(append([]string{"workspace", "summary", "--root", root}, args...), &out, &stderr) != 1 || out.Len() != 0 {
+		if Execute(append([]string{"workspace", "summary", "--root", root}, args...), &out, &stderr) != ExitCodeUsage || out.Len() != 0 {
 			t.Fatalf("invalid flags accepted: %v %s", args, out.String())
 		}
 	}

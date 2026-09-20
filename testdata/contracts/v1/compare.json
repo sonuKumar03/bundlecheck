@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.3.0",
+  "command": "compare",
+  "summary": {
+    "before": {
+      "initialJs": 1000,
+      "lazyJs": 500,
+      "totalJs": 1500
+    },
+    "after": {
+      "initialJs": 1100,
+      "lazyJs": 700,
+      "totalJs": 1800
+    },
+    "delta": {
+      "initialJs": 100,
+      "lazyJs": 200,
+      "totalJs": 300
+    }
+  },
+  "packages": [
+    {
+      "name": "grow",
+      "status": "changed",
+      "before": {
+        "initialBytes": 200,
+        "lazyBytes": 0,
+        "totalBytes": 200
+      },
+      "after": {
+        "initialBytes": 400,
+        "lazyBytes": 0,
+        "totalBytes": 400
+      },
+      "delta": {
+        "initialBytes": 200,
+        "lazyBytes": 0,
+        "totalBytes": 200
+      }
+    },
+    {
+      "name": "removed",
+      "status": "removed",
+      "before": {
+        "initialBytes": 150,
+        "lazyBytes": 0,
+        "totalBytes": 150
+      },
+      "after": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      },
+      "delta": {
+        "initialBytes": -150,
+        "lazyBytes": 0,
+        "totalBytes": -150
+      }
+    },
+    {
+      "name": "shrink",
+      "status": "changed",
+      "before": {
+        "initialBytes": 250,
+        "lazyBytes": 0,
+        "totalBytes": 250
+      },
+      "after": {
+        "initialBytes": 100,
+        "lazyBytes": 0,
+        "totalBytes": 100
+      },
+      "delta": {
+        "initialBytes": -150,
+        "lazyBytes": 0,
+        "totalBytes": -150
+      }
+    },
+    {
+      "name": "moved",
+      "status": "changed",
+      "before": {
+        "initialBytes": 100,
+        "lazyBytes": 0,
+        "totalBytes": 100
+      },
+      "after": {
+        "initialBytes": 0,
+        "lazyBytes": 100,
+        "totalBytes": 100
+      },
+      "delta": {
+        "initialBytes": -100,
+        "lazyBytes": 100,
+        "totalBytes": 0
+      }
+    },
+    {
+      "name": "added",
+      "status": "added",
+      "before": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      },
+      "after": {
+        "initialBytes": 100,
+        "lazyBytes": 0,
+        "totalBytes": 100
+      },
+      "delta": {
+        "initialBytes": 100,
+        "lazyBytes": 0,
+        "totalBytes": 100
+      }
+    },
+    {
+      "name": "lazy-grow",
+      "status": "changed",
+      "before": {
+        "initialBytes": 0,
+        "lazyBytes": 200,
+        "totalBytes": 200
+      },
+      "after": {
+        "initialBytes": 0,
+        "lazyBytes": 400,
+        "totalBytes": 400
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 200,
+        "totalBytes": 200
+      }
+    },
+    {
+      "name": "@angular/core",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 100,
+        "lazyBytes": 20,
+        "totalBytes": 120
+      },
+      "after": {
+        "initialBytes": 100,
+        "lazyBytes": 20,
+        "totalBytes": 120
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    }
+  ],
+  "findings": [
+    {
+      "name": "grow",
+      "deltaBytes": 200,
+      "initialDelta": 200,
+      "kind": "package"
+    },
+    {
+      "name": "lazy-grow",
+      "deltaBytes": 200,
+      "lazyDelta": 200,
+      "kind": "package"
+    },
+    {
+      "name": "added",
+      "deltaBytes": 100,
+      "initialDelta": 100,
+      "kind": "package"
+    }
+  ]
+}

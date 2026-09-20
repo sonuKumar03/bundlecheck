@@ -168,7 +168,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 			}
 
 			if !checkResult.Passed {
-				return fmt.Errorf("bundle budget check failed (%d violations)", len(checkResult.Violations))
+				return &PolicyViolationError{Err: fmt.Errorf("bundle budget check failed (%d violations)", len(checkResult.Violations))}
 			}
 
 			return nil

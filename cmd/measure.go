@@ -114,7 +114,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 			}
 
 			if !budgetCheck.Passed {
-				return fmt.Errorf("bundle regression limits breached (%d violations)", len(budgetCheck.Violations))
+				return &PolicyViolationError{Err: fmt.Errorf("bundle regression limits breached (%d violations)", len(budgetCheck.Violations))}
 			}
 
 			return nil

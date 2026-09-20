@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "violations": [],
+  "summary": {
+    "initialJs": 1024,
+    "lazyJs": 0,
+    "totalJs": 1024
+  }
+}

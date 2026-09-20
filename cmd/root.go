@@ -1,13 +1,96 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/sonuKumar03/bundlecheck/internal/analysis"
 )
+
+// Numeric exit codes conforming to automation contract
+const (
+	ExitCodeSuccess         = 0 // Command succeeded, analysis passed, policy satisfied
+	ExitCodePolicyViolation = 1 // Explicit budget breached or disallowed package detected
+	ExitCodeUsage           = 2 // Invalid flags, syntax, config file, or argument error
+	ExitCodeExecution       = 3 // Runtime failure, missing build artifacts, I/O error
+)
+
+// PolicyViolationError indicates a budget breach or disallowed package policy violation.
+type PolicyViolationError struct {
+	Err error
+}
+
+func (e *PolicyViolationError) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "bundle policy violation"
+}
+
+func (e *PolicyViolationError) Unwrap() error {
+	return e.Err
+}
+
+// UsageError indicates invalid flags, CLI arguments, or user configuration.
+type UsageError struct {
+	Err error
+}
+
+func (e *UsageError) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "usage error"
+}
+
+func (e *UsageError) Unwrap() error {
+	return e.Err
+}
+
+// MapErrorToExitCode maps an error to its documented numeric exit code.
+func MapErrorToExitCode(err error) int {
+	if err == nil {
+		return ExitCodeSuccess
+	}
+	var pErr *PolicyViolationError
+	if errors.As(err, &pErr) {
+		return ExitCodePolicyViolation
+	}
+	var uErr *UsageError
+	if errors.As(err, &uErr) {
+		return ExitCodeUsage
+	}
+
+	msg := err.Error()
+	if strings.Contains(msg, "unknown flag") ||
+		strings.Contains(msg, "unknown shorthand flag") ||
+		strings.Contains(msg, "flag needs an argument") ||
+		strings.Contains(msg, "invalid argument") ||
+		strings.Contains(msg, "accepts ") ||
+		strings.Contains(msg, "requires ") ||
+		strings.Contains(msg, "required") ||
+		strings.Contains(msg, "unsupported format") ||
+		strings.Contains(msg, "cannot be empty") ||
+		strings.Contains(msg, "invalid --") ||
+		strings.Contains(msg, "must be positive") ||
+		strings.Contains(msg, "config ") && strings.Contains(msg, "unknown field") ||
+		strings.Contains(msg, "ambiguous") {
+		return ExitCodeUsage
+	}
+
+	if strings.Contains(msg, "budget breached") ||
+		strings.Contains(msg, "regression limits breached") ||
+		strings.Contains(msg, "policy violation") ||
+		strings.Contains(msg, "rule violation") {
+		return ExitCodePolicyViolation
+	}
+
+	return ExitCodeExecution
+}
 
 // NewRootCommand creates and configures the root bundlecheck cobra.Command.
 func NewRootCommand() *cobra.Command {
@@ -45,7 +128,7 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 	root.SetErr(stderr)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(stderr, "bundlecheck: %v\n", err)
-		return 1
+		return MapErrorToExitCode(err)
 	}
-	return 0
+	return ExitCodeSuccess
 }

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.3.0",
+  "command": "summary",
+  "summary": {
+    "initialJs": 1024,
+    "initialGzipJs": 92,
+    "lazyJs": 0,
+    "totalJs": 1024,
+    "totalGzipJs": 92
+  },
+  "packages": [
+    {
+      "name": "lodash",
+      "initialBytes": 128,
+      "initialGzipBytes": 11,
+      "lazyBytes": 0,
+      "totalBytes": 128,
+      "totalGzipBytes": 11
+    }
+  ]
+}
