@@ -171,3 +171,24 @@ func TestSummaryPositionalArguments(t *testing.T) {
 		t.Errorf("expected InitialJS > 0, got %d", res.Summary.InitialJS)
 	}
 }
+
+func TestSummaryPositionalProject(t *testing.T) {
+	nxRoot := filepath.Join("..", "testdata", "nx-workspace")
+	if _, err := os.Stat(filepath.Join(nxRoot, "dist", "apps", "portal", "stats.json")); os.IsNotExist(err) {
+		t.Skip("portal build artifacts not present")
+	}
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"summary", nxRoot, "portal", "-f", "json"}, &out, &errOut)
+	if code != 0 || errOut.Len() != 0 {
+		t.Fatalf("summary positional project failed: %s", errOut.String())
+	}
+
+	var res analysis.AnalysisResult
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if res.Summary.InitialJS <= 0 {
+		t.Errorf("expected InitialJS > 0, got %d", res.Summary.InitialJS)
+	}
+}

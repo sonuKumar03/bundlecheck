@@ -34,6 +34,7 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 		inspectCommand(),
 		whyCommand(),
 		suggestCommand(),
+		mcpCommand(),
 	)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(stderr, "bundlecheck: %v\n", err)

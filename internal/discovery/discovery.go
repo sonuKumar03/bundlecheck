@@ -60,7 +60,7 @@ func Locate(rootDir string, projectName string) (string, string, error) {
 	for _, c := range candidates {
 		names = append(names, fmt.Sprintf("%s (stats: %s, dist: %s)", c.Project, c.Stats, c.Dist))
 	}
-	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using --project <name>, or pass --stats and --dist", strings.Join(names, "\n  - "))
+	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using 'bundlecheck summary <project>' (or --project <name>), or run 'bundlecheck workspace summary'", strings.Join(names, "\n  - "))
 }
 
 // FindCandidates searches for matching stats.json and browser dist directories.

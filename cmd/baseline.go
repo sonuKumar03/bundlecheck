@@ -377,6 +377,43 @@ func resolveBuildArtifactsInDir(rootDir, stats, dist, project string) (string, s
 		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
 			searchDir = p
 			stats = ""
+		} else if _, err := os.Stat(p); os.IsNotExist(err) && project == "" {
+			candidates, cErr := discovery.FindCandidates(searchDir)
+			if cErr == nil {
+				for _, c := range candidates {
+					if strings.EqualFold(c.Project, stats) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(stats)) {
+						project = stats
+						stats = ""
+						break
+					}
+				}
+			}
+		}
+	} else if stats != "" && dist != "" && project == "" {
+		// Could be: summary <dir> <project>
+		pStats := stats
+		if !filepath.IsAbs(pStats) {
+			pStats = filepath.Join(rootDir, pStats)
+		}
+		pDist := dist
+		if !filepath.IsAbs(pDist) {
+			pDist = filepath.Join(rootDir, pDist)
+		}
+		if fi, err := os.Stat(pStats); err == nil && fi.IsDir() {
+			if _, errDist := os.Stat(pDist); os.IsNotExist(errDist) {
+				candidates, cErr := discovery.FindCandidates(pStats)
+				if cErr == nil {
+					for _, c := range candidates {
+						if strings.EqualFold(c.Project, dist) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(dist)) {
+							searchDir = pStats
+							project = dist
+							stats = ""
+							dist = ""
+							break
+						}
+					}
+				}
+			}
 		}
 	}
 
