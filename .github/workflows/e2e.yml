@@ -5,26 +5,38 @@ on:
     branches: [ master ]
     paths:
       - 'testdata/nx-workspace/**'
+      - 'testdata/minimal/**'
       - 'cmd/**'
       - 'internal/**'
       - 'go.mod'
       - 'go.sum'
+      - 'action.yml'
       - '.github/workflows/e2e.yml'
   pull_request:
     branches: [ master ]
     paths:
       - 'testdata/nx-workspace/**'
+      - 'testdata/minimal/**'
       - 'cmd/**'
       - 'internal/**'
       - 'go.mod'
       - 'go.sum'
+      - 'action.yml'
       - '.github/workflows/e2e.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   e2e:
     name: Nx Workspace E2E & Real Build Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -42,25 +54,18 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'testdata/nx-workspace/package-lock.json'
 
-      - name: Restore Angular build artifact cache
-        id: dist-cache
-        uses: actions/cache@v4
-        with:
-          path: testdata/nx-workspace/dist
-          key: nx-dist-${{ runner.os }}-${{ hashFiles('testdata/nx-workspace/package-lock.json', 'testdata/nx-workspace/apps/**', 'testdata/nx-workspace/libs/**', 'testdata/nx-workspace/project.json', 'testdata/nx-workspace/nx.json', 'testdata/nx-workspace/tsconfig*.json') }}
-
       - name: Install Nx workspace dependencies
-        if: steps.dist-cache.outputs.cache-hit != 'true'
         working-directory: testdata/nx-workspace
         run: npm ci
 
       - name: Build Nx applications with stats.json
-        if: steps.dist-cache.outputs.cache-hit != 'true'
         working-directory: testdata/nx-workspace
         run: npm run build
 
       - name: Run Full Integration Tests with Real Nx Builds
-        run: go test -v ./cmd/... ./internal/discovery/... ./internal/workspace/... ./internal/mcp/...
+        env:
+          BUNDLECHECK_REQUIRE_E2E: "1"
+        run: go test -v -count=1 ./cmd/... ./internal/discovery/... ./internal/workspace/... ./internal/mcp/...
 
       - name: Build bundlecheck CLI
         run: go build -o bundlecheck .
@@ -82,4 +87,74 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           ./bundlecheck suggest testdata/nx-workspace -p portal -f markdown >> $GITHUB_STEP_SUMMARY
+
+  action-consumer:
+    name: Action Consumer & Regression Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test Action - Success Case (Fixture Minimal)
+        id: test-success
+        uses: ./
+        with:
+          working-directory: testdata/minimal
+          stats: stats.json
+          dist: browser
+          output: action-report.md
+          json-output: action-audit.json
+          max-initial: 5MB
+
+      - name: Assert Action Outputs & Report Files
+        run: |
+          test -f testdata/minimal/action-report.md || (echo "Missing report file" && exit 1)
+          test -f testdata/minimal/action-audit.json || (echo "Missing json audit file" && exit 1)
+          if [ "${{ steps.test-success.outputs.initial-bytes }}" -le 0 ]; then
+            echo "Expected positive initial-bytes output, got: ${{ steps.test-success.outputs.initial-bytes }}"
+            exit 1
+          fi
+          if [ "${{ steps.test-success.outputs.total-bytes }}" -le 0 ]; then
+            echo "Expected positive total-bytes output, got: ${{ steps.test-success.outputs.total-bytes }}"
+            exit 1
+          fi
+
+      - name: Test Action - Invalid Input Failure Case
+        id: test-invalid-input
+        continue-on-error: true
+        uses: ./
+        with:
+          working-directory: testdata/minimal
+          stats: nonexistent-stats.json
+          output: invalid-report.md
+
+      - name: Assert Invalid Input Failed
+        run: |
+          if [ "${{ steps.test-invalid-input.outcome }}" != "failure" ]; then
+            echo "Expected invalid input step to fail, but got: ${{ steps.test-invalid-input.outcome }}"
+            exit 1
+          fi
+
+      - name: Test Action - Budget Violation Failure Case
+        id: test-budget-failure
+        continue-on-error: true
+        uses: ./
+        with:
+          working-directory: testdata/minimal
+          stats: stats.json
+          dist: browser
+          max-initial: 100B
+          output: budget-failure-report.md
+
+      - name: Assert Budget Violation Step Failed
+        run: |
+          if [ "${{ steps.test-budget-failure.outcome }}" != "failure" ]; then
+            echo "Expected budget breach step to fail, but got: ${{ steps.test-budget-failure.outcome }}"
+            exit 1
+          fi
+          test -f testdata/minimal/budget-failure-report.md || (echo "Expected budget failure report to be generated" && exit 1)
 

@@ -35,37 +35,69 @@ jobs:
     steps:
       - name: Checkout bundlecheck
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Clone Target Repository
+      - name: Validate Inputs and Clone Target Repository
+        env:
+          REPO_URL: ${{ inputs.repo_url }}
+          REF: ${{ inputs.ref }}
+          SUB_DIR: ${{ inputs.sub_dir }}
         run: |
-          REPO_URL="${{ inputs.repo_url }}"
-          REF="${{ inputs.ref }}"
+          set -euo pipefail
+
+          # 1. Validate sub_dir does not traverse outside target-repo
+          RESOLVED_SUBDIR="$(python3 -c "
+          import os, sys
+          base = os.path.abspath('target-repo')
+          target = os.path.abspath(os.path.join('target-repo', sys.argv[1]))
+          if not (target == base or target.startswith(base + os.sep)):
+              print(f'SECURITY ERROR: sub_dir {sys.argv[1]} traverses outside target-repo', file=sys.stderr)
+              sys.exit(1)
+          print(target)
+          " "$SUB_DIR")"
+          echo "Target subdir validated: $RESOLVED_SUBDIR"
+
+          # 2. Clone Target Repository
           echo "Cloning $REPO_URL (ref: ${REF:-default})..."
           if [ -z "$REF" ] || [ "$REF" = "HEAD" ]; then
             git clone --depth 1 "$REPO_URL" target-repo
           elif git clone --depth 1 --branch "$REF" "$REPO_URL" target-repo 2>/dev/null; then
             echo "Successfully shallow-cloned branch/tag $REF"
           else
-            echo "Falling back to full clone..."
+            echo "Falling back to full clone for commit/ref..."
             git clone "$REPO_URL" target-repo
             cd target-repo
-            if ! git checkout "$REF" 2>/dev/null; then
-              echo "Warning: ref '$REF' not found; using default branch ($(git rev-parse --abbrev-ref HEAD))"
+            if ! git checkout "$REF"; then
+              echo "Error: Requested ref '$REF' could not be checked out." >&2
+              exit 1
             fi
+            cd ..
           fi
-          # Initialize submodules if present (e.g. realworld theme assets)
+
+          # 3. Initialize submodules if present and fail if submodule update fails
           if [ -d target-repo ]; then
-            cd target-repo && git submodule update --init --recursive 2>/dev/null || true
+            cd target-repo
+            if [ -f .gitmodules ]; then
+              echo "Initializing git submodules..."
+              git submodule update --init --recursive
+            fi
+            cd ..
           fi
 
       - name: Build Target Project
-        working-directory: target-repo/${{ inputs.sub_dir }}
+        env:
+          SUB_DIR: ${{ inputs.sub_dir }}
+          CUSTOM_CMD: ${{ inputs.build_cmd }}
         run: |
+          set -euo pipefail
+          cd "target-repo/$SUB_DIR"
+
           # 1. Ensure dependencies are installed
           if [ ! -d "node_modules" ]; then
             echo "Installing dependencies..."
@@ -84,10 +116,9 @@ jobs:
           fi
 
           # 2. Execute build command
-          CUSTOM_CMD="${{ inputs.build_cmd }}"
           if [ -n "$CUSTOM_CMD" ]; then
-            echo "Running custom build command: $CUSTOM_CMD"
-            eval "$CUSTOM_CMD"
+            echo "Running custom build command via bash..."
+            bash -c "$CUSTOM_CMD"
           else
             echo "Auto-detecting build command with --stats-json..."
             if [ -f nx.json ] || npx --no-install nx --version >/dev/null 2>&1; then
@@ -102,11 +133,15 @@ jobs:
           fi
 
       - name: Annotate Remote Target
+        env:
+          REPO_URL: ${{ inputs.repo_url }}
+          REF: ${{ inputs.ref }}
+          SUB_DIR: ${{ inputs.sub_dir }}
         run: |
           echo "## 📊 Remote Bundle Audit Report" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository**: [\`${{ inputs.repo_url }}\`](${{ inputs.repo_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ref**: \`${{ inputs.ref }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Subdirectory**: \`${{ inputs.sub_dir }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: [\`$REPO_URL\`]($REPO_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ref**: \`${REF:-default}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Subdirectory**: \`$SUB_DIR\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Run BundleCheck Action
@@ -126,4 +161,4 @@ jobs:
           path: |
             target-repo/**/bundle-report.md
             target-repo/**/bundlecheck-audit.json
-          if-no-files-found: ignore
+          if-no-files-found: error

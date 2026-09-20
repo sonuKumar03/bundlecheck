@@ -172,6 +172,9 @@ func TestHandleSummary_NxProject(t *testing.T) {
 	ctx := context.Background()
 	workspacePath, _ := filepath.Abs("../../testdata/nx-workspace")
 	if _, err := os.Stat(filepath.Join(workspacePath, "dist", "apps", "portal", "stats.json")); os.IsNotExist(err) {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E artifact missing: %s/dist/apps/portal/stats.json", workspacePath)
+		}
 		t.Skip("portal build artifacts not present in testdata/nx-workspace")
 	}
 

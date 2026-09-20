@@ -162,11 +162,17 @@ func TestReadMetadataEquivalence(t *testing.T) {
 	testWorkspace := filepath.Join(repoRoot, "testdata", "nx-workspace")
 
 	if _, err := os.Stat(filepath.Join(testWorkspace, "node_modules", "nx")); os.IsNotExist(err) {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E prerequisite missing: %s/node_modules/nx does not exist", testWorkspace)
+		}
 		t.Skip("testdata/nx-workspace/node_modules/nx not installed")
 	}
 
 	cliMeta, err := readMetadataNxCli(context.Background(), testWorkspace)
 	if err != nil {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E Nx CLI execution failed: %v", err)
+		}
 		t.Skipf("Nx CLI unavailable: %v", err)
 	}
 

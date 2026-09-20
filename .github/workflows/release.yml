@@ -6,12 +6,66 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    name: Build & Publish Release Binaries
+  verify:
+    name: Verify Release Quality Gates
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify release version consistency
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./npm/bundlecheck/package.json').version")"
+          ROOT_VERSION="$(cat VERSION | tr -d '[:space:]')"
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match npm package version $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+          if [ "$TAG_VERSION" != "$ROOT_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match VERSION file $ROOT_VERSION" >&2
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Run Tests (Race & Count=1)
+        run: go test -v -race -count=1 ./...
+
+      - name: Build Binary
+        run: go build -o bundlecheck .
+
+      - name: Validate install.sh
+        run: sh -n install.sh
+
+      - name: Smoke Test Binary on Fixture
+        run: |
+          ./bundlecheck summary testdata/minimal
+          ./bundlecheck check testdata/minimal --max-initial 5MB
+
+  publish:
+    name: Build & Publish Release
+    needs: [verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,20 +80,8 @@ jobs:
       - name: Set up Node for NPM Publish
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Verify release version
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(node -p "require('./npm/bundlecheck/package.json').version")"
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Tag version $TAG_VERSION does not match npm package version $PACKAGE_VERSION" >&2
-            exit 1
-          fi
-
-      - name: Run Tests
-        run: go test -v ./...
 
       - name: Build Multi-Arch Binaries
         id: build
@@ -85,6 +127,17 @@ jobs:
           sha256sum * > checksums.txt
           cd ..
 
+      - name: Publish to NPM (if NPM_TOKEN configured)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NODE_AUTH_TOKEN" ]; then
+            cd npm/bundlecheck
+            npm publish --access public
+          else
+            echo "::notice::NPM_TOKEN not set; skipping npm package publication."
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -94,14 +147,3 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-
-      - name: Publish to NPM (if NPM_TOKEN configured)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -n "$NODE_AUTH_TOKEN" ]; then
-            cd npm/bundlecheck
-            npm publish --access public
-          else
-            echo "NPM_TOKEN not set; skipping automatic npm publish."
-          fi

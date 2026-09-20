@@ -175,6 +175,9 @@ func TestSummaryPositionalArguments(t *testing.T) {
 func TestSummaryPositionalProject(t *testing.T) {
 	nxRoot := filepath.Join("..", "testdata", "nx-workspace")
 	if _, err := os.Stat(filepath.Join(nxRoot, "dist", "apps", "portal", "stats.json")); os.IsNotExist(err) {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E artifact missing: %s/dist/apps/portal/stats.json", nxRoot)
+		}
 		t.Skip("portal build artifacts not present")
 	}
 

@@ -92,6 +92,9 @@ outputs:
   report-path:
     description: 'Path where the bundle report was written'
     value: ${{ inputs.output }}
+  comparison-status:
+    description: 'Comparison status: none, compared, or failed'
+    value: ${{ steps.run-bundlecheck.outputs.comparison_status }}
 
 runs:
   using: 'composite'
@@ -109,9 +112,10 @@ runs:
             echo "Building bundlecheck from local action path: ${{ github.action_path }}"
             cd "${{ github.action_path }}" && (go build -o /usr/local/bin/bundlecheck . 2>/dev/null || (mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/bundlecheck" . && echo "$HOME/.local/bin" >> $GITHUB_PATH))
           else
-            echo "Installing bundlecheck via go install..."
-            go install github.com/sonuKumar03/bundlecheck@latest
-            echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+            echo "Installing precompiled bundlecheck binary..."
+            curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+            echo "/usr/local/bin" >> $GITHUB_PATH
           fi
         fi
 
@@ -119,65 +123,145 @@ runs:
       id: run-bundlecheck
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_STATS: ${{ inputs.stats }}
+        INPUT_DIST: ${{ inputs.dist }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_BASELINE: ${{ inputs.baseline }}
+        INPUT_BASE_REF: ${{ inputs.base-ref }}
+        INPUT_BUILD_CMD: ${{ inputs.build-cmd }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_JSON_OUTPUT: ${{ inputs.json-output }}
+        INPUT_GZIP: ${{ inputs.gzip }}
+        INPUT_SUGGEST: ${{ inputs.suggest }}
+        INPUT_MAX_INITIAL: ${{ inputs.max-initial }}
+        INPUT_MAX_LAZY: ${{ inputs.max-lazy }}
+        INPUT_MAX_TOTAL: ${{ inputs.max-total }}
+        INPUT_MAX_INITIAL_DELTA: ${{ inputs.max-initial-delta }}
+        INPUT_MAX_TOTAL_DELTA: ${{ inputs.max-total-delta }}
+        EVENT_NAME: ${{ github.event_name }}
+        EVENT_BASE_REF: ${{ github.base_ref }}
       run: |
+        set -eo pipefail
+
         ARGS=()
-        if [ -n "${{ inputs.stats }}" ]; then ARGS+=("-s" "${{ inputs.stats }}"); fi
-        if [ -n "${{ inputs.dist }}" ]; then ARGS+=("-d" "${{ inputs.dist }}"); fi
-        if [ -n "${{ inputs.project }}" ]; then ARGS+=("-p" "${{ inputs.project }}"); fi
+        if [ -n "$INPUT_STATS" ]; then ARGS+=("-s" "$INPUT_STATS"); fi
+        if [ -n "$INPUT_DIST" ]; then ARGS+=("-d" "$INPUT_DIST"); fi
+        if [ -n "$INPUT_PROJECT" ]; then ARGS+=("-p" "$INPUT_PROJECT"); fi
 
-        BASELINE_FILE="${{ inputs.baseline }}"
+        BASELINE_FILE="$INPUT_BASELINE"
+        COMPARISON_STATUS="none"
 
-        # If base-ref is specified or present in PR context, capture base in worktree if no explicit baseline given
-        TARGET_BASE_REF="${{ inputs.base-ref }}"
-        if [ -z "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
-          TARGET_BASE_REF="${{ github.base_ref }}"
+        # Determine target base ref
+        TARGET_BASE_REF="$INPUT_BASE_REF"
+        if [ -z "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ] && [ "$EVENT_NAME" = "pull_request" ]; then
+          TARGET_BASE_REF="$EVENT_BASE_REF"
+        fi
+
+        HAS_DELTA_BUDGET=false
+        if [ -n "$INPUT_MAX_INITIAL_DELTA" ] || [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then
+          HAS_DELTA_BUDGET=true
         fi
 
         if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ]; then
-          echo "Comparing against base git ref: $TARGET_BASE_REF..."
-          WT_BASE_FILE=".bundlecheck/baseline-${TARGET_BASE_REF//\//-}.json"
-          BASE_BUILD_ARG=""
-          if [ -n "${{ inputs.build-cmd }}" ]; then
-            BASE_BUILD_ARG="--build-cmd=${{ inputs.build-cmd }}"
+          echo "Preparing base git ref: $TARGET_BASE_REF..."
+          # Ensure base ref is fetched even in shallow checkouts
+          if ! git rev-parse --verify "$TARGET_BASE_REF" >/dev/null 2>&1; then
+            echo "Fetching origin $TARGET_BASE_REF..."
+            git fetch --no-tags --depth=1 origin "$TARGET_BASE_REF" 2>/dev/null || git fetch --no-tags origin "$TARGET_BASE_REF" 2>/dev/null || true
           fi
 
-          if bundlecheck baseline save --ref "$TARGET_BASE_REF" -o "$WT_BASE_FILE" ${BASE_BUILD_ARG} "${ARGS[@]}"; then
+          RESOLVED_BASE_SHA=$(git rev-parse --short "$TARGET_BASE_REF" 2>/dev/null || true)
+          if [ -n "$RESOLVED_BASE_SHA" ]; then
+            echo "Comparing against base git ref: $TARGET_BASE_REF ($RESOLVED_BASE_SHA)..."
+          else
+            echo "Comparing against base git ref: $TARGET_BASE_REF..."
+          fi
+
+          WT_BASE_FILE=".bundlecheck/baseline-${TARGET_BASE_REF//\//-}.json"
+          SAVE_CMD=("bundlecheck" "baseline" "save" "--ref" "$TARGET_BASE_REF" "-o" "$WT_BASE_FILE")
+          if [ -n "$INPUT_BUILD_CMD" ]; then
+            SAVE_CMD+=("--build-cmd" "$INPUT_BUILD_CMD")
+          fi
+          SAVE_CMD+=("${ARGS[@]}")
+
+          if "${SAVE_CMD[@]}"; then
             BASELINE_FILE="$WT_BASE_FILE"
+            COMPARISON_STATUS="compared"
             echo "  ✓ Successfully captured base snapshot for $TARGET_BASE_REF"
           else
-            echo "::warning::Failed to build or analyze base ref '$TARGET_BASE_REF'. Proceeding with current build summary."
+            COMPARISON_STATUS="failed"
+            if [ "$HAS_DELTA_BUDGET" = "true" ] || [ -n "$INPUT_BASE_REF" ]; then
+              echo "::error::Failed to build or analyze base ref '$TARGET_BASE_REF', and delta budget or explicit base-ref was requested."
+              exit 1
+            else
+              echo "::warning::Failed to build or analyze base ref '$TARGET_BASE_REF'. Proceeding with current build summary."
+            fi
           fi
+        elif [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
+          COMPARISON_STATUS="compared"
         fi
+
+        echo "comparison_status=$COMPARISON_STATUS" >> $GITHUB_OUTPUT
 
         # Generate report output
         if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
-          MEASURE_FLAGS=("${ARGS[@]}" "-b" "$BASELINE_FILE" "-f" "${{ inputs.format }}")
-          if [ -n "${{ inputs.max-initial-delta }}" ]; then MEASURE_FLAGS+=("--max-initial-delta" "${{ inputs.max-initial-delta }}"); fi
-          if [ -n "${{ inputs.max-total-delta }}" ]; then MEASURE_FLAGS+=("--max-total-delta" "${{ inputs.max-total-delta }}"); fi
-          if [ -n "${{ inputs.output }}" ]; then MEASURE_FLAGS+=("-o" "${{ inputs.output }}"); fi
-          bundlecheck measure "${MEASURE_FLAGS[@]}" || true
+          MEASURE_FLAGS=("${ARGS[@]}" "-b" "$BASELINE_FILE" "-f" "$INPUT_FORMAT")
+          if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then MEASURE_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); fi
+          if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then MEASURE_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); fi
+          if [ -n "$INPUT_OUTPUT" ]; then MEASURE_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
+
+          set +e
+          bundlecheck measure "${MEASURE_FLAGS[@]}"
+          MEASURE_EXIT=$?
+          set -e
+
+          if [ $MEASURE_EXIT -ne 0 ]; then
+            # Verify if report was produced (indicating a budget failure rather than tool crash)
+            if [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
+              echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
+            else
+              echo "::error::bundlecheck measure execution or report generation failed (exit code $MEASURE_EXIT)"
+              exit $MEASURE_EXIT
+            fi
+          fi
         else
-          SUMMARY_FLAGS=("${ARGS[@]}" "-f" "${{ inputs.format }}")
-          if [ "${{ inputs.gzip }}" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
-          if [ "${{ inputs.suggest }}" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
-          if [ -n "${{ inputs.output }}" ]; then SUMMARY_FLAGS+=("-o" "${{ inputs.output }}"); fi
+          SUMMARY_FLAGS=("${ARGS[@]}" "-f" "$INPUT_FORMAT")
+          if [ "$INPUT_GZIP" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
+          if [ "$INPUT_SUGGEST" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
+          if [ -n "$INPUT_OUTPUT" ]; then SUMMARY_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
           bundlecheck summary "${SUMMARY_FLAGS[@]}"
         fi
 
         # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
-        if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "${{ inputs.output }}" ] && [ -f "${{ inputs.output }}" ]; then
-          cat "${{ inputs.output }}" >> "$GITHUB_STEP_SUMMARY"
+        if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
+          cat "$INPUT_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
         fi
 
         # Extract structured metrics via JSON
         JSON_OUT=$(bundlecheck summary "${ARGS[@]}" -f json)
-        if [ -n "${{ inputs.json-output }}" ]; then
-          echo "$JSON_OUT" > "${{ inputs.json-output }}"
+        if [ -n "$INPUT_JSON_OUTPUT" ]; then
+          echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
         fi
 
-        INITIAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.initialJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"initialJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
-        LAZY=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.lazyJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"lazyJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
-        TOTAL=$(node -e 'try { const d=JSON.parse(process.argv[1]); console.log(d.summary?.totalJs ?? 0); } catch (_) { process.exit(1); }' "$JSON_OUT" 2>/dev/null || echo "$JSON_OUT" | grep -o '"totalJs"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo "0")
+        # Parse metrics strictly - fail if JSON is malformed or missing required summary fields
+        PARSED_METRICS=$(node -e '
+          const data = process.argv[1];
+          try {
+            const parsed = JSON.parse(data);
+            if (!parsed.summary || typeof parsed.summary.initialJs !== "number" || typeof parsed.summary.totalJs !== "number") {
+              console.error("Missing required summary numbers in JSON output");
+              process.exit(1);
+            }
+            console.log([parsed.summary.initialJs, parsed.summary.lazyJs ?? 0, parsed.summary.totalJs].join(" "));
+          } catch (e) {
+            console.error("Failed to parse bundlecheck JSON summary:", e.message);
+            process.exit(1);
+          }
+        ' "$JSON_OUT")
+
+        read -r INITIAL LAZY TOTAL <<< "$PARSED_METRICS"
 
         echo "initial_bytes=$INITIAL" >> $GITHUB_OUTPUT
         echo "lazy_bytes=$LAZY" >> $GITHUB_OUTPUT
@@ -186,12 +270,12 @@ runs:
         # Enforce budget checks if any threshold is specified
         CHECK_FLAGS=("${ARGS[@]}")
         HAS_BUDGET=false
-        if [ -n "${{ inputs.max-initial }}" ]; then CHECK_FLAGS+=("--max-initial" "${{ inputs.max-initial }}"); HAS_BUDGET=true; fi
-        if [ -n "${{ inputs.max-lazy }}" ]; then CHECK_FLAGS+=("--max-lazy" "${{ inputs.max-lazy }}"); HAS_BUDGET=true; fi
-        if [ -n "${{ inputs.max-total }}" ]; then CHECK_FLAGS+=("--max-total" "${{ inputs.max-total }}"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_INITIAL" ]; then CHECK_FLAGS+=("--max-initial" "$INPUT_MAX_INITIAL"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_LAZY" ]; then CHECK_FLAGS+=("--max-lazy" "$INPUT_MAX_LAZY"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_TOTAL" ]; then CHECK_FLAGS+=("--max-total" "$INPUT_MAX_TOTAL"); HAS_BUDGET=true; fi
         if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then CHECK_FLAGS+=("--baseline" "$BASELINE_FILE"); HAS_BUDGET=true; fi
-        if [ -n "${{ inputs.max-initial-delta }}" ]; then CHECK_FLAGS+=("--max-initial-delta" "${{ inputs.max-initial-delta }}"); HAS_BUDGET=true; fi
-        if [ -n "${{ inputs.max-total-delta }}" ]; then CHECK_FLAGS+=("--max-total-delta" "${{ inputs.max-total-delta }}"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then CHECK_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then CHECK_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); HAS_BUDGET=true; fi
 
         if [ "$HAS_BUDGET" = "true" ]; then
           echo "Enforcing bundle size budgets..."
@@ -203,12 +287,24 @@ runs:
     - name: Post PR Comment
       if: always() && inputs.post-comment == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@v7
+      env:
+        WORKING_DIR: ${{ inputs.working-directory }}
+        OUTPUT_FILE: ${{ inputs.output }}
       with:
         script: |
           const fs = require('fs');
           const path = require('path');
-          const workingDir = '${{ inputs.working-directory }}' || '.';
-          const reportPath = path.resolve(workingDir, '${{ inputs.output }}');
+          const repoRoot = path.resolve('.');
+          const workingDir = process.env.WORKING_DIR || '.';
+          const outputFile = process.env.OUTPUT_FILE || 'bundle-report.md';
+          const reportPath = path.resolve(workingDir, outputFile);
+
+          // Path traversal safety check: ensure reportPath stays inside workspace
+          if (!reportPath.startsWith(repoRoot + path.sep) && reportPath !== repoRoot) {
+            core.setFailed(`Security: report path '${reportPath}' is outside repository root '${repoRoot}'`);
+            return;
+          }
+
           if (fs.existsSync(reportPath)) {
             const reportContent = fs.readFileSync(reportPath, 'utf8');
             const headerTag = '<!-- bundlecheck-comment -->';
@@ -217,12 +313,19 @@ runs:
             if (!body.includes(headerTag) && !body.includes(fallbackHeaderTag)) {
               body = `${headerTag}\n${body}`;
             }
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(c => c.body.includes(headerTag) || c.body.includes(fallbackHeaderTag));
+
+            // Paginate through all comments to avoid duplicate bot comments on long PRs
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: 100,
+              }
+            );
+
+            const botComment = comments.find(c => c.body && (c.body.includes(headerTag) || c.body.includes(fallbackHeaderTag)));
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,

@@ -7,10 +7,18 @@ on:
     - cron: '0 4 * * 1' # Every Monday at 04:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   vulncheck:
     name: Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1

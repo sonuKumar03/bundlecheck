@@ -23,12 +23,18 @@ func ensureNxWorkspaceBuilt(t *testing.T, nxRoot string) {
 
 	nxBin := filepath.Join(nxRoot, "node_modules", ".bin", "nx")
 	if _, err := os.Stat(nxBin); os.IsNotExist(err) {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E prerequisite missing: %s does not exist", nxBin)
+		}
 		t.Skip("testdata/nx-workspace dist and dependencies not present")
 	}
 
 	cmd := exec.Command(nxBin, "run-many", "-t", "build", "--configuration=production")
 	cmd.Dir = nxRoot
 	if out, err := cmd.CombinedOutput(); err != nil {
+		if os.Getenv("BUNDLECHECK_REQUIRE_E2E") != "" {
+			t.Fatalf("required E2E nx build failed: %v\nOutput: %s", err, string(out))
+		}
 		t.Skipf("nx build failed or could not run in current environment: %v\nOutput: %s", err, string(out))
 	}
 }
