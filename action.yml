@@ -58,6 +58,14 @@ inputs:
     description: 'Path to baseline summary JSON for regression checks'
     required: false
     default: ''
+  base-ref:
+    description: 'Git base ref (e.g. main, master, or ${{ github.base_ref }}) for automatic worktree comparison'
+    required: false
+    default: ''
+  build-cmd:
+    description: 'Build command to run when building base-ref in worktree (defaults to "npm run build")'
+    required: false
+    default: ''
   max-initial-delta:
     description: 'Maximum allowed increase in initial JS vs baseline (e.g. 0B, 10KB)'
     required: false
@@ -117,14 +125,44 @@ runs:
         if [ -n "${{ inputs.dist }}" ]; then ARGS+=("-d" "${{ inputs.dist }}"); fi
         if [ -n "${{ inputs.project }}" ]; then ARGS+=("-p" "${{ inputs.project }}"); fi
 
-        # If baseline or regression thresholds are passed, use measure/check
-        SUMMARY_FLAGS=("${ARGS[@]}" "-f" "${{ inputs.format }}")
-        if [ "${{ inputs.gzip }}" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
-        if [ "${{ inputs.suggest }}" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
-        if [ -n "${{ inputs.output }}" ]; then SUMMARY_FLAGS+=("-o" "${{ inputs.output }}"); fi
+        BASELINE_FILE="${{ inputs.baseline }}"
 
-        # Run summary report
-        bundlecheck summary "${SUMMARY_FLAGS[@]}"
+        # If base-ref is specified or present in PR context, capture base in worktree if no explicit baseline given
+        TARGET_BASE_REF="${{ inputs.base-ref }}"
+        if [ -z "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
+          TARGET_BASE_REF="${{ github.base_ref }}"
+        fi
+
+        if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ]; then
+          echo "Comparing against base git ref: $TARGET_BASE_REF..."
+          WT_BASE_FILE=".bundlecheck/baseline-${TARGET_BASE_REF//\//-}.json"
+          BASE_BUILD_ARG=""
+          if [ -n "${{ inputs.build-cmd }}" ]; then
+            BASE_BUILD_ARG="--build-cmd=${{ inputs.build-cmd }}"
+          fi
+
+          if bundlecheck baseline save --ref "$TARGET_BASE_REF" -o "$WT_BASE_FILE" ${BASE_BUILD_ARG} "${ARGS[@]}"; then
+            BASELINE_FILE="$WT_BASE_FILE"
+            echo "  ✓ Successfully captured base snapshot for $TARGET_BASE_REF"
+          else
+            echo "::warning::Failed to build or analyze base ref '$TARGET_BASE_REF'. Proceeding with current build summary."
+          fi
+        fi
+
+        # Generate report output
+        if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
+          MEASURE_FLAGS=("${ARGS[@]}" "-b" "$BASELINE_FILE" "-f" "${{ inputs.format }}")
+          if [ -n "${{ inputs.max-initial-delta }}" ]; then MEASURE_FLAGS+=("--max-initial-delta" "${{ inputs.max-initial-delta }}"); fi
+          if [ -n "${{ inputs.max-total-delta }}" ]; then MEASURE_FLAGS+=("--max-total-delta" "${{ inputs.max-total-delta }}"); fi
+          if [ -n "${{ inputs.output }}" ]; then MEASURE_FLAGS+=("-o" "${{ inputs.output }}"); fi
+          bundlecheck measure "${MEASURE_FLAGS[@]}" || true
+        else
+          SUMMARY_FLAGS=("${ARGS[@]}" "-f" "${{ inputs.format }}")
+          if [ "${{ inputs.gzip }}" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
+          if [ "${{ inputs.suggest }}" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
+          if [ -n "${{ inputs.output }}" ]; then SUMMARY_FLAGS+=("-o" "${{ inputs.output }}"); fi
+          bundlecheck summary "${SUMMARY_FLAGS[@]}"
+        fi
 
         # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
         if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "${{ inputs.output }}" ] && [ -f "${{ inputs.output }}" ]; then
@@ -151,17 +189,19 @@ runs:
         if [ -n "${{ inputs.max-initial }}" ]; then CHECK_FLAGS+=("--max-initial" "${{ inputs.max-initial }}"); HAS_BUDGET=true; fi
         if [ -n "${{ inputs.max-lazy }}" ]; then CHECK_FLAGS+=("--max-lazy" "${{ inputs.max-lazy }}"); HAS_BUDGET=true; fi
         if [ -n "${{ inputs.max-total }}" ]; then CHECK_FLAGS+=("--max-total" "${{ inputs.max-total }}"); HAS_BUDGET=true; fi
-        if [ -n "${{ inputs.baseline }}" ]; then CHECK_FLAGS+=("--baseline" "${{ inputs.baseline }}"); HAS_BUDGET=true; fi
+        if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then CHECK_FLAGS+=("--baseline" "$BASELINE_FILE"); HAS_BUDGET=true; fi
         if [ -n "${{ inputs.max-initial-delta }}" ]; then CHECK_FLAGS+=("--max-initial-delta" "${{ inputs.max-initial-delta }}"); HAS_BUDGET=true; fi
         if [ -n "${{ inputs.max-total-delta }}" ]; then CHECK_FLAGS+=("--max-total-delta" "${{ inputs.max-total-delta }}"); HAS_BUDGET=true; fi
 
         if [ "$HAS_BUDGET" = "true" ]; then
           echo "Enforcing bundle size budgets..."
-          bundlecheck check "${CHECK_FLAGS[@]}"
+          if ! bundlecheck check "${CHECK_FLAGS[@]}"; then
+            echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
+          fi
         fi
 
     - name: Post PR Comment
-      if: inputs.post-comment == 'true' && github.event_name == 'pull_request'
+      if: always() && inputs.post-comment == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
         script: |
@@ -171,14 +211,18 @@ runs:
           const reportPath = path.resolve(workingDir, '${{ inputs.output }}');
           if (fs.existsSync(reportPath)) {
             const reportContent = fs.readFileSync(reportPath, 'utf8');
-            const headerTag = '<!-- bundlecheck-report -->';
-            const body = `${headerTag}\n${reportContent}`;
+            const headerTag = '<!-- bundlecheck-comment -->';
+            const fallbackHeaderTag = '<!-- bundlecheck-report -->';
+            let body = reportContent;
+            if (!body.includes(headerTag) && !body.includes(fallbackHeaderTag)) {
+              body = `${headerTag}\n${body}`;
+            }
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const botComment = comments.find(c => c.body.includes(headerTag));
+            const botComment = comments.find(c => c.body.includes(headerTag) || c.body.includes(fallbackHeaderTag));
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -195,3 +239,11 @@ runs:
               });
             }
           }
+
+    - name: Finalize Budget Status
+      shell: bash
+      run: |
+        if [ "${BUDGET_FAILED:-false}" = "true" ]; then
+          echo "::error::BundleCheck size budget check failed."
+          exit 1
+        fi

@@ -9,6 +9,7 @@ import (
 
 	"bundlecheck/internal/analysis"
 	"bundlecheck/internal/baseline"
+	"bundlecheck/internal/budget"
 	"bundlecheck/internal/comparison"
 	"bundlecheck/internal/report"
 )
@@ -53,8 +54,8 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 			if before == "" || after == "" {
 				return fmt.Errorf("both before and after paths are required (e.g. 'bundlecheck compare baseline.json current.json' or -b and -a)")
 			}
-			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) {
-				return fmt.Errorf("unsupported format %q: use text, json, or markdown", format)
+			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) && !report.IsGitHubPRFormat(format) {
+				return fmt.Errorf("unsupported format %q: use text, json, markdown, or github-pr", format)
 			}
 
 			b, err := loadSnapshotOrBuild(before)
@@ -84,6 +85,8 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 
 			if format == "json" {
 				return report.JSON(w, r)
+			} else if report.IsGitHubPRFormat(format) {
+				return report.ComparisonGitHubPR(w, r, budget.CheckResult{Passed: true}, opts)
 			} else if report.IsMarkdownFormat(format) {
 				return report.ComparisonMarkdown(w, r, opts)
 			}

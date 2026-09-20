@@ -141,3 +141,26 @@ func TestComparePositionalArguments(t *testing.T) {
 		t.Errorf("expected initial delta 100, got %d", res.Summary.Delta.InitialJS)
 	}
 }
+
+func TestCompareGitHubPRFormat(t *testing.T) {
+	base := filepath.Join("..", "testdata", "comparison")
+	before := filepath.Join(base, "before.json")
+	after := filepath.Join(base, "after.json")
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"compare", before, after, "-f", "github-pr"}, &out, &errOut)
+	if code != 0 || errOut.Len() != 0 {
+		t.Fatalf("exit %d, stderr: %s", code, errOut.String())
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "<!-- bundlecheck-comment -->") {
+		t.Errorf("expected sticky marker in compare output, got: %s", output)
+	}
+	if !strings.Contains(output, "## 📦 BundleCheck PR Report") {
+		t.Errorf("expected PR report header in compare output, got: %s", output)
+	}
+	if !strings.Contains(output, "| Metric | Before | After | Delta | % Change | Visual Diff |") {
+		t.Errorf("expected metrics table with visual diff bar, got: %s", output)
+	}
+}
