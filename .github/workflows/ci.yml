@@ -78,6 +78,12 @@ jobs:
       - name: Ensure cache directory exists
         run: mkdir -p ./cache
 
+      - name: Build bundlecheck CLI
+        run: go build -o bundlecheck .
+
+      - name: Format Human-Readable Benchmark Summary
+        run: ./bundlecheck benchmark benchmark-output.txt -f markdown >> $GITHUB_STEP_SUMMARY
+
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -85,8 +91,9 @@ jobs:
           output-file-path: benchmark-output.txt
           external-data-json-path: ./cache/benchmark-data.json
           fail-on-alert: false
-          summary-always: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          summary-always: false
+          comment-always: false
+          comment-on-alert: false
 
       - name: Save benchmark data
         uses: actions/cache/save@v4
