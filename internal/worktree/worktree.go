@@ -33,9 +33,42 @@ func GetRepoRoot(dir string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// ResolveRef resolves a git ref in repoRoot, checking if ref exists directly or
+// falling back to origin/<ref> if the ref is only available remotely (common in CI PR checkouts).
+func ResolveRef(dir string, ref string) (string, error) {
+	if !IsGitRepo(dir) {
+		return "", fmt.Errorf("directory %q is not a git repository", dir)
+	}
+	repoRoot, err := GetRepoRoot(dir)
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command("git", "rev-parse", "--verify", ref)
+	cmd.Dir = repoRoot
+	if err := cmd.Run(); err == nil {
+		return ref, nil
+	}
+
+	if !strings.HasPrefix(ref, "origin/") {
+		originRef := "origin/" + ref
+		cmdOrigin := exec.Command("git", "rev-parse", "--verify", originRef)
+		cmdOrigin.Dir = repoRoot
+		if err := cmdOrigin.Run(); err == nil {
+			return originRef, nil
+		}
+	}
+
+	return ref, nil
+}
+
 // GetCommitSHA resolves a git ref (branch, tag, commit) to a short commit SHA.
 func GetCommitSHA(dir string, ref string) (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--short", ref)
+	resolvedRef, _ := ResolveRef(dir, ref)
+	if resolvedRef == "" {
+		resolvedRef = ref
+	}
+	cmd := exec.Command("git", "rev-parse", "--short", resolvedRef)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
@@ -61,8 +94,13 @@ func Create(rootDir string, ref string) (string, func(), error) {
 		return "", nil, fmt.Errorf("create temp worktree dir: %w", err)
 	}
 
+	resolvedRef, _ := ResolveRef(repoRoot, ref)
+	if resolvedRef == "" {
+		resolvedRef = ref
+	}
+
 	// Add git worktree
-	cmd := exec.Command("git", "worktree", "add", "--detach", tempDir, ref)
+	cmd := exec.Command("git", "worktree", "add", "--detach", tempDir, resolvedRef)
 	cmd.Dir = repoRoot
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

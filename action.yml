@@ -171,9 +171,13 @@ runs:
         if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ]; then
           echo "Preparing base git ref: $TARGET_BASE_REF..."
           # Ensure base ref is fetched even in shallow checkouts
-          if ! git rev-parse --verify "$TARGET_BASE_REF" >/dev/null 2>&1; then
+          if ! git rev-parse --verify "$TARGET_BASE_REF" >/dev/null 2>&1 && ! git rev-parse --verify "origin/$TARGET_BASE_REF" >/dev/null 2>&1; then
             echo "Fetching origin $TARGET_BASE_REF..."
             git fetch --no-tags --depth=1 origin "$TARGET_BASE_REF" 2>/dev/null || git fetch --no-tags origin "$TARGET_BASE_REF" 2>/dev/null || true
+          fi
+
+          if ! git rev-parse --verify "$TARGET_BASE_REF" >/dev/null 2>&1 && git rev-parse --verify "origin/$TARGET_BASE_REF" >/dev/null 2>&1; then
+            TARGET_BASE_REF="origin/$TARGET_BASE_REF"
           fi
 
           RESOLVED_BASE_SHA=$(git rev-parse --short "$TARGET_BASE_REF" 2>/dev/null || true)

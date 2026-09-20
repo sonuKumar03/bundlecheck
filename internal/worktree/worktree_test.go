@@ -74,3 +74,28 @@ func TestRunBuild_Failure(t *testing.T) {
 	}
 }
 
+func TestResolveRef(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+
+	// HEAD should always resolve
+	ref, err := worktree.ResolveRef(wd, "HEAD")
+	if err != nil {
+		t.Fatalf("resolve HEAD: %v", err)
+	}
+	if ref != "HEAD" {
+		t.Errorf("expected HEAD, got %q", ref)
+	}
+
+	// Non-existent ref should return as-is without error
+	ref, err = worktree.ResolveRef(wd, "non-existent-ref-xyz")
+	if err != nil {
+		t.Fatalf("resolve non-existent ref: %v", err)
+	}
+	if ref != "non-existent-ref-xyz" {
+		t.Errorf("expected original ref returned, got %q", ref)
+	}
+}
+
