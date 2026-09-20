@@ -420,12 +420,6 @@ func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.Cal
 		}
 	}
 
-	hasDisallowed := len(disallowed) > 0 || (cfg != nil && len(cfg.Rules.DisallowPackages) > 0)
-	if limits.MaxInitial == nil && limits.MaxLazy == nil && limits.MaxTotal == nil &&
-		limits.MaxInitialDelta == nil && limits.MaxTotalDelta == nil && !hasDisallowed {
-		return mcpspec.NewToolResultError("at least one budget threshold must be specified (e.g. max_initial '200KB' or .bundlecheck.yml)"), nil
-	}
-
 	snap, err := build.Load(statsFile, distDir)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil

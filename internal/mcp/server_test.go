@@ -1558,6 +1558,37 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 		}
 	})
 
+	t.Run("explicit flag overrides config file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgFile := filepath.Join(tmpDir, "custom.yml")
+		// Config has failing 10B limit
+		cfgContent := []byte("budgets:\n  initial_js_max: 10B\n")
+		if err := os.WriteFile(cfgFile, cfgContent, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Providing max_initial = "10MB" overrides the config's 10B limit
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":        minimalPath,
+					"config":      cfgFile,
+					"max_initial": "10MB",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if res.IsError {
+			textContent, _ := mcpspec.AsTextContent(res.Content[0])
+			t.Fatalf("expected explicit flag to override config and pass, got: %s", textContent.Text)
+		}
+	})
+
 	t.Run("max_lazy budget threshold", func(t *testing.T) {
 		req := mcpspec.CallToolRequest{
 			Params: mcpspec.CallToolParams{
@@ -1597,7 +1628,7 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 		}
 	})
 
-	t.Run("requires at least one budget threshold or rule when no config exists", func(t *testing.T) {
+	t.Run("succeeds in report-only mode when no threshold or rule is configured", func(t *testing.T) {
 		req := mcpspec.CallToolRequest{
 			Params: mcpspec.CallToolParams{
 				Name: "bundle_check",
@@ -1611,12 +1642,23 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected handler error: %v", err)
 		}
-		if !res.IsError {
-			t.Errorf("expected error when no threshold or rule is provided")
+		if res.IsError {
+			textContent, _ := mcpspec.AsTextContent(res.Content[0])
+			t.Fatalf("expected report-only success without invented thresholds, got error: %s", textContent.Text)
 		}
 		textContent, _ := mcpspec.AsTextContent(res.Content[0])
-		if !strings.Contains(textContent.Text, "at least one budget threshold must be specified") {
-			t.Errorf("expected error about budget threshold, got: %s", textContent.Text)
+		var checkRes budget.CheckResult
+		if err := json.Unmarshal([]byte(textContent.Text), &checkRes); err != nil {
+			t.Fatalf("failed to unmarshal JSON: %v", err)
+		}
+		if !checkRes.Passed {
+			t.Errorf("expected report-only check to pass")
+		}
+		if len(checkRes.Violations) != 0 {
+			t.Errorf("expected 0 violations in report-only mode, got %d", len(checkRes.Violations))
+		}
+		if checkRes.Summary == nil || checkRes.Summary.InitialJS <= 0 {
+			t.Errorf("expected complete summary preserved in report-only mode")
 		}
 	})
 }

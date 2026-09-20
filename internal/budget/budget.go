@@ -91,7 +91,7 @@ func ParseBytes(s string) (int64, error) {
 
 // CheckSummary verifies absolute bundle metrics against limits.
 func CheckSummary(totals snapshot.Totals, limits Limits) CheckResult {
-	res := CheckResult{Passed: true, Violations: []Violation{}}
+	res := CheckResult{Passed: true, Violations: []Violation{}, Summary: &totals}
 
 	if limits.MaxInitial != nil && totals.InitialJS > *limits.MaxInitial {
 		res.Passed = false
@@ -132,6 +132,8 @@ func CheckComparison(comp *comparison.Result, limits Limits) CheckResult {
 	if comp == nil {
 		return res
 	}
+	res.Comparison = comp
+	res.Summary = &comp.Summary.After
 
 	// Check summary absolute limits against After
 	summaryRes := CheckSummary(comp.Summary.After, limits)

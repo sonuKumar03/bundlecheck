@@ -114,3 +114,93 @@ func TestCheckRejectsMalformedAutoLoadedConfig(t *testing.T) {
 		t.Fatalf("invalid config must fail before checking permissive CLI budgets: exit=%d err=%s", code, errOut.String())
 	}
 }
+
+func TestCheckReportOnlyWhenUnconfigured(t *testing.T) {
+	base := filepath.Join("..", "testdata", "minimal")
+
+	// 1. Text format report-only
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"check", base}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("unconfigured check must succeed in report-only mode, got exit %d: %s", code, errOut.String())
+	}
+	if !strings.Contains(out.String(), "Bundle Budget Check: PASSED") {
+		t.Errorf("expected pass message, got: %s", out.String())
+	}
+
+	// 2. JSON format report-only
+	out.Reset()
+	errOut.Reset()
+	code = Execute([]string{"check", base, "-f", "json"}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("unconfigured check JSON must succeed, got exit %d: %s", code, errOut.String())
+	}
+	if !strings.Contains(out.String(), `"passed": true`) {
+		t.Errorf("expected passed: true in JSON, got: %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"initialJs"`) {
+		t.Errorf("expected initialJs in JSON summary, got: %s", out.String())
+	}
+}
+
+func TestCheckExplicitFlagOverridesConfig(t *testing.T) {
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	// Config has strict 10B limit that would fail
+	cfgContent := "budgets:\n  initial_js_max: 10B\n"
+	if err := os.WriteFile(filepath.Join(root, ".bundlecheck.yml"), []byte(cfgContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+
+	base := filepath.Join(origWd, "..", "testdata", "minimal")
+
+	// Without CLI flag, it must fail because of config 10B
+	var out, errOut bytes.Buffer
+	if code := Execute([]string{"check", base}, &out, &errOut); code == 0 {
+		t.Fatal("expected failure from auto-loaded config 10B limit")
+	}
+
+	// With CLI flag --max-initial 10MB, the CLI flag must override the config and pass
+	out.Reset()
+	errOut.Reset()
+	if code := Execute([]string{"check", base, "--max-initial", "10MB"}, &out, &errOut); code != 0 {
+		t.Fatalf("CLI flag must override config file, expected pass but got exit %d: %s", code, errOut.String())
+	}
+}
+
+func TestCheckExplicitConfigFileOverridesAutoLoaded(t *testing.T) {
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	// Auto-loaded config in current directory has failing 10B limit
+	if err := os.WriteFile(filepath.Join(root, ".bundlecheck.yml"), []byte("budgets:\n  initial_js_max: 10B\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Explicit custom config has permissive 10MB limit
+	customCfg := filepath.Join(root, "custom.yml")
+	if err := os.WriteFile(customCfg, []byte("budgets:\n  initial_js_max: 10MB\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+
+	base := filepath.Join(origWd, "..", "testdata", "minimal")
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"check", base, "-c", customCfg}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("explicit --config must take precedence over auto-loaded config, got exit %d: %s", code, errOut.String())
+	}
+}

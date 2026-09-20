@@ -108,13 +108,6 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 				}
 			}
 
-			// If no limits and no rules, require at least one budget threshold
-			hasRules := cfg != nil && len(cfg.Rules.DisallowPackages) > 0
-			if limits.MaxInitial == nil && limits.MaxLazy == nil && limits.MaxTotal == nil &&
-				limits.MaxInitialDelta == nil && limits.MaxTotalDelta == nil && !hasRules {
-				return fmt.Errorf("at least one budget threshold must be specified (e.g. --max-initial 200KB or .bundlecheck.yml)")
-			}
-
 			// 4. Analyze current build
 			sFile, dDir, err := resolveBuildArtifacts(stats, dist, project)
 			if err != nil {

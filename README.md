@@ -367,6 +367,27 @@ rules:
     - lodash
 ```
 
+### Budget Precedence Table
+
+Bundlecheck enforces limits strictly according to the following deterministic precedence:
+
+| Priority | Source | Description |
+|:---:|:---|:---|
+| **1 (Highest)** | **CLI Flags** | Explicit command-line arguments (e.g., `--max-initial 200KB`, `--max-total 1MB`) override all configuration values. |
+| **2** | **Explicit Config** | Configuration file specified explicitly via `--config <path>`. |
+| **3** | **Auto-Loaded Config** | Automatically discovered `.bundlecheck.yml` / `.bundlecheck.yaml` in current or parent directory. |
+| **4** | **Imported Budgets** | Budgets imported from `angular.json` (e.g. via `bundlecheck init --from-angular-budgets`). |
+| **5 (Lowest)** | **No Limit** | Default for unconfigured projects: report-only mode with zero invented failures. |
+
+### Outcome Semantics
+
+| Outcome | Exit Status | Description |
+|:---|:---:|:---|
+| **Pass** | `0` | All configured budgets and package rules passed, or project was evaluated in unconfigured report-only mode. Full metrics and summary are output. |
+| **Policy Violation** | `1` | One or more thresholds or disallowed package rules were breached. Detailed violations are printed alongside actual vs limit values, while preserving full bundle breakdown. |
+| **Invalid Configuration** | `1` | Malformed YAML, unparseable byte values, or unknown configuration fields are rejected before analysis begins. |
+| **Execution Failure** | `1` | Missing build artifacts, unparseable stats JSON, or missing baseline file prevents analysis from completing. |
+
 ---
 
 ## 🤖 AI Agent Integration: MCP & Skills
