@@ -47,6 +47,9 @@ jobs:
       - name: Run Tests (Race & Count=1)
         run: go test -v -race -count=1 ./...
 
+      - name: Verify Documentation & Schema Contracts
+        run: go test -v . -run TestDocumentationContract -count=1
+
       - name: Build Binary
         run: go build -o bundlecheck .
 

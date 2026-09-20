@@ -9,7 +9,8 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/analysis"
 )
 
-func Execute(args []string, stdout, stderr io.Writer) int {
+// NewRootCommand creates and configures the root bundlecheck cobra.Command.
+func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "bundlecheck",
 		Short:   "Summarize, inspect, measure, compare, trace, advise, and check Angular browser JavaScript bundles",
@@ -21,9 +22,6 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.SetArgs(args)
-	root.SetOut(stdout)
-	root.SetErr(stderr)
 	root.AddCommand(
 		summaryCommand(),
 		workspaceCommand(),
@@ -37,6 +35,14 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 		benchmarkCommand(),
 		mcpCommand(),
 	)
+	return root
+}
+
+func Execute(args []string, stdout, stderr io.Writer) int {
+	root := NewRootCommand()
+	root.SetArgs(args)
+	root.SetOut(stdout)
+	root.SetErr(stderr)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(stderr, "bundlecheck: %v\n", err)
 		return 1

@@ -59,6 +59,10 @@ jobs:
         if: runner.os == 'Linux'
         run: go test -v -race -count=1 ./...
 
+      - name: Verify Documentation & Schema Contracts
+        if: runner.os == 'Linux'
+        run: go test -v . -run TestDocumentationContract -count=1
+
       - name: Build Binary
         run: go build -o bundlecheck .
 
