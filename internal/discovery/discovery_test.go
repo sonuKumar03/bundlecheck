@@ -201,3 +201,96 @@ func BenchmarkFindCandidatesScaling(b *testing.B) {
 	}
 }
 
+func TestDiscovery_DuplicateNxCacheDeduplication(t *testing.T) {
+	tmp := t.TempDir()
+
+	// 1. Final dist output
+	finalDist := filepath.Join(tmp, "dist", "apps", "portal", "browser")
+	_ = os.MkdirAll(finalDist, 0755)
+	finalStats := filepath.Join(tmp, "dist", "apps", "portal", "stats.json")
+	_ = os.WriteFile(finalStats, []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(finalDist, "index.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(finalDist, "main.js"), []byte(`console.log(1)`), 0644)
+
+	// 2. Cache output in .nx/cache
+	cacheDist := filepath.Join(tmp, ".nx", "cache", "hash123", "dist", "apps", "portal", "browser")
+	_ = os.MkdirAll(cacheDist, 0755)
+	cacheStats := filepath.Join(tmp, ".nx", "cache", "hash123", "dist", "apps", "portal", "stats.json")
+	_ = os.WriteFile(cacheStats, []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(cacheDist, "index.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(cacheDist, "main.js"), []byte(`console.log(1)`), 0644)
+
+	candidates, err := discovery.FindCandidates(tmp)
+	if err != nil {
+		t.Fatalf("unexpected error finding candidates: %v", err)
+	}
+
+	// Should deduplicate and choose the final dist over .nx/cache
+	if len(candidates) != 1 {
+		t.Fatalf("expected 1 candidate after deduplication, got %d: %+v", len(candidates), candidates)
+	}
+	if candidates[0].Stats != finalStats {
+		t.Errorf("expected finalStats %q, got %q", finalStats, candidates[0].Stats)
+	}
+	if candidates[0].Dist != finalDist {
+		t.Errorf("expected finalDist %q, got %q", finalDist, candidates[0].Dist)
+	}
+}
+
+func TestResolve_DirectStatsPathAndExplicitOverrides(t *testing.T) {
+	tmp := t.TempDir()
+	statsPath := filepath.Join(tmp, "dist", "my-app", "stats.json")
+	browserPath := filepath.Join(tmp, "dist", "my-app", "browser")
+	_ = os.MkdirAll(browserPath, 0755)
+	_ = os.WriteFile(statsPath, []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(browserPath, "index.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(browserPath, "main.js"), []byte(`console.log(1)`), 0644)
+
+	// Direct stats path infers sibling browser/
+	s, d, err := discovery.Resolve(tmp, statsPath, "", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s != statsPath || d != browserPath {
+		t.Errorf("expected (%q, %q), got (%q, %q)", statsPath, browserPath, s, d)
+	}
+
+	// Explicit overrides: both stats and dist specified
+	customDist := filepath.Join(tmp, "custom-dist")
+	_ = os.MkdirAll(customDist, 0755)
+	s, d, err = discovery.Resolve(tmp, statsPath, customDist, "")
+	if err != nil {
+		t.Fatalf("unexpected error with explicit dist: %v", err)
+	}
+	if s != statsPath || d != customDist {
+		t.Errorf("expected explicit override (%q, %q), got (%q, %q)", statsPath, customDist, s, d)
+	}
+}
+
+func TestResolve_AmbiguousErrorShowsRecoveryCommand(t *testing.T) {
+	tmp := t.TempDir()
+
+	for _, app := range []string{"admin", "portal"} {
+		appDir := filepath.Join(tmp, "dist", "apps", app)
+		_ = os.MkdirAll(filepath.Join(appDir, "browser"), 0755)
+		_ = os.WriteFile(filepath.Join(appDir, "stats.json"), []byte(`{}`), 0644)
+		_ = os.WriteFile(filepath.Join(appDir, "browser", "index.html"), []byte(`<html></html>`), 0644)
+		_ = os.WriteFile(filepath.Join(appDir, "browser", "main.js"), []byte(`console.log(1)`), 0644)
+	}
+
+	_, _, err := discovery.Resolve(tmp, "", "", "")
+	if err == nil {
+		t.Fatal("expected ambiguity error, got nil")
+	}
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "multiple Angular build outputs found") {
+		t.Errorf("expected ambiguity message header, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "--project") {
+		t.Errorf("expected recovery flag --project in error message, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "bundlecheck workspace summary") {
+		t.Errorf("expected workspace summary recommendation, got: %s", errMsg)
+	}
+}
+

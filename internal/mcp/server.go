@@ -171,29 +171,7 @@ func registerResources(s *server.MCPServer) {
 }
 
 func resolveArtifacts(path, project string) (string, string, error) {
-	searchDir := path
-	if searchDir == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			return "", "", fmt.Errorf("get working directory: %w", err)
-		}
-		searchDir = wd
-	}
-
-	// If path points directly to a file (like stats.json)
-	if fi, err := os.Stat(searchDir); err == nil && !fi.IsDir() {
-		dir := filepath.Dir(searchDir)
-		if s, d, err := discovery.Locate(dir, project); err == nil {
-			return s, d, nil
-		}
-		browserSub := filepath.Join(dir, "browser")
-		if bi, err := os.Stat(browserSub); err == nil && bi.IsDir() {
-			return searchDir, browserSub, nil
-		}
-		return searchDir, dir, nil
-	}
-
-	return discovery.Locate(searchDir, project)
+	return discovery.Resolve("", path, "", project)
 }
 
 func handleSummary(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {

@@ -60,7 +60,89 @@ func Locate(rootDir string, projectName string) (string, string, error) {
 	for _, c := range candidates {
 		names = append(names, fmt.Sprintf("%s (stats: %s, dist: %s)", c.Project, c.Stats, c.Dist))
 	}
-	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using 'bundlecheck summary <project>' (or --project <name>), or run 'bundlecheck workspace summary'", strings.Join(names, "\n  - "))
+	firstProject := candidates[0].Project
+	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using 'bundlecheck summary --project %s', or run 'bundlecheck workspace summary'", strings.Join(names, "\n  - "), firstProject)
+}
+
+// Resolve determines the stats.json and browser dist paths based on provided inputs and workspace discovery.
+// Precedence and resolution rules:
+// 1. If stats points directly to an existing file, that file is authoritative and does not search unrelated workspace builds.
+//    If dist is omitted, only the stats file's immediate sibling or child browser directory is inspected.
+// 2. If both stats and dist are explicitly specified, they are validated and used.
+// 3. If stats is an existing directory, discovery is scoped to that directory.
+// 4. If stats is a non-existent path without a .json extension, it is treated as a project name filter.
+// 5. If no artifacts can be resolved unambiguously, an error with available projects and the exact recovery command is returned.
+func Resolve(rootDir, stats, dist, project string) (string, string, error) {
+	if rootDir == "" {
+		rootDir = "."
+	}
+	absPath := func(p string) string {
+		if p == "" || filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.Join(rootDir, p)
+	}
+
+	// 1. If stats points directly to an existing file, resolve dist deterministically
+	if stats != "" {
+		pStats := absPath(stats)
+		if fi, err := os.Stat(pStats); err == nil && !fi.IsDir() {
+			stats = pStats
+			if dist != "" {
+				return stats, absPath(dist), nil
+			}
+			dir := filepath.Dir(stats)
+			browserSub := filepath.Join(dir, "browser")
+			if bi, err := os.Stat(browserSub); err == nil && bi.IsDir() {
+				return stats, browserSub, nil
+			}
+			return stats, dir, nil
+		}
+	}
+
+	// 2. If both stats and dist are explicitly specified
+	if stats != "" && dist != "" {
+		pStats := absPath(stats)
+		pDist := absPath(dist)
+		if fi, err := os.Stat(pStats); err == nil && fi.IsDir() {
+			if _, errDist := os.Stat(pDist); os.IsNotExist(errDist) && project == "" {
+				return Locate(pStats, dist)
+			}
+		}
+		return pStats, pDist, nil
+	}
+
+	// 3. Positional project or directory in stats argument
+	searchDir := rootDir
+	if stats != "" && dist == "" {
+		pStats := absPath(stats)
+		if fi, err := os.Stat(pStats); err == nil && fi.IsDir() {
+			searchDir = pStats
+			stats = ""
+		} else if _, err := os.Stat(pStats); os.IsNotExist(err) && project == "" && !strings.HasSuffix(strings.ToLower(stats), ".json") {
+			project = stats
+			stats = ""
+		}
+	}
+
+	// 4. Auto-discovery
+	discoveredStats, discoveredDist, err := Locate(searchDir, project)
+	if err != nil {
+		if stats != "" && dist == "" {
+			return "", "", fmt.Errorf("missing --dist directory path: %w", err)
+		}
+		if dist != "" && stats == "" {
+			return "", "", fmt.Errorf("missing --stats file path: %w", err)
+		}
+		return "", "", err
+	}
+	if stats == "" {
+		stats = discoveredStats
+	}
+	if dist == "" {
+		dist = discoveredDist
+	}
+	return stats, dist, nil
 }
 
 // FindCandidates searches for matching stats.json and browser dist directories.
@@ -146,11 +228,34 @@ func FindCandidates(rootDir string) ([]Candidate, error) {
 		}
 	}
 
-	slices.SortFunc(candidates, func(a, b Candidate) int {
-		return strings.Compare(a.Project, b.Project)
+	// Deduplicate candidates by project name: prefer final dist outputs over .nx/cache outputs
+	candidateMap := make(map[string]Candidate)
+	for _, c := range candidates {
+		existing, ok := candidateMap[c.Project]
+		if !ok {
+			candidateMap[c.Project] = c
+			continue
+		}
+		existingIsCache := strings.Contains(filepath.ToSlash(existing.Stats), "/.nx/cache/") || strings.HasPrefix(filepath.ToSlash(existing.Stats), ".nx/cache/")
+		currentIsCache := strings.Contains(filepath.ToSlash(c.Stats), "/.nx/cache/") || strings.HasPrefix(filepath.ToSlash(c.Stats), ".nx/cache/")
+		if existingIsCache && !currentIsCache {
+			candidateMap[c.Project] = c
+		}
+	}
+
+	deduped := make([]Candidate, 0, len(candidateMap))
+	for _, c := range candidateMap {
+		deduped = append(deduped, c)
+	}
+
+	slices.SortFunc(deduped, func(a, b Candidate) int {
+		if cmp := strings.Compare(a.Project, b.Project); cmp != 0 {
+			return cmp
+		}
+		return strings.Compare(a.Stats, b.Stats)
 	})
 
-	return candidates, nil
+	return deduped, nil
 }
 
 func hasJavaScriptFiles(dir string) bool {
