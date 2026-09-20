@@ -49,13 +49,13 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 			if err != nil {
 				return err
 			}
-			currentResult, err := runAnalysis(sFile, dDir)
+			currentResult, currentSnap, err := runAnalysisWithOptions(sFile, dDir, true)
 			if err != nil {
 				return err
 			}
 
 			// 3. Compare baseline vs current
-			compResult := comparison.Compare(baseResult, currentResult)
+			compResult := comparison.CompareWithSnapshot(baseResult, currentResult, currentSnap)
 
 			// 4. Check regression budgets if configured
 			var limits budget.Limits

@@ -113,7 +113,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 			if err != nil {
 				return err
 			}
-			currentResult, _, err := runAnalysisWithOptions(sFile, dDir, false)
+			currentResult, currentSnap, err := runAnalysisWithOptions(sFile, dDir, false)
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 				if err != nil {
 					return err
 				}
-				compResult := comparison.Compare(baseResult, currentResult)
+				compResult := comparison.CompareWithSnapshot(baseResult, currentResult, currentSnap)
 				checkResult = budget.CheckComparison(compResult, limits)
 			} else {
 				checkResult = budget.CheckSummary(currentResult.Summary, limits)

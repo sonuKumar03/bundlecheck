@@ -54,6 +54,26 @@ func ComparisonTextWithOptions(w io.Writer, r *comparison.Result, opts TextOptio
 	if shown == 0 {
 		fmt.Fprintln(table, "(none)")
 	}
+	if len(r.Findings) > 0 {
+		fmt.Fprintln(table, "\nRegression explanation")
+		for _, f := range r.Findings {
+			target := f.Name
+			if len(f.Chunks) > 0 {
+				target = fmt.Sprintf("%s -> %s", f.Name, strings.Join(f.Chunks, ", "))
+			}
+			if f.Reason != "" {
+				target = fmt.Sprintf("%s (%s)", target, f.Reason)
+			}
+			fmt.Fprintf(table, "%s\t%s\n", formatDelta(f.DeltaBytes), target)
+			for i, step := range f.TracePath {
+				prefix := "  "
+				if i > 0 {
+					prefix = "  -> "
+				}
+				fmt.Fprintf(table, "\t%s%s\n", prefix, step)
+			}
+		}
+	}
 	if err := table.Flush(); err != nil {
 		return err
 	}

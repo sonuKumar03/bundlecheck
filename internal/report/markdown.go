@@ -121,6 +121,25 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 	renderMetricRow(&sb, "Total JS", r.Summary.Before.TotalJS, r.Summary.After.TotalJS, r.Summary.Delta.TotalJS)
 	sb.WriteString("\n")
 
+	if len(r.Findings) > 0 {
+		sb.WriteString("### 🔎 Regression Explanation\n\n")
+		for _, f := range r.Findings {
+			chunkInfo := ""
+			if len(f.Chunks) > 0 {
+				chunkInfo = fmt.Sprintf(" → emitted in `%s`", strings.Join(f.Chunks, "`, `"))
+			}
+			reasonInfo := ""
+			if f.Reason != "" {
+				reasonInfo = fmt.Sprintf(" *(%s)*", f.Reason)
+			}
+			fmt.Fprintf(&sb, "- **`%s`** (`%s`)%s%s\n", f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
+			if len(f.TracePath) > 0 {
+				sb.WriteString("  - **Import path:** `" + strings.Join(f.TracePath, "` → `") + "`\n")
+			}
+		}
+		sb.WriteString("\n")
+	}
+
 	// Package changes table
 	sb.WriteString("### Changed Packages\n\n")
 

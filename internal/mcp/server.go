@@ -417,7 +417,7 @@ func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.Cal
 		if err != nil {
 			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load baseline %q: %v", baselinePath, err)), nil
 		}
-		compResult := comparison.Compare(baseResult, res)
+		compResult := comparison.CompareWithSnapshot(baseResult, res, snap)
 		checkResult = budget.CheckComparison(compResult, limits)
 		checkResult.Comparison = compResult
 	} else {
@@ -486,7 +486,7 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 	currentRes.Summary = currentSnap.Totals
 	currentRes.Packages = currentSnap.Packages
 
-	cmpResult := comparison.Compare(baseResult, currentRes)
+	cmpResult := comparison.CompareWithSnapshot(baseResult, currentRes, currentSnap)
 
 	if maxInitialDeltaStr != "" || maxTotalDeltaStr != "" {
 		var limits budget.Limits

@@ -120,3 +120,46 @@ func TestCheckMarkdown(t *testing.T) {
 		t.Errorf("expected fail markdown, got: %s", bufFail.String())
 	}
 }
+
+func TestComparisonMarkdownWithFindings(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Before: snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+			After:  snapshot.Totals{InitialJS: 142 * 1024, TotalJS: 142 * 1024},
+			Delta:  snapshot.Totals{InitialJS: 42 * 1024, TotalJS: 42 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "chart.js",
+				DeltaBytes: 31 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"dist/browser/main.js"},
+				TracePath:  []string{"src/main.ts", "node_modules/chart.js/auto.js"},
+			},
+			{
+				Name:       "(unattributed)",
+				DeltaBytes: 11 * 1024,
+				Kind:       "unattributed",
+				Reason:     "Growth in application sources",
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := report.ComparisonMarkdown(&buf, comp, report.TextOptions{Top: 10})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	for _, want := range []string{
+		"### 🔎 Regression Explanation",
+		"- **`chart.js`** (`+31 KB`) → emitted in `dist/browser/main.js`",
+		"- **Import path:** `src/main.ts` → `node_modules/chart.js/auto.js`",
+		"- **`(unattributed)`** (`+11 KB`) *(Growth in application sources)*",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in markdown output:\n%s", want, out)
+		}
+	}
+}

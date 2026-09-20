@@ -29,12 +29,24 @@ type PackageChange struct {
 	Delta  Bytes  `json:"delta"`
 }
 
+type Finding struct {
+	Name         string   `json:"name"`
+	DeltaBytes   int64    `json:"deltaBytes"`
+	InitialDelta int64    `json:"initialDelta,omitempty"`
+	LazyDelta    int64    `json:"lazyDelta,omitempty"`
+	Kind         string   `json:"kind"` // "package", "source", or "unattributed"
+	Chunks       []string `json:"chunks,omitempty"`
+	TracePath    []string `json:"tracePath,omitempty"`
+	Reason       string   `json:"reason,omitempty"`
+}
+
 type Result struct {
 	SchemaVersion string          `json:"schemaVersion"`
 	ToolVersion   string          `json:"toolVersion"`
 	Command       string          `json:"command"`
 	Summary       SummaryChange   `json:"summary"`
 	Packages      []PackageChange `json:"packages"`
+	Findings      []Finding       `json:"findings,omitempty"`
 }
 
 // Compare consumes summaries validated by Parse. Nonnegative int64 operands

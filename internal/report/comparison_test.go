@@ -91,3 +91,48 @@ func TestComparisonJSON(t *testing.T) {
 		t.Fatal("lost JSON writer error")
 	}
 }
+
+func TestComparisonTextWithFindings(t *testing.T) {
+	r := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Before: snapshot.Totals{InitialJS: 100 * 1024, TotalJS: 100 * 1024},
+			After:  snapshot.Totals{InitialJS: 142 * 1024, TotalJS: 142 * 1024},
+			Delta:  snapshot.Totals{InitialJS: 42 * 1024, TotalJS: 42 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "chart.js",
+				DeltaBytes: 31 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"dist/browser/main.js"},
+				TracePath:  []string{"src/main.ts", "node_modules/chart.js/auto.js"},
+			},
+			{
+				Name:       "(unattributed)",
+				DeltaBytes: 11 * 1024,
+				Kind:       "unattributed",
+				Reason:     "Growth in application sources",
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	if err := ComparisonText(&out, r); err != nil {
+		t.Fatal(err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"Regression explanation",
+		"+31 KB",
+		"chart.js -> dist/browser/main.js",
+		"src/main.ts",
+		"-> node_modules/chart.js/auto.js",
+		"+11 KB",
+		"(unattributed) (Growth in application sources)",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q in output:\n%s", want, text)
+		}
+	}
+}

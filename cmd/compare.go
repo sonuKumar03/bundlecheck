@@ -12,6 +12,7 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/budget"
 	"github.com/sonuKumar03/bundlecheck/internal/comparison"
 	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func compareCommand() *cobra.Command {
@@ -62,12 +63,12 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 			if err != nil {
 				return fmt.Errorf("before (%q): %w", before, err)
 			}
-			a, err := loadSnapshotOrBuild(after)
+			a, snap, err := loadSnapshotOrBuildWithSnapshot(after)
 			if err != nil {
 				return fmt.Errorf("after (%q): %w", after, err)
 			}
 
-			r := comparison.Compare(b, a)
+			r := comparison.CompareWithSnapshot(b, a, snap)
 
 			w, cleanup, err := getOutputWriter(c, output)
 			if err != nil {
@@ -107,33 +108,38 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 }
 
 func loadSnapshotOrBuild(pathOrName string) (*analysis.AnalysisResult, error) {
+	res, _, err := loadSnapshotOrBuildWithSnapshot(pathOrName)
+	return res, err
+}
+
+func loadSnapshotOrBuildWithSnapshot(pathOrName string) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
 	// 1. Try resolving via baseline manager
 	resolved := baseline.ResolvePath(pathOrName)
 	if fi, err := os.Stat(resolved); err == nil && !fi.IsDir() {
 		res, err := comparison.Parse(resolved)
 		if err == nil {
-			return res, nil
+			return res, nil, nil
 		}
 	}
 
 	// 2. If it is a directory, locate stats and dist in directory
 	fi, err := os.Stat(pathOrName)
 	if err != nil {
-		return nil, fmt.Errorf("read path %q: %w", pathOrName, err)
+		return nil, nil, fmt.Errorf("read path %q: %w", pathOrName, err)
 	}
 
 	if fi.IsDir() {
 		sFile, dDir, err := resolveBuildArtifactsInDir(pathOrName, "", "", "")
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return runAnalysis(sFile, dDir)
+		return runAnalysisWithOptions(sFile, dDir, true)
 	}
 
 	// 3. If it is a file (e.g. stats.json), parse as stats or summary
 	res, err := comparison.Parse(pathOrName)
 	if err == nil {
-		return res, nil
+		return res, nil, nil
 	}
 
 	// Try running build analysis on raw stats.json
@@ -142,5 +148,5 @@ func loadSnapshotOrBuild(pathOrName string) (*analysis.AnalysisResult, error) {
 	if bfi, err := os.Stat(browserDir); err == nil && bfi.IsDir() {
 		distDir = browserDir
 	}
-	return runAnalysis(pathOrName, distDir)
+	return runAnalysisWithOptions(pathOrName, distDir, true)
 }
