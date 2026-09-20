@@ -115,6 +115,15 @@ bundlecheck why lodash
 bundlecheck why @angular/material --initial-only --format json
 ```
 
+### Inspect One Chunk (`bundlecheck inspect`)
+```sh
+# Show exact module and npm package contributions for one emitted chunk
+bundlecheck inspect chunk-ABC123.js
+
+# Use a full output path when filenames are ambiguous
+bundlecheck inspect browser/chunk-ABC123.js --format json
+```
+
 ### Baseline (`bundlecheck baseline`)
 ```sh
 # Captures current build and writes to .bundlecheck/baseline.json

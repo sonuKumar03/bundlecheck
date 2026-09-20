@@ -128,6 +128,9 @@ ng build --configuration production --stats-json
 # View initial JS vs lazy breakdown & top npm contributors
 bundlecheck summary dist/my-app/stats.json
 
+# Inspect the modules and packages inside one emitted chunk
+bundlecheck inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
+
 # Trace why a package was pulled into initial JS
 bundlecheck why dist/my-app/stats.json lodash-es
 
@@ -161,7 +164,17 @@ bundlecheck summary dist/my-app/stats.json --format json -o summary.json
 
 ---
 
-### 2. `bundlecheck why <package>`
+### 2. `bundlecheck inspect <chunk>`
+Shows the exact module and npm package contributions inside one emitted JavaScript chunk. The target can be its full output path or a unique filename.
+
+```bash
+bundlecheck inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
+bundlecheck inspect browser/chunk-ABC123.js --format json
+```
+
+---
+
+### 3. `bundlecheck why <package>`
 Traces the exact import graph path from entrypoints (`src/main.ts`) down to any bundled file or package.
 
 ```bash
@@ -183,7 +196,7 @@ src/main.ts
 
 ---
 
-### 3. `bundlecheck suggest`
+### 4. `bundlecheck suggest`
 Scans the bundle against optimization heuristics to suggest concrete refactoring opportunities.
 
 ```bash
@@ -197,7 +210,7 @@ bundlecheck suggest dist/my-app/stats.json
 
 ---
 
-### 4. `bundlecheck baseline` & `measure` (Git Worktrees & Snapshots)
+### 5. `bundlecheck baseline` & `measure` (Git Worktrees & Snapshots)
 Capture, manage, switch, and compare baseline bundle metrics across git branches without manual branch switching or rebuilding.
 
 ```bash
@@ -228,7 +241,7 @@ Total Bundle Size:   4.52 MB  -> 4.13 MB  (-390.00 KB / -8.6%)  🎉
 
 ---
 
-### 5. `bundlecheck compare`
+### 6. `bundlecheck compare`
 Compares saved JSON summary snapshots, or a baseline snapshot against Angular build stats:
 
 ```bash
@@ -237,7 +250,7 @@ bundlecheck compare .bundlecheck/baseline.json dist/my-app/stats.json
 
 ---
 
-### 5. `bundlecheck check`
+### 7. `bundlecheck check`
 Strict CI budget gate with custom pass/fail exit codes.
 
 ```bash

@@ -12,7 +12,7 @@ import (
 func Execute(args []string, stdout, stderr io.Writer) int {
 	root := &cobra.Command{
 		Use:     "bundlecheck",
-		Short:   "Summarize, measure, compare, trace, advise, and check Angular browser JavaScript bundles",
+		Short:   "Summarize, inspect, measure, compare, trace, advise, and check Angular browser JavaScript bundles",
 		Version: analysis.ToolVersion,
 		Long: `bundlecheck is a fast CLI and AI agent skill for Angular esbuild bundle analysis.
 It calculates accurate initial vs. lazy JavaScript byte totals, attributes npm package sizes,
@@ -31,6 +31,7 @@ recommendations, tracks baselines across changes, and enforces bundle size budge
 		baselineCommand(),
 		measureCommand(),
 		checkCommand(),
+		inspectCommand(),
 		whyCommand(),
 		suggestCommand(),
 	)
