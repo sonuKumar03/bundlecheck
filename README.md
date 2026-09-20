@@ -264,31 +264,44 @@ bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-
 
 ---
 
-### Nx workspace intelligence (`bundlecheck workspace summary`)
+### 8. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
 
-Build the apps first using the workspace-installed Nx CLI, then compare their existing browser artifacts:
+Compare app sizes, shared library costs, and duplicate npm dependencies across an Nx or Angular multi-app workspace:
 
 ```bash
-# Nx builds; bundlecheck never invokes build targets
-nx run-many -t build --projects=shop,admin --configuration=production --stats-json
-bundlecheck workspace summary --projects shop,admin
-bundlecheck workspace summary --format json --output workspace-report.json
+# Analyze all applications in workspace
+bundlecheck workspace summary
+
+# Select specific projects
+bundlecheck workspace summary --projects admin-dashboard,portal
+
+# Export machine-readable JSON or markdown
+bundlecheck workspace summary --format json -o workspace-report.json
 bundlecheck workspace summary --format markdown --all
 ```
 
-The command finds the nearest `nx.json`, or accepts `--root <workspace>`. It uses local Node and the installed Nx package to read `nx graph --print`. Defaults are all supported Angular apps, `--target build`, and `--configuration production`; projects must define that configuration. No dependencies are downloaded by bundlecheck.
+Supported builders include `@nx/angular:application`, `@nx/angular:browser-esbuild`, `@angular-devkit/build-angular:application`, `@angular-devkit/build-angular:browser-esbuild`, and `@angular/build:application`. Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, freshness indicators, and drill-down commands.
 
-Supported builders are `@nx/angular:application`, `@nx/angular:browser-esbuild`, `@angular-devkit/build-angular:application`, `@angular-devkit/build-angular:browser-esbuild`, and `@angular/build:application`. Output paths and configuration overrides determine each app's stats and browser directory, including custom application-builder `{base, browser}` paths. Stats must be directly in the output base or browser directory; ambiguous files fail that app.
+---
 
-Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, artifact paths, and argument lists for `why`/`suggest` drill-down. Text and Markdown show ten contributors per category by default (`--top` or `--all` overrides); JSON includes every contributor. Library ownership uses emitted input paths and project-root boundaries. Generated files and compiled library paths without authoritative source ownership remain unattributed; contribution totals need not equal bundle totals.
+### 9. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
 
-Each analyzed app includes a `freshness` result. `stale-suspected` means a contributing source file, project/workspace configuration, or dependency lockfile is newer than `stats.json`; text and Markdown reports warn users to rebuild. `unknown` means no newer input was found, not that the requested build configuration or Git revision was verified.
+Launch a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server over standard I/O for AI coding assistants (**Claude Code**, **Antigravity**, **Cursor**, **Claude Desktop**).
 
-Human reports lead with key findings and use readable binary sizes (KiB/MiB) plus each package's share of app startup JS. Framework/runtime contributions appear separately as context; library entries show their own emitted code, excluding imported npm costs. Markdown collapses exact artifact commands into a drill-down section. JSON retains exact byte counts and its existing schema.
+```bash
+bundlecheck mcp
+```
 
-Repeated contributions are summed **across app deployments**, not one user's transfer or deduplication savings. Build configuration and Git provenance are not verified.
+**Exposed MCP Tools:**
+- `bundle_summary`: Inspects bundle sizes, initial vs. lazy JS breakdown, and ranked npm contributors (with `path`, `project`, `top`, `filter`).
+- `bundle_why`: Traces dependency import paths from entrypoints to any target module.
+- `bundle_suggest`: Proposes prioritized optimization recommendations with estimated byte savings.
+- `bundle_check`: Evaluates absolute budgets and disallowed package rules.
+- `bundle_measure`: Measures size deltas against baseline snapshots with regression thresholds.
+- `workspace_summary`: Analyzes multi-app Nx workspaces, shared libraries, and cross-application duplicate dependencies.
 
-Missing or failed apps remain in a partial report with `complete: false` and exit code **1**. Their matrix values are `null`, never zero; a successful app with no contribution has zero values. Unsupported applications are listed and skipped by default, but explicitly selecting one fails. Unknown projects, absent configurations, and duplicate artifact ownership also fail. Capture the report even on exit 1; diagnostics go to stderr. Single-app commands and baseline formats are unchanged; workspace baseline management is not included.
+**Exposed MCP Resource:**
+- `bundlecheck://rules`: Standard bundle optimization heuristics and modern replacement guidelines for common heavy packages.
 
 ---
 
@@ -355,20 +368,43 @@ rules:
 
 ---
 
-## 🤖 AI Agent Skill Integration
+## 🤖 AI Agent Integration: MCP & Skills
 
-`bundlecheck` includes an official agent skill definition ([`.agents/skills/bundlecheck/SKILL.md`](.agents/skills/bundlecheck/SKILL.md)) compatible with **Antigravity**, **Claude Code**, **OpenAI Codex**, and **Cursor**.
+`bundlecheck` is built from the ground up for agentic workflows, providing two integration options for AI coding agents (**Antigravity**, **Claude Code**, **Cursor**, **OpenAI Codex**):
 
-### Install Agent Skill:
+### 1. Model Context Protocol (MCP) Server
+Add `bundlecheck` to your agent's MCP configuration:
+
+**Claude Code:**
+```bash
+claude mcp add bundlecheck -- bundlecheck mcp
+```
+
+**Claude Desktop / Cursor (`claude_desktop_config.json` / `.cursor/mcp.json`):**
+```json
+{
+  "mcpServers": {
+    "bundlecheck": {
+      "command": "bundlecheck",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+### 2. Companion Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
+Install the official skill definition to your local agent library:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
 Autonomous agents use `bundlecheck` in their inner coding loop to:
-1. Capture a baseline before refactoring.
-2. Read `bundlecheck suggest --format json` for ranked targets.
-3. Trace exact files with `bundlecheck why <package> --format json`.
-4. Validate byte reductions before committing code.
+1. Capture a baseline before refactoring (`bundle_measure` or `bundlecheck baseline`).
+2. Read `bundle_suggest` for prioritized refactoring targets.
+3. Trace exact importing files with `bundle_why`.
+4. Verify byte reductions before committing code.
+
+For complete agent documentation and JSON contracts, see [**docs/agents.md**](docs/agents.md).
 
 ---
 
@@ -405,7 +441,7 @@ browser/ dist + index.html ──► internal/discovery
 ## 🧪 Development & Testing
 
 ```bash
-# Run test suite (171 tests across 14 packages)
+# Run test suite (291 tests across 19 packages)
 go test -v ./...
 
 # Run linter

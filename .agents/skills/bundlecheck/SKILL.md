@@ -72,12 +72,23 @@ bundlecheck check --baseline .bundlecheck/baseline.json --max-initial-delta 0B
 # Zero-config auto-discovery
 bundlecheck summary --format json
 
+# Multi-app workspace: specify project positionally
+bundlecheck summary portal
+bundlecheck summary portal --format json
+
 # Summary with Gzip wire transfer sizing
 bundlecheck summary --gzip
 
 # Summary with immediate optimization suggestions
 bundlecheck summary --suggest --gzip
 ```
+
+### Model Context Protocol Server (`bundlecheck mcp`)
+For agents connecting via MCP over stdio:
+```sh
+bundlecheck mcp
+```
+Provides 6 tools (`bundle_summary`, `bundle_why`, `bundle_suggest`, `bundle_check`, `bundle_measure`, `workspace_summary`) and 1 resource (`bundlecheck://rules`).
 
 ### Nx Workspace Summary (`bundlecheck workspace summary`)
 ```sh

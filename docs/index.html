@@ -244,6 +244,14 @@
               <span>check</span>
               <span class="text-[10px] text-slate-500">CI gate</span>
             </a>
+            <a href="#cmd-workspace" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>workspace</span>
+              <span class="text-[10px] text-cyan-400">Nx Monorepo</span>
+            </a>
+            <a href="#cmd-mcp" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>mcp</span>
+              <span class="text-[10px] text-fuchsia-400">Agent Protocol</span>
+            </a>
           </nav>
         </div>
 
@@ -261,7 +269,7 @@
             </a>
             <a href="#agent-skill" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
               <span class="text-emerald-400 group-hover:scale-110 transition-transform">🤖</span>
-              <span>AI Agent Skill</span>
+              <span>AI Agents & MCP</span>
             </a>
           </nav>
         </div>
@@ -302,8 +310,8 @@
           </p>
         </div>
 
-        <!-- 3 Quick Pillars -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <!-- 4 Quick Pillars -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-emerald-400">⚡ SUB-MILLISECOND SPEED</div>
             <div class="text-xs text-slate-300">Pure compiled Go binary. Zero Node/npm startup overhead or heavy dependencies.</div>
@@ -315,6 +323,10 @@
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-sky-400">🛡️ AUTOMATED CI GATING</div>
             <div class="text-xs text-slate-300">Enforce max initial JS, total bundle sizes, and delta thresholds directly in GitHub PRs.</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div class="text-xs font-mono font-bold text-fuchsia-400">🤖 AI AGENTS &amp; MCP</div>
+            <div class="text-xs text-slate-300">Native Model Context Protocol server over stdio for Claude Code, Antigravity, and Cursor.</div>
           </div>
         </div>
       </section>
@@ -430,7 +442,7 @@
       <section id="commands" class="scroll-mt-20 space-y-8">
         <div class="space-y-2">
           <div class="text-xs font-mono font-semibold uppercase tracking-wider text-indigo-400">Command Reference</div>
-          <h2 class="text-2xl font-bold text-white tracking-tight">5 Core Commands to Inspect & Control Bundles</h2>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Core Commands to Inspect, Benchmark & Control Bundles</h2>
           <p class="text-sm text-slate-300 max-w-3xl">
             Each command outputs clean, structured ANSI tables and trees designed for both human terminal inspection and automated CI pipelines.
           </p>
@@ -628,6 +640,60 @@ Saved Baselines (.bundlecheck/baselines/):<br>
             </div>
           </div>
 
+          <!-- CMD 8: workspace summary -->
+          <div id="cmd-workspace" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">8</span>
+                <h3 class="text-base font-mono font-bold text-cyan-300">bundlecheck workspace summary [--projects &lt;names&gt;]</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">Nx Monorepo</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Aggregates existing Angular builds across an Nx workspace to compare multi-app sizes, shared library costs, duplicate dependencies, and artifact freshness.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck workspace summary</span></div>
+              <div class="text-white font-bold pt-1">WORKSPACE APPLICATION SUMMARY</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>• <strong class="text-cyan-300">admin-dashboard</strong>: Initial 1.25 MB | Lazy 450 KB | Total 1.70 MB <span class="text-emerald-400">✓ fresh</span></div>
+              <div>• <strong class="text-cyan-300">portal</strong>:          Initial 2.08 MB | Lazy 86 KB  | Total 2.16 MB <span class="text-emerald-400">✓ fresh</span></div>
+              <div class="pt-2 text-white font-bold">SHARED NX LIBRARIES & DUPLICATES</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div>1. @nx-workspace/reports    <span class="text-amber-300">412.50 KB</span> (used in admin-dashboard, portal)</div>
+              <div>2. @nx-workspace/charting   <span class="text-amber-300">195.20 KB</span> (used in portal)</div>
+              <div>• <strong class="text-rose-400">Cross-App Repeat</strong>: <span class="text-slate-300">exceljs</span> repeated across 2 app deployments (1.85 MB total)</div>
+            </div>
+          </div>
+
+          <!-- CMD 9: mcp -->
+          <div id="cmd-mcp" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center font-mono font-bold text-xs">9</span>
+                <h3 class="text-base font-mono font-bold text-fuchsia-300">bundlecheck mcp</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">Model Context Protocol</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Starts a native <strong class="text-white">Model Context Protocol (MCP)</strong> server over standard I/O for AI coding assistants (Claude Code, Antigravity, Cursor) to inspect bundles, trace dependency chains, and enforce budgets directly inside agent tool loops.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck mcp</span></div>
+              <div class="text-fuchsia-300 font-bold pt-1">MODEL CONTEXT PROTOCOL SERVER (bundlecheck v0.2.0)</div>
+              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
+              <div class="text-emerald-300">✓ 6 Tools registered: bundle_summary, bundle_why, bundle_suggest, bundle_check, bundle_measure, workspace_summary</div>
+              <div class="text-sky-300">✓ 1 Resource registered: bundlecheck://rules</div>
+              <div class="text-slate-400">Listening on stdio (JSON-RPC 2.0)...</div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -689,17 +755,143 @@ jobs:
         </div>
       </section>
 
-      <!-- 8. CI & AUTOMATION: AI AGENT SKILL -->
-      <section id="agent-skill" class="scroll-mt-20 space-y-4 pb-16">
-        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-          <span>AI Agent Skill Integration</span>
-        </h2>
-        <p class="text-sm text-slate-300">
-          bundlecheck includes an official agent skill definition (<code class="text-indigo-300 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">SKILL.md</code>) compatible with Antigravity, Claude Code, and autonomous coding agents to automatically inspect, diagnose, and fix bundle regressions during coding loops.
-        </p>
-        <div class="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 text-xs text-indigo-200 space-y-1">
-          <div class="font-bold text-indigo-300">Agent Command Usage:</div>
-          <div>Install using <code class="bg-black/50 px-1.5 py-0.5 rounded text-white">bundlecheck install --with-skill</code> to equip your AI assistant with zero-config bundle analysis capabilities.</div>
+      <!-- 8. CI & AUTOMATION: AI AGENT INTEGRATION & MCP -->
+      <section id="agent-skill" class="scroll-mt-20 space-y-6 pb-16">
+        <div class="space-y-2">
+          <div class="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400">Agentic Architecture</div>
+          <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+            <span>AI Agents & Model Context Protocol (MCP)</span>
+          </h2>
+          <p class="text-sm text-slate-300 max-w-3xl">
+            Equip autonomous coding agents (<strong class="text-white">Claude Code</strong>, <strong class="text-white">Antigravity</strong>, <strong class="text-white">Cursor</strong>) with native bundle inspection tools, dependency path tracing, and real-time regression gates through the standardized Model Context Protocol or zero-dependency CLI skill.
+          </p>
+        </div>
+
+        <!-- MCP Tools Grid -->
+        <div class="space-y-3">
+          <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Available MCP Tools (<code class="text-indigo-300">bundlecheck mcp</code>)</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-indigo-300">bundle_summary</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inspection</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Initial vs lazy JS totals, Gzip wire estimations, and top npm package contributors with optional path, project, and substring filters.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-sky-300">bundle_why</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Tracer</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                BFS import graph tracer revealing static and dynamic chains from entrypoints to any target library or source module.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-amber-300">bundle_suggest</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Advisor</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Generates prioritized optimization recommendations for heavy packages, eager components, and duplicate libraries with potential byte savings.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-rose-300">bundle_check</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">Guard</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Evaluates size budgets (max initial, max total) and enforces disallowed package policies to prevent unapproved dependencies.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-teal-300">bundle_measure</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">Delta</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Calculates signed byte movements against saved baseline snapshots with configurable regression limits (e.g. max initial delta).
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <code class="text-xs font-mono font-bold text-cyan-300">workspace_summary</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Monorepo</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Inspects Nx monorepos, comparing multi-app sizes, shared library contributions, repeated cross-app dependencies, and build freshness.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MCP Client Configuration Snippets -->
+        <div class="space-y-3 pt-2">
+          <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Quick Client Setup</div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- Claude Code -->
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white">Claude Code CLI</span>
+                <span class="text-[10px] font-mono text-indigo-400">Terminal Command</span>
+              </div>
+              <div class="p-3 rounded-lg bg-black/60 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto">
+                <code>claude mcp add bundlecheck -- bundlecheck mcp</code>
+              </div>
+              <p class="text-[11px] text-slate-400">Runs instantly without modifying config files directly.</p>
+            </div>
+
+            <!-- Claude Desktop / Cursor -->
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white">Claude Desktop &amp; Cursor</span>
+                <span class="text-[10px] font-mono text-slate-400">mcp.json</span>
+              </div>
+              <div class="p-3 rounded-lg bg-black/60 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto">
+<pre><code>{
+  "mcpServers": {
+    "bundlecheck": {
+      "command": "bundlecheck",
+      "args": ["mcp"]
+    }
+  }
+}</code></pre>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Companion Agent Skill -->
+        <div class="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">🤖</span>
+            <h3 class="text-sm font-bold text-white">Companion Agent Skill Definition (<code class="text-indigo-300 font-mono">SKILL.md</code>)</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            For coding assistants without direct MCP connections, bundlecheck provides an official skill file following standard agent prompts. Agents can capture baselines, parse structured JSON (<code class="text-indigo-300 font-mono">--format json</code>), and verify size reductions during autonomous code editing loops.
+          </p>
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <div class="p-2.5 rounded-lg bg-black/50 border border-slate-800 font-mono text-xs text-slate-200 flex-1 min-w-[280px]">
+              <code>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill</code>
+            </div>
+            <a href="https://github.com/sonuKumar03/bundlecheck/blob/master/docs/agents.md" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors flex items-center space-x-1.5 whitespace-nowrap">
+              <span>View Full Agent Docs</span>
+              <span>→</span>
+            </a>
+          </div>
         </div>
       </section>
 
@@ -809,6 +1001,20 @@ jobs:
           </div>
           <span class="text-[10px] text-slate-500">Budget</span>
         </a>
+        <a href="#cmd-workspace" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-cyan-400">$</span>
+            <span>bundlecheck workspace summary</span>
+          </div>
+          <span class="text-[10px] text-slate-500">Nx Monorepo</span>
+        </a>
+        <a href="#cmd-mcp" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+          <div class="flex items-center space-x-2">
+            <span class="text-fuchsia-400">$</span>
+            <span>bundlecheck mcp</span>
+          </div>
+          <span class="text-[10px] text-slate-500">MCP Server</span>
+        </a>
         <a href="#config-file" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-slate-400">⚙️</span>
@@ -826,9 +1032,9 @@ jobs:
         <a href="#agent-skill" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">🤖</span>
-            <span class="font-medium font-sans">AI Agent Skill</span>
+            <span class="font-medium font-sans">AI Agents &amp; MCP Protocol</span>
           </div>
-          <span class="text-[10px] text-slate-500">AI</span>
+          <span class="text-[10px] text-slate-500">AI / MCP</span>
         </a>
       </div>
 
