@@ -59,7 +59,7 @@ inputs:
     required: false
     default: ''
   base-ref:
-    description: 'Git base ref (e.g. main, master, or ${{ github.base_ref }}) for automatic worktree comparison'
+    description: 'Git base ref (e.g. main, master, or github.base_ref) for automatic worktree comparison'
     required: false
     default: ''
   build-cmd:
