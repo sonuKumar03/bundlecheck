@@ -9,7 +9,7 @@
 
 `bundlecheck` is a high-speed, zero-dependency bundle analysis tool and AI agent skill engineered specifically for Angular esbuild outputs and Nx enterprise workspaces.
 
-Following the comprehensive performance audit in `docs/cli-performance-audit.md`, this document outlines:
+Following comprehensive performance audits across the CLI, this document outlines:
 1. **Completed Performance Enhancements (Stage 1)**: Algorithmic optimizations eliminating quadratic bottlenecks.
 2. **Upcoming Engine Optimizations (Stage 2)**: Parser, discovery, and fast-path metadata reader improvements.
 3. **Product & Feature Roadmap (Stage 3)**: Interactive visualizer reports, CI action integrations, and multi-bundler expansion.
@@ -65,8 +65,9 @@ flowchart TD
 
 ## 3. Product & Feature Roadmap
 
-### 1. Standalone Interactive HTML Treemap Visualizer
-- **Command**: `bundlecheck summary --format html --output report.html`
+### 1. Standalone Interactive HTML Treemap Visualizer *(Planned)*
+- **Status**: Planned (Not yet implemented in current CLI)
+- **Proposed Command**: `bundlecheck summary --format html --output report.html`
 - **Capabilities**:
   - Zero-dependency, self-contained SVG/Canvas interactive treemap and zoomable sunburst partition chart.
   - Interactive drill-down from initial vs lazy chunks down to individual NPM packages and source files.

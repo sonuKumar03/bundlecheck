@@ -8,7 +8,7 @@
 
 **Tech Stack:** Angular 21 (standalone components, signals), Nx 22, Chart.js 4, Moment.js 2, ExcelJS 4, PDF.js (`pdfjs-dist 4`), Lodash / Lodash-es.
 
-**Spec:** [docs/superpowers/specs/2026-09-20-document-report-studio-design.md](file:///Users/sonukumar/project/bundlecheck/docs/superpowers/specs/2026-09-20-document-report-studio-design.md)
+**Spec:** [docs/superpowers/specs/2026-09-20-document-report-studio-design.md](../specs/2026-09-20-document-report-studio-design.md)
 
 ## Global Constraints
 - Target workspace directory: `testdata/nx-workspace`.
@@ -33,7 +33,7 @@
   - `export class ReportDatasetService` with `rows = signal<ReportRow[]>`, `totalAmount = computed<number>`, `averageMargin = computed<number>`, `addRow(row: ReportRow)`, `updateRow(id: string, updates: Partial<ReportRow>)`, `deleteRow(id: string)`
   - `export function generateExcelWorkbook(title: string, rows: ReportRow[]): Promise<Blob>` in `excel-export.ts`
 
-- [ ] **Step 1: Write ReportDatasetService and update excel-export**
+- [x] **Step 1: Write ReportDatasetService and update excel-export**
 
 Create `testdata/nx-workspace/libs/reports/src/lib/report-dataset.service.ts`:
 ```typescript
@@ -141,12 +141,12 @@ export * from './lib/pdf-report.component';
 export * from './lib/report-dataset.service';
 ```
 
-- [ ] **Step 2: Build verification**
+- [x] **Step 2: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add testdata/nx-workspace/libs/reports
@@ -167,7 +167,7 @@ git commit -m "feat: add reactive ReportDatasetService and real ExcelJS workbook
 - Produces:
   - `ExecutiveChartComponent` standalone Angular component displaying KPI summary cards and rendering interactive Chart.js bar & line chart.
 
-- [ ] **Step 1: Implement ExecutiveChartComponent**
+- [x] **Step 1: Implement ExecutiveChartComponent**
 
 Create `testdata/nx-workspace/libs/charting/src/lib/executive-chart.component.ts`:
 ```typescript
@@ -308,12 +308,12 @@ export * from './lib/date-utils';
 export * from './lib/executive-chart.component';
 ```
 
-- [ ] **Step 2: Build verification**
+- [x] **Step 2: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add testdata/nx-workspace/libs/charting
@@ -335,7 +335,7 @@ git commit -m "feat: add ExecutiveChartComponent with live Chart.js rendering an
 - Produces:
   - `SpreadsheetStudioComponent` (standalone component with editable table grid, add row form, cell updater, and direct `.xlsx` download button)
 
-- [ ] **Step 1: Configure library and tsconfig**
+- [x] **Step 1: Configure library and tsconfig**
 
 Create `testdata/nx-workspace/libs/spreadsheet-studio/project.json`:
 ```json
@@ -355,7 +355,7 @@ Add path in `testdata/nx-workspace/tsconfig.base.json`:
       ]
 ```
 
-- [ ] **Step 2: Implement SpreadsheetStudioComponent**
+- [x] **Step 2: Implement SpreadsheetStudioComponent**
 
 Create `testdata/nx-workspace/libs/spreadsheet-studio/src/lib/spreadsheet-studio.component.ts`:
 ```typescript
@@ -513,12 +513,12 @@ Create `testdata/nx-workspace/libs/spreadsheet-studio/src/index.ts`:
 export * from './lib/spreadsheet-studio.component';
 ```
 
-- [ ] **Step 3: Build verification**
+- [x] **Step 3: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add testdata/nx-workspace/libs/spreadsheet-studio testdata/nx-workspace/tsconfig.base.json
@@ -540,7 +540,7 @@ git commit -m "feat: add spreadsheet-studio library with interactive grid and Ex
 - Produces:
   - `PdfStudioComponent` (document builder with real-time PDF canvas preview using `pdfjs-dist`, page pagination, and document export)
 
-- [ ] **Step 1: Configure library and tsconfig**
+- [x] **Step 1: Configure library and tsconfig**
 
 Create `testdata/nx-workspace/libs/pdf-studio/project.json`:
 ```json
@@ -560,7 +560,7 @@ Add path in `testdata/nx-workspace/tsconfig.base.json`:
       ]
 ```
 
-- [ ] **Step 2: Implement PdfStudioComponent**
+- [x] **Step 2: Implement PdfStudioComponent**
 
 Create `testdata/nx-workspace/libs/pdf-studio/src/lib/pdf-studio.component.ts`:
 ```typescript
@@ -732,12 +732,12 @@ Create `testdata/nx-workspace/libs/pdf-studio/src/index.ts`:
 export * from './lib/pdf-studio.component';
 ```
 
-- [ ] **Step 3: Build verification**
+- [x] **Step 3: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add testdata/nx-workspace/libs/pdf-studio testdata/nx-workspace/tsconfig.base.json
@@ -759,7 +759,7 @@ git commit -m "feat: add pdf-studio library with PDF canvas preview and export"
 - Produces:
   - `DocumentEditorComponent` (split-pane document editor with live formatted markdown preview, toolbar, word/character counter)
 
-- [ ] **Step 1: Configure library and tsconfig**
+- [x] **Step 1: Configure library and tsconfig**
 
 Create `testdata/nx-workspace/libs/document-editor/project.json`:
 ```json
@@ -779,7 +779,7 @@ Add path in `testdata/nx-workspace/tsconfig.base.json`:
       ]
 ```
 
-- [ ] **Step 2: Implement DocumentEditorComponent**
+- [x] **Step 2: Implement DocumentEditorComponent**
 
 Create `testdata/nx-workspace/libs/document-editor/src/lib/document-editor.component.ts`:
 ```typescript
@@ -900,12 +900,12 @@ Create `testdata/nx-workspace/libs/document-editor/src/index.ts`:
 export * from './lib/document-editor.component';
 ```
 
-- [ ] **Step 3: Build verification**
+- [x] **Step 3: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add testdata/nx-workspace/libs/document-editor testdata/nx-workspace/tsconfig.base.json
@@ -931,7 +931,7 @@ git commit -m "feat: add document-editor library with markdown editor and live p
   - `lodash/cloneDeep` (preserves bundlecheck gotcha requirement)
   - `moment` (preserves bundlecheck gotcha requirement)
 
-- [ ] **Step 1: Update app.routes.ts**
+- [x] **Step 1: Update app.routes.ts**
 
 Update `testdata/nx-workspace/apps/portal/src/app/app.routes.ts`:
 ```typescript
@@ -977,7 +977,7 @@ export const appRoutes: Route[] = [
 ];
 ```
 
-- [ ] **Step 2: Update app.component.ts with studio shell UI**
+- [x] **Step 2: Update app.component.ts with studio shell UI**
 
 Update `testdata/nx-workspace/apps/portal/src/app/app.component.ts`:
 ```typescript
@@ -1098,7 +1098,7 @@ export class AppComponent {
 }
 ```
 
-- [ ] **Step 3: Update index.html title**
+- [x] **Step 3: Update index.html title**
 
 Update `testdata/nx-workspace/apps/portal/src/index.html`:
 ```html
@@ -1116,12 +1116,12 @@ Update `testdata/nx-workspace/apps/portal/src/index.html`:
 </html>
 ```
 
-- [ ] **Step 4: Build verification**
+- [x] **Step 4: Build verification**
 
 Run: `npm run build:portal` in `testdata/nx-workspace`
 Expected: PASS with separate chunks emitted.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add testdata/nx-workspace/apps/portal
@@ -1164,9 +1164,9 @@ git commit -m "feat: implement DocuCraft studio shell with sidebar navigation an
   - `LoginComponent` standalone component with professional branding, credentials input, 1-click quick login ("Sign In as Auditor"), and error validation.
   - Route guard redirecting unauthenticated users to `/login`.
 
-- [ ] **Step 1: Implement AuthService and LoginComponent**
-- [ ] **Step 2: Wire `/login` into app.routes and app.component header**
-- [ ] **Step 3: Verify build and commit**
+- [x] **Step 1: Implement AuthService and LoginComponent**
+- [x] **Step 2: Wire `/login` into app.routes and app.component header**
+- [x] **Step 3: Verify build and commit**
 
 ---
 
@@ -1174,23 +1174,23 @@ git commit -m "feat: implement DocuCraft studio shell with sidebar navigation an
 
 **Files:** None (verification commands)
 
-- [ ] **Step 1: Workspace build verification**
+- [x] **Step 1: Workspace build verification**
 
 Run: `npm run build` in `testdata/nx-workspace`
 Expected: PASS for both `portal` and `admin-dashboard`.
 
-- [ ] **Step 2: Bundlecheck Go test suite verification**
+- [x] **Step 2: Bundlecheck Go test suite verification**
 
 Run: `go test ./...` in repository root
-Expected: PASS (all 245 tests pass, no regression in `cmd/nx_workspace_test.go`).
+Expected: PASS (all 296 tests pass across 19 packages, no regression in `cmd/nx_workspace_test.go`).
 
-- [ ] **Step 3: Dev server verification on localhost:3000**
+- [x] **Step 3: Dev server verification on localhost:3000**
 
 Run: `npm start` in `testdata/nx-workspace`
 Check: `curl -s -I http://localhost:3000` returns `HTTP/1.1 200 OK`.
 Check: `curl -s http://localhost:3000 | grep "OmniReport"` confirms studio HTML is served.
 
-- [ ] **Step 4: Final commit and clean status**
+- [x] **Step 4: Final commit and clean status**
 
 Ensure git status is clean and all changes are committed.
 

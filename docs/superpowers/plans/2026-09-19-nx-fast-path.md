@@ -29,7 +29,7 @@
 - Consumes: `workspace.Metadata`, `workspace.Project`, `workspace.Target`, `workspace.IsApplication`, `workspace.Supported`.
 - Produces: `ReadMetadataStatic(root string) (Metadata, error)`, `ErrStaticFallbackRequired`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 Create `internal/workspace/static_test.go`:
 ```go
@@ -94,12 +94,12 @@ func TestReadMetadataStatic(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `rtk go test ./internal/workspace -run TestReadMetadataStatic`
 Expected: FAIL with undefined `ReadMetadataStatic`
 
-- [ ] **Step 3: Implement `internal/workspace/static.go`**
+- [x] **Step 3: Implement `internal/workspace/static.go`**
 
 Write `internal/workspace/static.go`:
 ```go
@@ -226,12 +226,12 @@ func ReadMetadataStatic(root string) (Metadata, error) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `rtk go test -v ./internal/workspace -run TestReadMetadataStatic`
 Expected: PASS
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 rtk git add internal/workspace/static.go internal/workspace/static_test.go
@@ -250,7 +250,7 @@ rtk git commit -m "feat(workspace): implement pure-Go static metadata parser for
 - Consumes: `ReadMetadataStatic`, `readMetadataNxCli`.
 - Produces: `ReadMetadata(ctx context.Context, root string) (Metadata, error)`.
 
-- [ ] **Step 1: Write test verifying transparent fallback and equivalence**
+- [x] **Step 1: Write test verifying transparent fallback and equivalence**
 
 Add to `internal/workspace/static_test.go`:
 ```go
@@ -295,7 +295,7 @@ func TestReadMetadataEquivalence(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Refactor `ReadMetadata` in `internal/workspace/nx.go`**
+- [x] **Step 2: Refactor `ReadMetadata` in `internal/workspace/nx.go`**
 
 Rename current `ReadMetadata` body to `readMetadataNxCli(ctx context.Context, root string) (Metadata, error)` and implement top-level `ReadMetadata`:
 ```go
@@ -307,12 +307,12 @@ func ReadMetadata(ctx context.Context, root string) (Metadata, error) {
 }
 ```
 
-- [ ] **Step 3: Run all workspace tests**
+- [x] **Step 3: Run all workspace tests**
 
 Run: `rtk go test -v ./internal/workspace`
 Expected: PASS
 
-- [ ] **Step 4: Commit Task 2**
+- [x] **Step 4: Commit Task 2**
 
 ```bash
 rtk git add internal/workspace/nx.go internal/workspace/static_test.go
@@ -327,7 +327,7 @@ rtk git commit -m "feat(workspace): wire ReadMetadata to use fast-path static pa
 - Modify: `internal/workspace/nx_test.go`
 - Modify: `docs/roadmap.md`
 
-- [ ] **Step 1: Write microbenchmark in `internal/workspace/nx_test.go`**
+- [x] **Step 1: Write microbenchmark in `internal/workspace/nx_test.go`**
 
 Add:
 ```go
@@ -353,26 +353,26 @@ func BenchmarkReadMetadataStatic(b *testing.B) {
 }
 ```
 
-- [ ] **Step 2: Run benchmark to verify sub-5ms performance**
+- [x] **Step 2: Run benchmark to verify sub-5ms performance**
 
 Run: `rtk go test -bench=BenchmarkReadMetadataStatic -benchmem ./internal/workspace`
 Expected: PASS, ~0.5ms - 2ms per op.
 
-- [ ] **Step 3: Update `docs/roadmap.md`**
+- [x] **Step 3: Update `docs/roadmap.md`**
 
 Update Stage 2.3 status to Completed in `docs/roadmap.md`.
 
-- [ ] **Step 4: Run full test suite across entire project**
+- [x] **Step 4: Run full test suite across entire project**
 
 Run: `rtk go test ./...`
 Expected: 100% PASS
 
-- [ ] **Step 5: Run linter**
+- [x] **Step 5: Run linter**
 
 Run: `rtk golangci-lint run ./...`
 Expected: No issues found
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```bash
 rtk git add internal/workspace/nx_test.go docs/roadmap.md

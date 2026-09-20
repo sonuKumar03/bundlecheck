@@ -18,7 +18,7 @@ Optimization Advisor (`bundlecheck suggest`), Markdown PR / CI Reporter (`--form
 - [x] Calculate raw output bytes and emitted npm package contributions.
 - [x] Handle scoped, nested, and Windows-style package paths and normalization collisions.
 - [x] Expose `summary --stats --dist --format text|json|markdown` with auto-discovery, short flags (`-s`, `-d`, `-p`, `-f`, `-o`), `--gzip`, and `--suggest`.
-- [x] Provide deterministic JSON with schema version `1`, tool version `0.1.0`, and all contributing packages.
+- [x] Provide deterministic JSON with schema version `1`, tool version `0.3.0`, and all contributing packages.
 - [x] Provide text totals, percentage shares, and configurable `--top`, `--filter`, `--all` flags.
 - [x] Add zero-config artifact auto-discovery (`internal/discovery`) for single and multi-project workspaces.
 - [x] Implement baseline capture (`bundlecheck baseline`) and `.bundlecheck/baseline.json` management.
@@ -30,17 +30,18 @@ Optimization Advisor (`bundlecheck suggest`), Markdown PR / CI Reporter (`--form
 - [x] Implement GitHub Flavored Markdown PR & CI reporting (`--format markdown`, `-f md`) across summary, compare, measure, suggest, and check.
 - [x] Add direct file output support (`-o, --output`) across CLI commands.
 - [x] Add universal AI agent skill (`.agents/skills/bundlecheck/SKILL.md`) with complete optimization playbooks.
+- [x] Implement Model Context Protocol (MCP) server (`bundlecheck mcp`) exposing 6 core analysis tools and `bundlecheck://rules` resource.
 - [x] Update `install.sh` to support multi-environment skill installation (`--with-skill`, `--skill-dir`).
 - [x] Compare saved summary snapshots with signed JS/package deltas and deterministic text/JSON/markdown.
 - [x] Warn when Nx workspace bundle inputs are newer than an app's `stats.json`, without changing report completeness or exit status.
 
 ## Verification recorded
 
-The latest implementation checks on 2026-09-18 passed:
+The latest implementation checks on 2026-09-21 passed:
 
 | Check | Result |
 | --- | --- |
-| `rtk go test ./...` | 171 tests passed across 14 packages |
+| `rtk go test ./...` | 296 tests passed across 19 packages |
 | `rtk go vet ./...` | Passed |
 | `rtk go build -o bundlecheck .` | Passed |
 | `rtk proxy sh -n install.sh` | Passed |

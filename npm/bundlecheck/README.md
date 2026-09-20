@@ -75,10 +75,11 @@ Run instantly without installing Go or compilers:
 
 ```bash
 # Run on demand
-npx bundlecheck summary dist/my-app/stats.json
+npx @sonukumar03/bundlecheck summary dist/my-app/stats.json
 
 # Or add to project devDependencies
-npm install -D bundlecheck
+npm install -D @sonukumar03/bundlecheck
+npx bundlecheck summary dist/my-app/stats.json
 ```
 
 ### Option 2: 1-Line Standalone Shell Installer
@@ -392,7 +393,7 @@ claude mcp add bundlecheck -- bundlecheck mcp
 }
 ```
 
-### 2. Companion Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
+### 2. Companion Agent Skill ([`SKILL.md`](https://github.com/sonuKumar03/bundlecheck/blob/master/.agents/skills/bundlecheck/SKILL.md))
 Install the official skill definition to your local agent library:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
@@ -404,7 +405,7 @@ Autonomous agents use `bundlecheck` in their inner coding loop to:
 3. Trace exact importing files with `bundle_why`.
 4. Verify byte reductions before committing code.
 
-For complete agent documentation and JSON contracts, see [**docs/agents.md**](docs/agents.md).
+For complete agent documentation and JSON contracts, see [**docs/agents.md**](https://github.com/sonuKumar03/bundlecheck/blob/master/docs/agents.md).
 
 ---
 
@@ -441,7 +442,7 @@ browser/ dist + index.html ──► internal/discovery
 ## 🧪 Development & Testing
 
 ```bash
-# Run test suite (291 tests across 19 packages)
+# Run test suite (296 tests across 19 packages)
 go test -v ./...
 
 # Run linter

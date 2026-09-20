@@ -75,10 +75,11 @@ Run instantly without installing Go or compilers:
 
 ```bash
 # Run on demand
-npx bundlecheck summary dist/my-app/stats.json
+npx @sonukumar03/bundlecheck summary dist/my-app/stats.json
 
 # Or add to project devDependencies
-npm install -D bundlecheck
+npm install -D @sonukumar03/bundlecheck
+npx bundlecheck summary dist/my-app/stats.json
 ```
 
 ### Option 2: 1-Line Standalone Shell Installer
@@ -441,7 +442,7 @@ browser/ dist + index.html ──► internal/discovery
 ## 🧪 Development & Testing
 
 ```bash
-# Run test suite (291 tests across 19 packages)
+# Run test suite (296 tests across 19 packages)
 go test -v ./...
 
 # Run linter

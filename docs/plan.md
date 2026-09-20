@@ -60,6 +60,6 @@
 
 ## Verification & Validation
 
-- `rtk go test -v ./...`: 171 tests passed across 14 packages.
+- `rtk go test -v ./...`: 296 tests passed across 19 packages.
 - `rtk go vet ./...`: Passed.
 - `rtk go build -o bundlecheck .`: Passed.
