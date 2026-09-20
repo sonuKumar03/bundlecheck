@@ -8,9 +8,51 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"bundlecheck/internal/workspace"
 )
+
+func TestWorkspaceSummaryWarnsAboutNewerBundleInput(t *testing.T) {
+	root := nxFixture(t)
+	stats := filepath.Join(root, "dist/apps/shop/stats.json")
+	source := filepath.Join(root, "libs/ui/main.ts")
+	if err := os.MkdirAll(filepath.Dir(source), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(source, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	artifactTime := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(stats, artifactTime, artifactTime); err != nil {
+		t.Fatal(err)
+	}
+	inputTime := time.Now().Add(time.Hour)
+	if err := os.Chtimes(source, inputTime, inputTime); err != nil {
+		t.Fatal(err)
+	}
+
+	var out, stderr bytes.Buffer
+	args := []string{"workspace", "summary", "--root", root, "--projects", "shop", "--format", "json"}
+	if code := Execute(args, &out, &stderr); code != 0 {
+		t.Fatalf("JSON report: %d %s", code, stderr.String())
+	}
+	var result workspace.Result
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	freshness := result.Apps[0].Freshness
+	if freshness == nil || freshness.Status != "stale-suspected" || freshness.NewestInput != "libs/ui/main.ts" {
+		t.Fatalf("freshness: %+v", freshness)
+	}
+
+	out.Reset()
+	stderr.Reset()
+	args[len(args)-1] = "text"
+	if code := Execute(args, &out, &stderr); code != 0 || !strings.Contains(out.String(), "artifacts may be stale") || !strings.Contains(out.String(), "libs/ui/main.ts") {
+		t.Fatalf("text report: %d %s %s", code, out.String(), stderr.String())
+	}
+}
 
 func nxFixture(t *testing.T) string {
 	t.Helper()

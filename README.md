@@ -269,9 +269,11 @@ Supported builders are `@nx/angular:application`, `@nx/angular:browser-esbuild`,
 
 Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, artifact paths, and argument lists for `why`/`suggest` drill-down. Text and Markdown show ten contributors per category by default (`--top` or `--all` overrides); JSON includes every contributor. Library ownership uses emitted input paths and project-root boundaries. Generated files and compiled library paths without authoritative source ownership remain unattributed; contribution totals need not equal bundle totals.
 
+Each analyzed app includes a `freshness` result. `stale-suspected` means a contributing source file, project/workspace configuration, or dependency lockfile is newer than `stats.json`; text and Markdown reports warn users to rebuild. `unknown` means no newer input was found, not that the requested build configuration or Git revision was verified.
+
 Human reports lead with key findings and use readable binary sizes (KiB/MiB) plus each package's share of app startup JS. Framework/runtime contributions appear separately as context; library entries show their own emitted code, excluding imported npm costs. Markdown collapses exact artifact commands into a drill-down section. JSON retains exact byte counts and its existing schema.
 
-Repeated contributions are summed **across app deployments**, not one user's transfer or deduplication savings. Artifacts are not verified as fresh or as matching the requested configuration.
+Repeated contributions are summed **across app deployments**, not one user's transfer or deduplication savings. Build configuration and Git provenance are not verified.
 
 Missing or failed apps remain in a partial report with `complete: false` and exit code **1**. Their matrix values are `null`, never zero; a successful app with no contribution has zero values. Unsupported applications are listed and skipped by default, but explicitly selecting one fails. Unknown projects, absent configurations, and duplicate artifact ownership also fail. Capture the report even on exit 1; diagnostics go to stderr. Single-app commands and baseline formats are unchanged; workspace baseline management is not included.
 

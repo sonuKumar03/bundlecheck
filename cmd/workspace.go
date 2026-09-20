@@ -140,6 +140,7 @@ func workspaceCommand() *cobra.Command {
 			}
 			app.Status = "analyzed"
 			app.Analysis = result
+			app.Freshness = workspace.CheckFreshness(workspaceRoot, metadata.Graph.Nodes[app.Name].Data.Root, app.Stats, snap)
 			packages[app.Name] = result.Packages
 			app.DrillDown = [][]string{{"bundlecheck", "why", "--stats", app.Stats, "--dist", app.Dist, "--package", "<package-name>"}, {"bundlecheck", "suggest", "--stats", app.Stats, "--dist", app.Dist}}
 		}

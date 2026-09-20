@@ -7,10 +7,39 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"bundlecheck/internal/analysis"
 	"bundlecheck/internal/snapshot"
 )
+
+func TestFreshnessReportsNewerBundleInput(t *testing.T) {
+	root := t.TempDir()
+	stats := filepath.Join(root, "dist/apps/shop/stats.json")
+	source := filepath.Join(root, "apps/shop/src/main.ts")
+	for _, path := range []string{stats, source} {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	artifactTime := time.Date(2026, 9, 20, 10, 30, 0, 0, time.UTC)
+	if err := os.Chtimes(stats, artifactTime, artifactTime); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(source, artifactTime.Add(time.Minute), artifactTime.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+
+	got := CheckFreshness(root, "apps/shop", stats, &snapshot.BundleSnapshot{
+		Inputs: []snapshot.Module{{Path: "apps/shop/src/main.ts"}},
+	})
+	if got.Status != "stale-suspected" || got.NewestInput != "apps/shop/src/main.ts" || got.ArtifactModifiedAt != "2026-09-20T10:30:00Z" || got.NewestInputModifiedAt != "2026-09-20T10:31:00Z" {
+		t.Fatalf("freshness: %+v", got)
+	}
+}
 
 func TestNxOutputsAndOwnership(t *testing.T) {
 	root := t.TempDir()

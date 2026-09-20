@@ -18,8 +18,16 @@ type App struct {
 	Diagnostic string                   `json:"diagnostic,omitempty"`
 	Stats      string                   `json:"stats,omitempty"`
 	Dist       string                   `json:"dist,omitempty"`
+	Freshness  *Freshness               `json:"freshness,omitempty"`
 	Analysis   *analysis.AnalysisResult `json:"analysis,omitempty"`
 	DrillDown  [][]string               `json:"drillDown,omitempty"`
+}
+
+type Freshness struct {
+	Status                string `json:"status"`
+	ArtifactModifiedAt    string `json:"artifactModifiedAt,omitempty"`
+	NewestInput           string `json:"newestInput,omitempty"`
+	NewestInputModifiedAt string `json:"newestInputModifiedAt,omitempty"`
 }
 type Bytes struct {
 	InitialBytes int64 `json:"initialBytes"`

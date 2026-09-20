@@ -32,6 +32,7 @@ Optimization Advisor (`bundlecheck suggest`), Markdown PR / CI Reporter (`--form
 - [x] Add universal AI agent skill (`.agents/skills/bundlecheck/SKILL.md`) with complete optimization playbooks.
 - [x] Update `install.sh` to support multi-environment skill installation (`--with-skill`, `--skill-dir`).
 - [x] Compare saved summary snapshots with signed JS/package deltas and deterministic text/JSON/markdown.
+- [x] Warn when Nx workspace bundle inputs are newer than an app's `stats.json`, without changing report completeness or exit status.
 
 ## Verification recorded
 

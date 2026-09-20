@@ -90,7 +90,7 @@ Requires local Node/Nx. Finds the nearest `nx.json`; `--root`, `--target`, and `
 
 Human reports lead with key findings, readable sizes, and per-app startup shares; framework/runtime costs are separate context. Library sizes exclude imported npm dependencies. Use JSON for exact bytes.
 
-Inspect `apps[]`, `packages[]`, `libraries[]`, and `findings[]`. Library bytes come from emitted source contributions, not graph edges. Sums represent separate deployments, not deduplication savings. Build freshness/configuration are not verified. Keep unattributed/generated/compiled-library contributions unassigned.
+Inspect `apps[]`, `packages[]`, `libraries[]`, and `findings[]`. Each analyzed app has `freshness.status`: `stale-suspected` means an input timestamp is newer than `stats.json`, while `unknown` is not proof of freshness. Library bytes come from emitted source contributions, not graph edges. Sums represent separate deployments, not deduplication savings. Build configuration and Git provenance are not verified. Keep unattributed/generated/compiled-library contributions unassigned.
 
 A partial report exits 1 with `complete: false`; JSON remains available. Failed apps have `null` matrix values, while absent contributions in analyzed apps have zero values. Do not discard partial JSON or treat missing apps as zero. Unsupported apps are skipped by default; selecting one explicitly fails.
 

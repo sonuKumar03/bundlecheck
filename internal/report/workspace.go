@@ -124,8 +124,11 @@ func Workspace(w io.Writer, r *workspace.Result, opts TextOptions, markdown bool
 		if app.Diagnostic != "" {
 			fmt.Fprintf(&b, "\n- %s: %s\n", escape(app.Name), escape(app.Diagnostic))
 		}
+		if app.Freshness != nil && app.Freshness.Status == "stale-suspected" {
+			fmt.Fprintf(&b, "\n- %s: artifacts may be stale; %s was modified after stats.json. Rebuild before trusting this report.\n", escape(app.Name), escape(app.Freshness.NewestInput))
+		}
 	}
-	b.WriteString("\nSizes use binary units (1 KiB = 1,024 bytes). Existing artifact freshness and build configuration are not verified.\n\n")
+	b.WriteString("\nSizes use binary units (1 KiB = 1,024 bytes). Freshness warnings are timestamp heuristics; build configuration is not verified.\n\n")
 	// Initial and lazy contributions have separate matrices instead of packed cells.
 	matrix := func(rows []workspace.Contributor, lazy bool) {
 		columns := []string{"Package", "Sum across apps"}
