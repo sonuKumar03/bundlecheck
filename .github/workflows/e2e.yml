@@ -1,0 +1,75 @@
+name: E2E Integration
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'testdata/nx-workspace/**'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'testdata/nx-workspace/**'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: Nx Workspace E2E & Real Build Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'testdata/nx-workspace/package-lock.json'
+
+      - name: Restore Angular build artifact cache
+        id: dist-cache
+        uses: actions/cache@v4
+        with:
+          path: testdata/nx-workspace/dist
+          key: nx-dist-${{ runner.os }}-${{ hashFiles('testdata/nx-workspace/package-lock.json', 'testdata/nx-workspace/apps/**', 'testdata/nx-workspace/libs/**', 'testdata/nx-workspace/project.json', 'testdata/nx-workspace/nx.json', 'testdata/nx-workspace/tsconfig*.json') }}
+
+      - name: Install Nx workspace dependencies
+        if: steps.dist-cache.outputs.cache-hit != 'true'
+        working-directory: testdata/nx-workspace
+        run: npm ci
+
+      - name: Build Nx applications with stats.json
+        if: steps.dist-cache.outputs.cache-hit != 'true'
+        working-directory: testdata/nx-workspace
+        run: npm run build
+
+      - name: Run Full Integration Tests with Real Nx Builds
+        run: go test -v ./cmd/... ./internal/discovery/... ./internal/workspace/... ./internal/mcp/...
+
+      - name: Build bundlecheck CLI
+        run: go build -o bundlecheck .
+
+      - name: Verify bundlecheck CLI on real Nx workspace
+        run: |
+          ./bundlecheck summary testdata/nx-workspace portal
+          ./bundlecheck summary testdata/nx-workspace admin-dashboard
+          ./bundlecheck workspace summary --root testdata/nx-workspace
+          ./bundlecheck why testdata/nx-workspace lodash -p portal
+          ./bundlecheck suggest testdata/nx-workspace -p portal
+          ./bundlecheck check testdata/nx-workspace -p portal --max-initial 10MB
