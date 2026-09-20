@@ -93,8 +93,11 @@ outputs:
     description: 'Path where the bundle report was written'
     value: ${{ inputs.output }}
   comparison-status:
-    description: 'Comparison status: none, compared, or failed'
+    description: 'Comparison status: completed or unavailable'
     value: ${{ steps.run-bundlecheck.outputs.comparison_status }}
+  comparison-message:
+    description: 'Detailed explanation of comparison status'
+    value: ${{ steps.run-bundlecheck.outputs.comparison_message }}
 
 runs:
   using: 'composite'
@@ -151,7 +154,8 @@ runs:
         if [ -n "$INPUT_PROJECT" ]; then ARGS+=("-p" "$INPUT_PROJECT"); fi
 
         BASELINE_FILE="$INPUT_BASELINE"
-        COMPARISON_STATUS="none"
+        COMPARISON_STATUS="unavailable"
+        COMPARISON_MESSAGE="No baseline file or pull request base ref available"
 
         # Determine target base ref
         TARGET_BASE_REF="$INPUT_BASE_REF"
@@ -188,22 +192,26 @@ runs:
 
           if "${SAVE_CMD[@]}"; then
             BASELINE_FILE="$WT_BASE_FILE"
-            COMPARISON_STATUS="compared"
+            COMPARISON_STATUS="completed"
+            COMPARISON_MESSAGE="Successfully captured and compared against base git ref '$TARGET_BASE_REF'"
             echo "  ✓ Successfully captured base snapshot for $TARGET_BASE_REF"
           else
-            COMPARISON_STATUS="failed"
+            COMPARISON_STATUS="unavailable"
+            COMPARISON_MESSAGE="Failed to build or analyze base git ref '$TARGET_BASE_REF'"
             if [ "$HAS_DELTA_BUDGET" = "true" ] || [ -n "$INPUT_BASE_REF" ]; then
-              echo "::error::Failed to build or analyze base ref '$TARGET_BASE_REF', and delta budget or explicit base-ref was requested."
+              echo "::error::$COMPARISON_MESSAGE, and delta budget or explicit base-ref was requested."
               exit 1
             else
-              echo "::warning::Failed to build or analyze base ref '$TARGET_BASE_REF'. Proceeding with current build summary."
+              echo "::warning::$COMPARISON_MESSAGE. Proceeding with current build summary."
             fi
           fi
         elif [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
-          COMPARISON_STATUS="compared"
+          COMPARISON_STATUS="completed"
+          COMPARISON_MESSAGE="Successfully compared against baseline file '$BASELINE_FILE'"
         fi
 
         echo "comparison_status=$COMPARISON_STATUS" >> $GITHUB_OUTPUT
+        echo "comparison_message=$COMPARISON_MESSAGE" >> $GITHUB_OUTPUT
 
         # Generate report output
         if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then

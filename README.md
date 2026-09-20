@@ -339,8 +339,27 @@ jobs:
           stats: dist/my-app/stats.json
           max-initial: '250kb'
           max-total: '1.2mb'
+          max-initial-delta: '0B'
           post-comment: true
 ```
+
+#### Action Inputs & Comparison Behavior
+
+| Input | Default | Description |
+|:---|:---:|:---|
+| `stats` | *(auto)* | Path to `stats.json` (auto-detected if omitted). |
+| `dist` | *(auto)* | Path to emitted `browser` dist with `index.html` (auto-detected if omitted). |
+| `project` | `""` | Project name for multi-project or Nx workspaces. |
+| `base-ref` | `github.base_ref` | Git ref for baseline comparison in PRs. Automatically fetched in shallow checkouts (`fetch-depth: 1` or `0`). |
+| `build-cmd` | `"npm run build"` | Command used to build `base-ref` inside an isolated temporary git worktree. |
+| `max-initial-delta` | `""` | Maximum allowed increase in initial JS vs baseline (e.g. `0B`, `10KB`). |
+| `max-total-delta` | `""` | Maximum allowed increase in total JS vs baseline. |
+| `post-comment` | `false` | Automatically creates or updates a single sticky PR comment with visual diffs. Requires `pull-requests: write`. |
+
+**Fallback & Error Handling:**
+- If comparing against a base ref succeeds, full visual diffs and package deltas are posted to the PR.
+- If base ref build fails and **no delta regression budgets** were requested, the Action warns and falls back to current build measurements without failing CI.
+- If **delta regression limits** or explicit `base-ref` were requested and base analysis fails, the Action terminates with an error to ensure regression gates are never silently bypassed.
 
 ### ☁️ On-Demand Remote Audits
 Audit any public open-source Angular repository directly via GitHub Actions without local installation:
