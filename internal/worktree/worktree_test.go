@@ -37,3 +37,40 @@ func TestGetCommitSHA(t *testing.T) {
 		t.Errorf("expected valid short SHA, got %q", sha)
 	}
 }
+
+func TestCreateAndCleanup(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+
+	wtDir, cleanup, err := worktree.Create(wd, "HEAD")
+	if err != nil {
+		t.Fatalf("failed to create worktree for HEAD: %v", err)
+	}
+	defer cleanup()
+
+	if _, err := os.Stat(wtDir); os.IsNotExist(err) {
+		t.Fatalf("worktree directory %q does not exist", wtDir)
+	}
+
+	// Test RunBuild with a harmless command inside the worktree
+	if err := worktree.RunBuild(wtDir, "echo 'worktree build test'"); err != nil {
+		t.Errorf("RunBuild failed: %v", err)
+	}
+
+	// Explicitly invoke cleanup
+	cleanup()
+	if _, err := os.Stat(wtDir); !os.IsNotExist(err) {
+		t.Errorf("worktree directory %q still exists after cleanup", wtDir)
+	}
+}
+
+func TestRunBuild_Failure(t *testing.T) {
+	tmp := t.TempDir()
+	err := worktree.RunBuild(tmp, "non_existent_command_12345")
+	if err == nil {
+		t.Error("expected error running nonexistent command")
+	}
+}
+

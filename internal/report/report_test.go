@@ -78,3 +78,33 @@ func TestWriteErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestTextRealFixtureStructure(t *testing.T) {
+	res := &analysis.AnalysisResult{
+		Summary: snapshot.Totals{
+			InitialJS:     254464, // 248.5 KB
+			InitialGzipJS: 75980,  // ~74.2 KB
+			LazyJS:        831692, // 812.2 KB
+			TotalJS:       1086156,
+		},
+		Packages: []snapshot.Package{
+			{Name: "@angular/core", InitialBytes: 86220, InitialGzipBytes: 25702},
+			{Name: "rxjs", InitialBytes: 43110, InitialGzipBytes: 12697},
+		},
+	}
+	var out bytes.Buffer
+	if err := TextWithOptions(&out, res, TextOptions{Top: 10, Gzip: true}); err != nil {
+		t.Fatal(err)
+	}
+	str := out.String()
+	if !strings.Contains(str, "Angular Bundle Summary") {
+		t.Errorf("missing title in text output:\n%s", str)
+	}
+	if !strings.Contains(str, "Initial JS") || !strings.Contains(str, "gzip") {
+		t.Errorf("missing gzip totals in text output:\n%s", str)
+	}
+	if !strings.Contains(str, "@angular/core") || !strings.Contains(str, "rxjs") {
+		t.Errorf("missing packages in text output:\n%s", str)
+	}
+}
+

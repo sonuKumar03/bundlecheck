@@ -251,3 +251,28 @@ func TestSummaryDirectStatsPathInMultiOutputWorkspace(t *testing.T) {
 		t.Errorf("expected InitialJS > 0, got %d", res.Summary.InitialJS)
 	}
 }
+
+func TestSummaryRealOutputContract(t *testing.T) {
+	base := filepath.Join("..", "testdata", "minimal")
+	var stdout, stderr bytes.Buffer
+	code := Execute([]string{"summary", base, "--gzip", "--suggest"}, &stdout, &stderr)
+	if code != ExitCodeSuccess || stderr.Len() != 0 {
+		t.Fatalf("summary command failed: code %d, stderr: %s", code, stderr.String())
+	}
+
+	out := stdout.String()
+	// Real fixture structure assertions:
+	if !strings.Contains(out, "Angular Bundle Summary") {
+		t.Errorf("missing summary title in output:\n%s", out)
+	}
+	if !strings.Contains(out, "Initial JS") || !strings.Contains(out, "Total JS") {
+		t.Errorf("missing JS totals in output:\n%s", out)
+	}
+	if !strings.Contains(out, "Largest initial packages") {
+		t.Errorf("missing packages section in output:\n%s", out)
+	}
+	if !strings.Contains(out, "lodash") {
+		t.Errorf("missing contributing package lodash in output:\n%s", out)
+	}
+}
+

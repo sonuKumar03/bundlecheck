@@ -87,7 +87,8 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 		filepath.Join("docs", "index.html"),
 	}
 
-	yamlBlockRegex := regexp.MustCompile("(?s)```ya?ml\\s*\n(# \\.bundlecheck\\.yml.*?)```")
+	mdYamlRegex := regexp.MustCompile("(?s)```ya?ml\\s*\n(# \\.bundlecheck\\.yml.*?)```")
+	htmlYamlRegex := regexp.MustCompile("(?s)<pre><code>(# \\.bundlecheck\\.yml.*?)</code></pre>")
 
 	for _, docFile := range docFiles {
 		content, err := os.ReadFile(docFile)
@@ -95,9 +96,15 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 			t.Fatalf("failed to read %s: %v", docFile, err)
 		}
 
-		matches := yamlBlockRegex.FindAllStringSubmatch(string(content), -1)
-		for _, match := range matches {
-			snippet := match[1]
+		var snippets []string
+		for _, match := range mdYamlRegex.FindAllStringSubmatch(string(content), -1) {
+			snippets = append(snippets, match[1])
+		}
+		for _, match := range htmlYamlRegex.FindAllStringSubmatch(string(content), -1) {
+			snippets = append(snippets, match[1])
+		}
+
+		for _, snippet := range snippets {
 			var cfg config.Config
 			decoder := yaml.NewDecoder(bytes.NewReader([]byte(snippet)))
 			decoder.KnownFields(true)
@@ -179,6 +186,7 @@ func TestDocumentationContract_CLICommandsAndFlags(t *testing.T) {
 		"suggest":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--gzip", "--format", "-f", "--output", "-o"},
 		"inspect":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--format", "-f", "--output", "-o"},
 		"compare":   {"--format", "-f", "--output", "-o"},
+		"init":      {"--project", "-p", "--headroom", "--from-angular-budgets", "--write"},
 		"workspace": {},
 		"mcp":       {},
 	}

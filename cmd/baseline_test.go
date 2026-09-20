@@ -202,3 +202,18 @@ func TestBaselineFromGitWorktree(t *testing.T) {
 		t.Errorf("expected CommitSHA to be recorded")
 	}
 }
+
+func TestBaselineFromGitRef_MissingRef(t *testing.T) {
+	var out, errOut bytes.Buffer
+	code := Execute([]string{
+		"baseline", "save",
+		"--ref", "non-existent-ref-99999",
+	}, &out, &errOut)
+	if code == 0 {
+		t.Errorf("expected baseline save to fail on nonexistent ref, got code %d", code)
+	}
+	if !strings.Contains(errOut.String(), "git worktree add failed") && !strings.Contains(errOut.String(), "create worktree") {
+		t.Errorf("expected worktree failure error message, got: %s", errOut.String())
+	}
+}
+

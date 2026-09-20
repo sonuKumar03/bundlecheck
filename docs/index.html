@@ -245,6 +245,10 @@
               <span>check</span>
               <span class="text-[10px] text-slate-500">CI gate</span>
             </a>
+            <a href="#cmd-init" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>init</span>
+              <span class="text-[10px] text-emerald-400">Setup</span>
+            </a>
             <a href="#cmd-workspace" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>workspace</span>
               <span class="text-[10px] text-cyan-400">Nx Monorepo</span>
@@ -667,11 +671,37 @@ Saved Baselines (.bundlecheck/baselines/):<br>
             </div>
           </div>
 
-          <!-- CMD 9: workspace summary -->
+          <!-- CMD 9: init -->
+          <div id="cmd-init" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">9</span>
+                <h3 class="text-base font-mono font-bold text-emerald-300">bundlecheck init [path] [flags]</h3>
+              </div>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Assisted Setup</span>
+            </div>
+            
+            <p class="text-sm text-slate-300">
+              Generates or previews a reviewable <code>.bundlecheck.yml</code> configuration with headroom over measured sizes or imported from Angular budgets. Refuses to overwrite existing configs.
+            </p>
+
+            <!-- Inline Terminal Output -->
+            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck init</span> --headroom 10</div>
+              <div class="text-slate-400"># Proposed configuration with 10.0% headroom:</div>
+              <div class="text-slate-400"># Measured: Initial JS 248.50 KB, Total JS 1.06 MB</div>
+              <div class="text-slate-400"># Proposed: initial_js_max: 274KB, total_max: 1.17MB</div>
+              <div class="text-white font-bold pt-1">budgets:</div>
+              <div class="text-emerald-300">  initial_js_max: 274KB</div>
+              <div class="text-emerald-300">  total_max: 1.17MB</div>
+            </div>
+          </div>
+
+          <!-- CMD 10: workspace summary -->
           <div id="cmd-workspace" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">9</span>
+                <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">10</span>
                 <h3 class="text-base font-mono font-bold text-cyan-300">bundlecheck workspace summary [--projects &lt;names&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">Nx Monorepo</span>
@@ -696,11 +726,11 @@ Saved Baselines (.bundlecheck/baselines/):<br>
             </div>
           </div>
 
-          <!-- CMD 10: mcp -->
+          <!-- CMD 11: mcp -->
           <div id="cmd-mcp" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center font-mono font-bold text-xs">10</span>
+                <span class="w-6 h-6 rounded-md bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center font-mono font-bold text-xs">11</span>
                 <h3 class="text-base font-mono font-bold text-fuchsia-300">bundlecheck mcp</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">Model Context Protocol</span>
