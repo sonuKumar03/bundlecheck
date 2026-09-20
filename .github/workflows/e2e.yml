@@ -38,7 +38,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: 'testdata/nx-workspace/package-lock.json'
 
@@ -73,3 +73,13 @@ jobs:
           ./bundlecheck why testdata/nx-workspace lodash -p portal
           ./bundlecheck suggest testdata/nx-workspace -p portal
           ./bundlecheck check testdata/nx-workspace -p portal --max-initial 10MB
+
+      - name: Publish Bundlecheck Report to GitHub Step Summary
+        run: |
+          echo "# 📊 Bundlecheck Real Nx Workspace Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          ./bundlecheck workspace summary --root testdata/nx-workspace -f markdown >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          ./bundlecheck suggest testdata/nx-workspace -p portal -f markdown >> $GITHUB_STEP_SUMMARY
+
