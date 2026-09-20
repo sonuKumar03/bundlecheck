@@ -49,6 +49,10 @@ func registerTools(s *server.MCPServer) {
 	s.AddTool(mcpspec.NewTool(
 		"bundle_summary",
 		mcpspec.WithDescription("Analyze and summarize Angular esbuild bundle sizes (initial JS, lazy JS, total JS) and npm package contributors."),
+		mcpspec.WithReadOnlyHintAnnotation(true),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path. Defaults to current working directory.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app Nx or Angular workspace (e.g. 'portal').")),
 		mcpspec.WithInteger("top", mcpspec.Description("Max number of top packages to include in summary. Defaults to 10.")),
@@ -59,6 +63,10 @@ func registerTools(s *server.MCPServer) {
 	s.AddTool(mcpspec.NewTool(
 		"bundle_why",
 		mcpspec.WithDescription("Trace why an npm package or module is included in the bundle, showing static/dynamic import paths from entrypoints."),
+		mcpspec.WithReadOnlyHintAnnotation(true),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("package", mcpspec.Required(), mcpspec.Description("Name of the package or module to trace (e.g. 'lodash' or 'moment').")),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
@@ -70,6 +78,10 @@ func registerTools(s *server.MCPServer) {
 	s.AddTool(mcpspec.NewTool(
 		"bundle_suggest",
 		mcpspec.WithDescription("Analyze bundle contributors and provide actionable optimization recommendations (e.g., heavy packages, duplicate libraries, lighter alternatives)."),
+		mcpspec.WithReadOnlyHintAnnotation(true),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
 		mcpspec.WithInteger("min_savings", mcpspec.Description("Minimum potential byte savings to report. Defaults to 1024.")),
@@ -78,30 +90,49 @@ func registerTools(s *server.MCPServer) {
 	// 4. bundle_check
 	s.AddTool(mcpspec.NewTool(
 		"bundle_check",
-		mcpspec.WithDescription("Validate bundle sizes and rules against defined performance budgets (e.g., max initial size, disallowed packages)."),
+		mcpspec.WithDescription("Validate bundle sizes, regressions, and repository rules against defined performance budgets and .bundlecheck.yml."),
+		mcpspec.WithReadOnlyHintAnnotation(true),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
+		mcpspec.WithString("config", mcpspec.Description("Optional path to .bundlecheck.yml configuration file.")),
+		mcpspec.WithString("baseline", mcpspec.Description("Optional path to baseline summary JSON or saved baseline name for regression checks.")),
 		mcpspec.WithString("max_initial", mcpspec.Description("Maximum initial JS budget (e.g. '500KB', '1.5MB').")),
+		mcpspec.WithString("max_lazy", mcpspec.Description("Maximum lazy JS budget (e.g. '500KB', '1MB').")),
 		mcpspec.WithString("max_total", mcpspec.Description("Maximum total JS budget (e.g. '2MB').")),
-		mcpspec.WithArray("disallowed_packages", mcpspec.Description("List of package names that are forbidden from appearing in initial JS.")),
+		mcpspec.WithString("max_initial_delta", mcpspec.Description("Maximum allowed increase in initial JS vs baseline (e.g. '50KB', '0B').")),
+		mcpspec.WithString("max_total_delta", mcpspec.Description("Maximum allowed increase in total JS vs baseline (e.g. '100KB').")),
+		mcpspec.WithArray("disallowed_packages", mcpspec.WithStringItems(), mcpspec.Description("List of package names that are forbidden from appearing anywhere in the bundle.")),
 	), handleCheck)
 
 	// 5. bundle_measure
 	s.AddTool(mcpspec.NewTool(
 		"bundle_measure",
 		mcpspec.WithDescription("Compare current bundle build against a saved baseline snapshot and calculate size deltas."),
+		mcpspec.WithReadOnlyHintAnnotation(true),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("baseline", mcpspec.Required(), mcpspec.Description("Name of saved baseline snapshot or file path to baseline JSON.")),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path for the current build.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
 		mcpspec.WithString("max_initial_delta", mcpspec.Description("Maximum allowed increase in initial JS (e.g. '50KB', '0B').")),
+		mcpspec.WithString("max_total_delta", mcpspec.Description("Maximum allowed increase in total JS (e.g. '50KB', '0B').")),
 	), handleMeasure)
 
 	// 6. workspace_summary
 	s.AddTool(mcpspec.NewTool(
 		"workspace_summary",
-		mcpspec.WithDescription("Inspect an Nx or Angular multi-app monorepo workspace, comparing all applications, shared library costs, and cross-app duplicates."),
+		mcpspec.WithDescription("Inspect an Nx or Angular multi-app monorepo workspace, comparing all applications, shared library costs, and cross-app duplicates. Fast-path static project.json parsing is used by default; set allow_nx_fallback to true to permit fallback to workspace-installed Nx CLI execution."),
+		mcpspec.WithReadOnlyHintAnnotation(false),
+		mcpspec.WithDestructiveHintAnnotation(false),
+		mcpspec.WithIdempotentHintAnnotation(true),
+		mcpspec.WithOpenWorldHintAnnotation(true),
 		mcpspec.WithString("root", mcpspec.Description("Root directory of the monorepo workspace. Defaults to current directory.")),
-		mcpspec.WithArray("projects", mcpspec.Description("Optional list of specific projects to analyze.")),
+		mcpspec.WithArray("projects", mcpspec.WithStringItems(), mcpspec.Description("Optional list of specific projects to analyze.")),
+		mcpspec.WithBoolean("allow_nx_fallback", mcpspec.Description("Allow falling back to executing workspace-installed Nx CLI if static parsing cannot resolve the project graph. Defaults to false for security on untrusted workspaces.")),
 	), handleWorkspaceSummary)
 }
 
@@ -276,16 +307,123 @@ func handleSuggest(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 	return mcpspec.NewToolResultText(string(data)), nil
 }
 
+func parseStringSlice(args map[string]any, key string) ([]string, error) {
+	val, ok := args[key]
+	if !ok || val == nil {
+		return nil, nil
+	}
+	switch v := val.(type) {
+	case []string:
+		return v, nil
+	case []any:
+		result := make([]string, len(v))
+		for i, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("element %d in %s must be a string", i, key)
+			}
+			result[i] = s
+		}
+		return result, nil
+	default:
+		return nil, fmt.Errorf("parameter %s must be an array of strings", key)
+	}
+}
+
+type measureResponse struct {
+	*comparison.Result
+	Budget *budget.CheckResult `json:"budget,omitempty"`
+}
+
 func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	configPath := req.GetString("config", "")
+	baselinePath := req.GetString("baseline", "")
 	maxInitial := req.GetString("max_initial", "")
+	maxLazy := req.GetString("max_lazy", "")
 	maxTotal := req.GetString("max_total", "")
-	disallowed := req.GetStringSlice("disallowed_packages", nil)
+	maxInitialDelta := req.GetString("max_initial_delta", "")
+	maxTotalDelta := req.GetString("max_total_delta", "")
+	disallowed, err := parseStringSlice(req.GetArguments(), "disallowed_packages")
+	if err != nil {
+		return mcpspec.NewToolResultError(fmt.Sprintf("Invalid parameter: %v", err)), nil
+	}
 
 	statsFile, distDir, err := resolveArtifacts(path, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to resolve build artifacts: %v", err)), nil
+	}
+
+	// 1. Load config file if present or specified
+	var cfg *config.Config
+	if configPath != "" {
+		cfg, err = config.LoadFile(configPath)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load config %q: %v", configPath, err)), nil
+		}
+	} else {
+		searchDir := path
+		if searchDir == "" {
+			searchDir = filepath.Dir(statsFile)
+		} else if fi, statErr := os.Stat(searchDir); statErr == nil && !fi.IsDir() {
+			searchDir = filepath.Dir(searchDir)
+		}
+		cfg, _, err = config.FindAndLoad(searchDir)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load config: %v", err)), nil
+		}
+	}
+
+	// 2. Parse Limits
+	var limits budget.Limits
+	if maxInitial != "" {
+		b, err := budget.ParseBytes(maxInitial)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_initial: %v", err)), nil
+		}
+		limits.MaxInitial = &b
+	}
+	if maxLazy != "" {
+		b, err := budget.ParseBytes(maxLazy)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_lazy: %v", err)), nil
+		}
+		limits.MaxLazy = &b
+	}
+	if maxTotal != "" {
+		b, err := budget.ParseBytes(maxTotal)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_total: %v", err)), nil
+		}
+		limits.MaxTotal = &b
+	}
+	if maxInitialDelta != "" {
+		b, err := budget.ParseBytes(maxInitialDelta)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_initial_delta: %v", err)), nil
+		}
+		limits.MaxInitialDelta = &b
+	}
+	if maxTotalDelta != "" {
+		b, err := budget.ParseBytes(maxTotalDelta)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_total_delta: %v", err)), nil
+		}
+		limits.MaxTotalDelta = &b
+	}
+
+	// 3. Apply config defaults to unset limits
+	if cfg != nil {
+		if err := cfg.ApplyToLimits(&limits); err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to apply config limits: %v", err)), nil
+		}
+	}
+
+	hasDisallowed := len(disallowed) > 0 || (cfg != nil && len(cfg.Rules.DisallowPackages) > 0)
+	if limits.MaxInitial == nil && limits.MaxLazy == nil && limits.MaxTotal == nil &&
+		limits.MaxInitialDelta == nil && limits.MaxTotalDelta == nil && !hasDisallowed {
+		return mcpspec.NewToolResultError("at least one budget threshold must be specified (e.g. max_initial '200KB' or .bundlecheck.yml)"), nil
 	}
 
 	snap, err := build.Load(statsFile, distDir)
@@ -297,31 +435,36 @@ func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.Cal
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to analyze build: %v", err)), nil
 	}
+	compression.AttachCompression(snap, distDir)
+	res.Summary = snap.Totals
+	res.Packages = snap.Packages
 
-	var limits budget.Limits
-	if maxInitial != "" {
-		b, err := budget.ParseBytes(maxInitial)
+	var checkResult budget.CheckResult
+	if limits.MaxInitialDelta != nil || limits.MaxTotalDelta != nil || baselinePath != "" {
+		baseResult, err := baseline.Load(baselinePath)
 		if err != nil {
-			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_initial: %v", err)), nil
+			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load baseline %q: %v", baselinePath, err)), nil
 		}
-		limits.MaxInitial = &b
-	}
-	if maxTotal != "" {
-		b, err := budget.ParseBytes(maxTotal)
-		if err != nil {
-			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_total: %v", err)), nil
-		}
-		limits.MaxTotal = &b
+		compResult := comparison.Compare(baseResult, res)
+		checkResult = budget.CheckComparison(compResult, limits)
+		checkResult.Comparison = compResult
+	} else {
+		checkResult = budget.CheckSummary(res.Summary, limits)
+		checkResult.Summary = &res.Summary
 	}
 
-	checkResult := budget.CheckSummary(res.Summary, limits)
-	if len(disallowed) > 0 {
-		cfg := &config.Config{
+	var allDisallowed []string
+	if cfg != nil {
+		allDisallowed = append(allDisallowed, cfg.Rules.DisallowPackages...)
+	}
+	allDisallowed = append(allDisallowed, disallowed...)
+	if len(allDisallowed) > 0 {
+		ruleCfg := &config.Config{
 			Rules: config.ConfigRules{
-				DisallowPackages: disallowed,
+				DisallowPackages: allDisallowed,
 			},
 		}
-		ruleViolations := cfg.CheckRules(res)
+		ruleViolations := ruleCfg.CheckRules(res)
 		if len(ruleViolations) > 0 {
 			checkResult.Passed = false
 			checkResult.Violations = append(checkResult.Violations, ruleViolations...)
@@ -333,7 +476,9 @@ func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.Cal
 		return mcpspec.NewToolResultError(fmt.Sprintf("JSON marshal error: %v", err)), nil
 	}
 
-	return mcpspec.NewToolResultText(string(data)), nil
+	toolRes := mcpspec.NewToolResultText(string(data))
+	toolRes.IsError = !checkResult.Passed
+	return toolRes, nil
 }
 
 func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
@@ -344,6 +489,7 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
 	maxInitialDeltaStr := req.GetString("max_initial_delta", "")
+	maxTotalDeltaStr := req.GetString("max_total_delta", "")
 
 	statsFile, distDir, err := resolveArtifacts(path, project)
 	if err != nil {
@@ -370,18 +516,37 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 
 	cmpResult := comparison.Compare(baseResult, currentRes)
 
-	if maxInitialDeltaStr != "" {
-		limitBytes, err := budget.ParseBytes(maxInitialDeltaStr)
-		if err != nil {
-			return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_initial_delta: %v", err)), nil
+	if maxInitialDeltaStr != "" || maxTotalDeltaStr != "" {
+		var limits budget.Limits
+		if maxInitialDeltaStr != "" {
+			limitBytes, err := budget.ParseBytes(maxInitialDeltaStr)
+			if err != nil {
+				return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_initial_delta: %v", err)), nil
+			}
+			limits.MaxInitialDelta = &limitBytes
 		}
-		limits := budget.Limits{
-			MaxInitialDelta: &limitBytes,
+		if maxTotalDeltaStr != "" {
+			limitBytes, err := budget.ParseBytes(maxTotalDeltaStr)
+			if err != nil {
+				return mcpspec.NewToolResultError(fmt.Sprintf("Invalid max_total_delta: %v", err)), nil
+			}
+			limits.MaxTotalDelta = &limitBytes
 		}
+
 		check := budget.CheckComparison(cmpResult, limits)
-		if !check.Passed {
-			return mcpspec.NewToolResultError(fmt.Sprintf("Budget check failed: %s", check.Violations[0].Message)), nil
+		resp := measureResponse{
+			Result: cmpResult,
+			Budget: &check,
 		}
+
+		data, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("JSON marshal error: %v", err)), nil
+		}
+
+		toolRes := mcpspec.NewToolResultText(string(data))
+		toolRes.IsError = !check.Passed
+		return toolRes, nil
 	}
 
 	data, err := json.MarshalIndent(cmpResult, "", "  ")
@@ -394,13 +559,18 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 
 func handleWorkspaceSummary(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
 	root := req.GetString("root", "")
-	projects := req.GetStringSlice("projects", nil)
+	projects, err := parseStringSlice(req.GetArguments(), "projects")
+	if err != nil {
+		return mcpspec.NewToolResultError(fmt.Sprintf("Invalid parameter: %v", err)), nil
+	}
+	allowNxFallback := req.GetBool("allow_nx_fallback", false)
 
 	wsResult, err := workspace.Analyze(ctx, workspace.AnalyzeOptions{
 		Root:            root,
 		ExplicitRoot:    root != "",
 		Projects:        projects,
 		WithCompression: true,
+		AllowNxFallback: allowNxFallback,
 	})
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Workspace analysis error: %v", err)), nil

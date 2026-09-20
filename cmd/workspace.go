@@ -40,6 +40,7 @@ func workspaceCommand() *cobra.Command {
 			Configuration:   configuration,
 			Projects:        selected,
 			WithCompression: needCompression,
+			AllowNxFallback: true,
 		})
 		if err != nil {
 			return err

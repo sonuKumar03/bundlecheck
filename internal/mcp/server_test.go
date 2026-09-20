@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	mcpspec "github.com/mark3labs/mcp-go/mcp"
@@ -997,5 +998,623 @@ func TestHandleWorkspaceSummary_InvalidRoot(t *testing.T) {
 	if !res.IsError {
 		t.Errorf("expected error tool result for invalid workspace root")
 	}
+}
+
+func TestToolSchemas_ArrayProperties(t *testing.T) {
+	ctx := context.Background()
+	s := NewServer()
+
+	reqJSON := []byte(`{
+		"jsonrpc": "2.0",
+		"id": 10,
+		"method": "tools/list",
+		"params": {}
+	}`)
+	resp := s.HandleMessage(ctx, reqJSON)
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatalf("failed to marshal response: %v", err)
+	}
+
+	var parsed map[string]any
+	_ = json.Unmarshal(data, &parsed)
+	result := parsed["result"].(map[string]any)
+	toolsList := result["tools"].([]any)
+
+	toolMap := make(map[string]map[string]any)
+	for _, raw := range toolsList {
+		tObj := raw.(map[string]any)
+		toolMap[tObj["name"].(string)] = tObj
+	}
+
+	// 1. Check bundle_check.disallowed_packages
+	checkTool, ok := toolMap["bundle_check"]
+	if !ok {
+		t.Fatal("bundle_check tool missing")
+	}
+	checkSchema := checkTool["inputSchema"].(map[string]any)
+	checkProps := checkSchema["properties"].(map[string]any)
+	disallowedProp, ok := checkProps["disallowed_packages"].(map[string]any)
+	if !ok {
+		t.Fatal("disallowed_packages property missing in bundle_check schema")
+	}
+	if disallowedProp["type"] != "array" {
+		t.Errorf("expected disallowed_packages type 'array', got %v", disallowedProp["type"])
+	}
+	items, ok := disallowedProp["items"].(map[string]any)
+	if !ok || items["type"] != "string" {
+		t.Errorf("expected items.type 'string' for disallowed_packages, got %v", disallowedProp["items"])
+	}
+
+	// 2. Check workspace_summary.projects
+	wsTool, ok := toolMap["workspace_summary"]
+	if !ok {
+		t.Fatal("workspace_summary tool missing")
+	}
+	wsSchema := wsTool["inputSchema"].(map[string]any)
+	wsProps := wsSchema["properties"].(map[string]any)
+	projectsProp, ok := wsProps["projects"].(map[string]any)
+	if !ok {
+		t.Fatal("projects property missing in workspace_summary schema")
+	}
+	if projectsProp["type"] != "array" {
+		t.Errorf("expected projects type 'array', got %v", projectsProp["type"])
+	}
+	wsItems, ok := projectsProp["items"].(map[string]any)
+	if !ok || wsItems["type"] != "string" {
+		t.Errorf("expected items.type 'string' for projects, got %v", projectsProp["items"])
+	}
+}
+
+func TestHandleCheck_InvalidArrayElements(t *testing.T) {
+	ctx := context.Background()
+	minimalPath, _ := filepath.Abs("../../testdata/minimal")
+
+	t.Run("rejects non-string array elements", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":                minimalPath,
+					"disallowed_packages": []any{"lodash", 123},
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error result for non-string array element")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "element 1 in disallowed_packages must be a string") {
+			t.Errorf("expected element type error, got: %s", textContent.Text)
+		}
+	})
+
+	t.Run("rejects non-array value for disallowed_packages", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":                minimalPath,
+					"disallowed_packages": "lodash",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error result for non-array value")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "must be an array of strings") {
+			t.Errorf("expected array requirement error, got: %s", textContent.Text)
+		}
+	})
+}
+
+func TestHandleWorkspaceSummary_InvalidArrayElements(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("rejects non-string projects elements", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "workspace_summary",
+				Arguments: map[string]any{
+					"projects": []any{"portal", 42},
+				},
+			},
+		}
+
+		res, err := handleWorkspaceSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error result for non-string project element")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "element 1 in projects must be a string") {
+			t.Errorf("expected element type error, got: %s", textContent.Text)
+		}
+	})
+
+	t.Run("rejects non-array value for projects", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "workspace_summary",
+				Arguments: map[string]any{
+					"projects": true,
+				},
+			},
+		}
+
+		res, err := handleWorkspaceSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error result for non-array value")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "must be an array of strings") {
+			t.Errorf("expected array requirement error, got: %s", textContent.Text)
+		}
+	})
+}
+
+func TestHandleCheck_DisallowedPackages_LazyOnly(t *testing.T) {
+	ctx := context.Background()
+	lazyFixturePath, _ := filepath.Abs("../../testdata/lazy-import")
+
+	req := mcpspec.CallToolRequest{
+		Params: mcpspec.CallToolParams{
+			Name: "bundle_check",
+			Arguments: map[string]any{
+				"path":                lazyFixturePath,
+				"disallowed_packages": []string{"date-fns"},
+			},
+		},
+	}
+
+	res, err := handleCheck(ctx, req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.IsError {
+		t.Errorf("expected check to fail when disallowed package is present in lazy bundle")
+	}
+
+	textContent, _ := mcpspec.AsTextContent(res.Content[0])
+	var checkRes budget.CheckResult
+	if err := json.Unmarshal([]byte(textContent.Text), &checkRes); err != nil {
+		t.Fatalf("failed to unmarshal JSON: %v", err)
+	}
+
+	if checkRes.Passed {
+		t.Errorf("expected checkRes.Passed to be false")
+	}
+	found := false
+	for _, v := range checkRes.Violations {
+		if strings.Contains(v.Metric, "date-fns") {
+			found = true
+			if v.Actual != 92160 {
+				t.Errorf("expected actual bytes 92160, got %d", v.Actual)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected violation for date-fns in lazy bundle, got: %v", checkRes.Violations)
+	}
+}
+
+func TestToolsList_Annotations(t *testing.T) {
+	ctx := context.Background()
+	s := NewServer()
+
+	reqJSON := []byte(`{
+		"jsonrpc": "2.0",
+		"id": 11,
+		"method": "tools/list",
+		"params": {}
+	}`)
+	resp := s.HandleMessage(ctx, reqJSON)
+	data, _ := json.Marshal(resp)
+
+	var parsed map[string]any
+	_ = json.Unmarshal(data, &parsed)
+	result := parsed["result"].(map[string]any)
+	toolsList := result["tools"].([]any)
+
+	type expectedHints struct {
+		readOnly    bool
+		destructive bool
+		idempotent  bool
+		openWorld   bool
+	}
+
+	expectations := map[string]expectedHints{
+		"bundle_summary":    {readOnly: true, destructive: false, idempotent: true, openWorld: false},
+		"bundle_why":        {readOnly: true, destructive: false, idempotent: true, openWorld: false},
+		"bundle_suggest":    {readOnly: true, destructive: false, idempotent: true, openWorld: false},
+		"bundle_check":      {readOnly: true, destructive: false, idempotent: true, openWorld: false},
+		"bundle_measure":    {readOnly: true, destructive: false, idempotent: true, openWorld: false},
+		"workspace_summary": {readOnly: false, destructive: false, idempotent: true, openWorld: true},
+	}
+
+	for _, raw := range toolsList {
+		tool := raw.(map[string]any)
+		name := tool["name"].(string)
+		exp, ok := expectations[name]
+		if !ok {
+			t.Errorf("unexpected tool name: %s", name)
+			continue
+		}
+
+		annotations, ok := tool["annotations"].(map[string]any)
+		if !ok {
+			t.Fatalf("tool %s missing annotations", name)
+		}
+
+		if readOnly, _ := annotations["readOnlyHint"].(bool); readOnly != exp.readOnly {
+			t.Errorf("tool %s: expected readOnlyHint %v, got %v", name, exp.readOnly, readOnly)
+		}
+		if destructive, _ := annotations["destructiveHint"].(bool); destructive != exp.destructive {
+			t.Errorf("tool %s: expected destructiveHint %v, got %v", name, exp.destructive, destructive)
+		}
+		if idempotent, _ := annotations["idempotentHint"].(bool); idempotent != exp.idempotent {
+			t.Errorf("tool %s: expected idempotentHint %v, got %v", name, exp.idempotent, idempotent)
+		}
+		if openWorld, _ := annotations["openWorldHint"].(bool); openWorld != exp.openWorld {
+			t.Errorf("tool %s: expected openWorldHint %v, got %v", name, exp.openWorld, openWorld)
+		}
+	}
+}
+
+func TestHandleWorkspaceSummary_ExecutionBoundary(t *testing.T) {
+	ctx := context.Background()
+	tmp := t.TempDir()
+
+	// Create workspace with nx.json but no projects to cause static parsing failure
+	nxJSON := []byte(`{"installation": {"version": "19.0.0"}}`)
+	if err := os.WriteFile(filepath.Join(tmp, "nx.json"), nxJSON, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("fails without fallback when allow_nx_fallback is false", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "workspace_summary",
+				Arguments: map[string]any{
+					"root": tmp,
+				},
+			},
+		}
+
+		res, err := handleWorkspaceSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error when static parsing fails and fallback is disallowed")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "allow_nx_fallback") {
+			t.Errorf("expected error to mention allow_nx_fallback, got: %s", textContent.Text)
+		}
+	})
+
+	t.Run("attempts fallback when allow_nx_fallback is true", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "workspace_summary",
+				Arguments: map[string]any{
+					"root":              tmp,
+					"allow_nx_fallback": true,
+				},
+			},
+		}
+
+		res, err := handleWorkspaceSummary(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Fatalf("expected error because node_modules/nx is absent")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "workspace-installed Nx not found") {
+			t.Errorf("expected Nx CLI attempt error, got: %s", textContent.Text)
+		}
+	})
+}
+
+func TestFailedBudgetSemantics_DataPreservation(t *testing.T) {
+	ctx := context.Background()
+	minimalPath, _ := filepath.Abs("../../testdata/minimal")
+	baselinePath, _ := filepath.Abs("../../testdata/comparison/before.json")
+
+	t.Run("bundle_check preserves summary and violations on failure", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":        minimalPath,
+					"max_initial": "10B",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected isError to be true on failed budget")
+		}
+
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var checkRes budget.CheckResult
+		if err := json.Unmarshal([]byte(textContent.Text), &checkRes); err != nil {
+			t.Fatalf("failed to unmarshal JSON: %v", err)
+		}
+
+		if checkRes.Passed {
+			t.Errorf("expected Passed == false")
+		}
+		if len(checkRes.Violations) == 0 {
+			t.Errorf("expected violations, got 0")
+		}
+		if checkRes.Summary == nil || checkRes.Summary.InitialJS <= 0 {
+			t.Errorf("expected non-nil summary with InitialJS > 0, got %v", checkRes.Summary)
+		}
+	})
+
+	t.Run("bundle_check preserves comparison and violations on baseline delta failure", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":              minimalPath,
+					"baseline":          baselinePath,
+					"max_initial_delta": "-1MB",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected isError to be true on failed baseline delta")
+		}
+
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var checkRes budget.CheckResult
+		if err := json.Unmarshal([]byte(textContent.Text), &checkRes); err != nil {
+			t.Fatalf("failed to unmarshal JSON: %v", err)
+		}
+
+		if checkRes.Passed {
+			t.Errorf("expected Passed == false")
+		}
+		if len(checkRes.Violations) == 0 {
+			t.Errorf("expected violations, got 0")
+		}
+		if checkRes.Comparison == nil || checkRes.Comparison.Summary.Before.InitialJS <= 0 {
+			t.Errorf("expected non-nil comparison with valid data, got %v", checkRes.Comparison)
+		}
+	})
+
+	t.Run("bundle_measure preserves full comparison and budget violations on regression failure", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_measure",
+				Arguments: map[string]any{
+					"baseline":          baselinePath,
+					"path":              minimalPath,
+					"max_initial_delta": "-1MB",
+					"max_total_delta":   "-1MB",
+				},
+			},
+		}
+
+		res, err := handleMeasure(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected isError to be true on breached delta threshold")
+		}
+
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var resp measureResponse
+		if err := json.Unmarshal([]byte(textContent.Text), &resp); err != nil {
+			t.Fatalf("failed to unmarshal measureResponse JSON: %v", err)
+		}
+
+		// Verify comparison data is complete
+		if resp.Summary.Before.InitialJS <= 0 || resp.Summary.After.InitialJS <= 0 {
+			t.Errorf("expected complete before/after summary, got %v", resp.Summary)
+		}
+		if len(resp.Packages) == 0 {
+			t.Errorf("expected packages list in comparison result, got 0")
+		}
+
+		// Verify budget violations are complete
+		if resp.Budget == nil {
+			t.Fatalf("expected non-nil budget in measure response")
+		}
+		if resp.Budget.Passed {
+			t.Errorf("expected budget.Passed == false")
+		}
+		if len(resp.Budget.Violations) != 2 {
+			t.Errorf("expected 2 violations (initial and total delta), got %d: %v", len(resp.Budget.Violations), resp.Budget.Violations)
+		}
+	})
+}
+
+func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
+	ctx := context.Background()
+	minimalPath, _ := filepath.Abs("../../testdata/minimal")
+	baselinePath, _ := filepath.Abs("../../testdata/comparison/before.json")
+
+	t.Run("loads config file automatically when present in directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// Copy minimal fixture stats.json and browser dir
+		statsData, err := os.ReadFile(filepath.Join(minimalPath, "stats.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpDir, "stats.json"), statsData, 0644); err != nil {
+			t.Fatal(err)
+		}
+		browserDir := filepath.Join(tmpDir, "browser")
+		if err := os.MkdirAll(browserDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		htmlData, err := os.ReadFile(filepath.Join(minimalPath, "browser", "index.html"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(browserDir, "index.html"), htmlData, 0644); err != nil {
+			t.Fatal(err)
+		}
+		jsData, err := os.ReadFile(filepath.Join(minimalPath, "browser", "main.js"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(browserDir, "main.js"), jsData, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create .bundlecheck.yml with budget that fails
+		cfgContent := []byte("budgets:\n  initial_js_max: 10B\nrules:\n  disallow_packages:\n    - lodash\n")
+		if err := os.WriteFile(filepath.Join(tmpDir, ".bundlecheck.yml"), cfgContent, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path": tmpDir,
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected error tool result from .bundlecheck.yml budget violation")
+		}
+
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var checkRes budget.CheckResult
+		_ = json.Unmarshal([]byte(textContent.Text), &checkRes)
+
+		if checkRes.Passed {
+			t.Errorf("expected checkRes.Passed to be false")
+		}
+		// Expect both initial JS budget violation and disallowed package lodash violation
+		if len(checkRes.Violations) < 2 {
+			t.Errorf("expected at least 2 violations from .bundlecheck.yml, got %d: %v", len(checkRes.Violations), checkRes.Violations)
+		}
+	})
+
+	t.Run("explicit config file parameter", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgFile := filepath.Join(tmpDir, "custom.yml")
+		cfgContent := []byte("budgets:\n  initial_js_max: 10B\n")
+		if err := os.WriteFile(cfgFile, cfgContent, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":   minimalPath,
+					"config": cfgFile,
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil || !res.IsError {
+			t.Fatalf("expected budget check failure from explicit config file")
+		}
+	})
+
+	t.Run("max_lazy budget threshold", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":     minimalPath,
+					"max_lazy": "0B",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		// In minimal fixture, LazyJS is 0B, so max_lazy 0B passes
+		if res.IsError {
+			t.Errorf("expected max_lazy 0B to pass for 0 lazy bytes")
+		}
+	})
+
+	t.Run("max_total_delta budget threshold", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path":            minimalPath,
+					"baseline":        baselinePath,
+					"max_total_delta": "-1MB",
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil || !res.IsError {
+			t.Fatalf("expected error tool result on max_total_delta breach")
+		}
+	})
+
+	t.Run("requires at least one budget threshold or rule when no config exists", func(t *testing.T) {
+		req := mcpspec.CallToolRequest{
+			Params: mcpspec.CallToolParams{
+				Name: "bundle_check",
+				Arguments: map[string]any{
+					"path": minimalPath,
+				},
+			},
+		}
+
+		res, err := handleCheck(ctx, req)
+		if err != nil {
+			t.Fatalf("unexpected handler error: %v", err)
+		}
+		if !res.IsError {
+			t.Errorf("expected error when no threshold or rule is provided")
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !strings.Contains(textContent.Text, "at least one budget threshold must be specified") {
+			t.Errorf("expected error about budget threshold, got: %s", textContent.Text)
+		}
+	})
 }
 

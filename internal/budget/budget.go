@@ -27,8 +27,10 @@ type Violation struct {
 }
 
 type CheckResult struct {
-	Passed     bool        `json:"passed"`
-	Violations []Violation `json:"violations"`
+	Passed     bool               `json:"passed"`
+	Violations []Violation        `json:"violations"`
+	Summary    *snapshot.Totals   `json:"summary,omitempty"`
+	Comparison *comparison.Result `json:"comparison,omitempty"`
 }
 
 // ParseBytes converts size strings like "200KB", "1.5MB", "1024B", "-10KB" into signed int64 bytes.

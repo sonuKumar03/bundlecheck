@@ -21,6 +21,7 @@ type AnalyzeOptions struct {
 	Configuration   string
 	Projects        []string
 	WithCompression bool
+	AllowNxFallback bool
 }
 
 // Analyze runs comprehensive workspace inspection across Angular apps in an Nx workspace.
@@ -46,9 +47,20 @@ func Analyze(ctx context.Context, opts AnalyzeOptions) (*Result, error) {
 		return nil, err
 	}
 
-	metadata, err := ReadMetadata(ctx, workspaceRoot)
-	if err != nil {
-		return nil, err
+	var metadata Metadata
+	if opts.AllowNxFallback {
+		metadata, err = ReadMetadata(ctx, workspaceRoot)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		metadata, err = ReadMetadataStatic(workspaceRoot)
+		if err != nil {
+			return nil, fmt.Errorf("static Nx parsing failed: %w; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)", err)
+		}
+		if len(metadata.Graph.Nodes) == 0 {
+			return nil, fmt.Errorf("static Nx parsing found no projects; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)")
+		}
 	}
 
 	r := NewResult(workspaceRoot, opts.Target, opts.Configuration)
