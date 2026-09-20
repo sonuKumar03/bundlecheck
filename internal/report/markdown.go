@@ -199,20 +199,20 @@ func renderMetricRow(sb *strings.Builder, name string, before, after, delta int6
 	fmt.Fprintf(sb, "| **%s** | `%s` | `%s` | **%s** | %s |\n", name, formatBytes(before), formatBytes(after), formatDelta(delta), status)
 }
 
-// SuggestMarkdown renders optimization suggestions in GitHub Flavored Markdown.
+// SuggestMarkdown renders culprit analysis in GitHub Flavored Markdown.
 func SuggestMarkdown(w io.Writer, r *advisor.AdvisorResult, showGzip bool) error {
 	var sb strings.Builder
 
-	sb.WriteString("## 💡 Bundle Optimization Recommendations\n\n")
+	sb.WriteString("## 🔍 Initial Bundle Culprits & Contributors\n\n")
 
 	if len(r.Suggestions) == 0 {
-		sb.WriteString("✅ **No optimization opportunities detected.** Your bundle structure looks optimal!\n")
+		sb.WriteString("✅ **No major culprits detected.** Your initial bundle structure looks optimal!\n")
 		_, err := io.WriteString(w, sb.String())
 		return err
 	}
 
 	savingsStr := formatBytes(r.TotalPotentialSavings)
-	fmt.Fprintf(&sb, "> **Potential Initial JS Reduction:** ~`%s` across %d opportunity(ies)\n\n", savingsStr, len(r.Suggestions))
+	fmt.Fprintf(&sb, "> **Initial JS Impact:** ~`%s` across %d detected contributor(s)\n\n", savingsStr, len(r.Suggestions))
 
 	for i, s := range r.Suggestions {
 		badge := "🔵 LOW"
@@ -229,12 +229,15 @@ func SuggestMarkdown(w io.Writer, r *advisor.AdvisorResult, showGzip bool) error
 		}
 
 		fmt.Fprintf(&sb, "### %d. %s: %s\n", i+1, badge, s.Title)
-		fmt.Fprintf(&sb, "- **Potential Savings:** ~`%s`\n", savingsDisplay)
+		fmt.Fprintf(&sb, "- **Initial JS Impact:** ~`%s`\n", savingsDisplay)
 		if s.File != "" {
-			fmt.Fprintf(&sb, "- **Target / Importer:** `%s`\n", s.File)
+			fmt.Fprintf(&sb, "- **Culprit / Importer:** `%s`\n", s.File)
 		}
-		fmt.Fprintf(&sb, "- **Rationale:** %s\n", s.Description)
-		fmt.Fprintf(&sb, "- **Recommended Action:**\n  ```ts\n  %s\n  ```\n\n", s.Action)
+		fmt.Fprintf(&sb, "- **Reason:** %s\n", s.Description)
+		if s.Action != "" {
+			fmt.Fprintf(&sb, "- **Recommended Action:**\n  ```ts\n  %s\n  ```\n", s.Action)
+		}
+		sb.WriteString("\n")
 	}
 
 	_, err := io.WriteString(w, sb.String())

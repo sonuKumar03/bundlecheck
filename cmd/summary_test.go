@@ -118,7 +118,7 @@ func TestSummaryMarkdown(t *testing.T) {
 	if !strings.Contains(output, "### Top NPM Contributors") {
 		t.Errorf("expected top npm contributors section, got: %s", output)
 	}
-	if !strings.Contains(output, "## 💡 Bundle Optimization Recommendations") {
+	if !strings.Contains(output, "## 🔍 Initial Bundle Culprits & Contributors") {
 		t.Errorf("expected suggestions section in markdown, got: %s", output)
 	}
 }

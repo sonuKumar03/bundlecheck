@@ -234,15 +234,15 @@ func TestAdvisorRootBootstrapSuggestion(t *testing.T) {
 	if s.File != "src/app/app.config.ts" {
 		t.Errorf("expected file src/app/app.config.ts, got %s", s.File)
 	}
-	// Verify title & action do NOT prescribe naive `const lib = await import`
-	if strings.Contains(s.Action, "const lib = await import") {
-		t.Errorf("unexpected naive dynamic import in action: %s", s.Action)
+	// Verify action is disabled and title calls out root bootstrap
+	if s.Action != "" {
+		t.Errorf("expected action to be disabled/empty, got: %s", s.Action)
 	}
-	if !strings.Contains(s.Action, "provide...Async") && !strings.Contains(s.Action, "async providers") {
-		t.Errorf("expected action to mention async/deferred providers, got: %s", s.Action)
+	if !strings.Contains(s.Title, "root bootstrap") {
+		t.Errorf("expected title to mention root bootstrap, got: %s", s.Title)
 	}
-	if !strings.Contains(s.Title, "Review root provider") {
-		t.Errorf("expected title to mention root provider, got: %s", s.Title)
+	if !strings.Contains(s.Description, "src/app/app.config.ts") {
+		t.Errorf("expected description to mention importer file, got: %s", s.Description)
 	}
 }
 
@@ -298,11 +298,11 @@ func TestAdvisorRouteComponentSuggestion(t *testing.T) {
 	if s.Target != "@push-based/ngx-fast-svg" {
 		t.Errorf("expected target @push-based/ngx-fast-svg, got %s", s.Target)
 	}
-	if !strings.Contains(s.Title, "Lazy-load") {
-		t.Errorf("expected title to recommend lazy-loading parent route, got: %s", s.Title)
+	if s.Action != "" {
+		t.Errorf("expected action to be disabled/empty, got: %s", s.Action)
 	}
-	if !strings.Contains(s.Action, "loadComponent") {
-		t.Errorf("expected action to mention loadComponent, got: %s", s.Action)
+	if !strings.Contains(s.Title, "eager component") {
+		t.Errorf("expected title to identify eager component, got: %s", s.Title)
 	}
 	if !strings.Contains(s.Description, "app.routes.ts") {
 		t.Errorf("expected description to mention app.routes.ts, got: %s", s.Description)
@@ -355,11 +355,11 @@ func TestAdvisorGeneralUtilitySuggestion(t *testing.T) {
 	if s.Target != "pdfjs-dist" {
 		t.Errorf("expected target pdfjs-dist, got %s", s.Target)
 	}
+	if s.Action != "" {
+		t.Errorf("expected action to be disabled/empty, got: %s", s.Action)
+	}
 	if !strings.Contains(s.Title, "pdf-export.service.ts") {
 		t.Errorf("expected title to reference importer file, got: %s", s.Title)
-	}
-	if !strings.Contains(s.Action, "@defer") || !strings.Contains(s.Action, "await import") {
-		t.Errorf("expected action to offer dynamic import or @defer options, got: %s", s.Action)
 	}
 }
 
@@ -425,7 +425,10 @@ func TestAdvisorTransitiveNodeModulesImporter(t *testing.T) {
 	if s.File != "src/app/app.config.ts" {
 		t.Errorf("expected application caller src/app/app.config.ts, got %s", s.File)
 	}
-	if !strings.Contains(s.Title, "Review root provider") {
+	if s.Action != "" {
+		t.Errorf("expected action to be disabled/empty, got: %s", s.Action)
+	}
+	if !strings.Contains(s.Title, "root bootstrap") {
 		t.Errorf("expected title to classify as root bootstrap, got: %s", s.Title)
 	}
 }

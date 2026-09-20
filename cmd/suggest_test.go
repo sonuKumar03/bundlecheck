@@ -49,7 +49,7 @@ func TestSuggestCommand(t *testing.T) {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 
-	if !strings.Contains(out.String(), "Bundle Optimization Recommendations") || !strings.Contains(out.String(), "Potential Savings") {
+	if !strings.Contains(out.String(), "Initial Bundle Culprits") || !strings.Contains(out.String(), "Initial JS Impact") {
 		t.Errorf("unexpected text output: %s", out.String())
 	}
 }
@@ -70,7 +70,7 @@ func TestSummaryWithGzipAndSuggest(t *testing.T) {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 
-	if !strings.Contains(out.String(), "gzip") || !strings.Contains(out.String(), "Bundle Optimization Recommendations") {
+	if !strings.Contains(out.String(), "gzip") || !strings.Contains(out.String(), "Initial Bundle Culprits") {
 		t.Errorf("expected gzip and suggestions in summary output: %s", out.String())
 	}
 }
@@ -91,7 +91,7 @@ func TestSuggestMarkdown(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "## 💡 Bundle Optimization Recommendations") {
+	if !strings.Contains(output, "## 🔍 Initial Bundle Culprits & Contributors") {
 		t.Errorf("expected suggestions markdown header, got: %s", output)
 	}
 	if !strings.Contains(output, "### 1.") {

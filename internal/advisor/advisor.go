@@ -133,13 +133,13 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 				res.Suggestions = append(res.Suggestions, Suggestion{
 					Rule:        "eager-feature-component",
 					Severity:    severity,
-					Title:       "Lazy-load feature component '" + path.Base(c.Input) + "'",
+					Title:       "Eager component '" + path.Base(c.Input) + "' bundled in initial JS",
 					Target:      c.Input,
 					File:        c.Input,
 					Savings:     c.Bytes,
 					SavingsGzip: int64(float64(c.Bytes) * 0.32),
 					Description: "Component '" + c.Input + "' is eagerly bundled into initial JS.",
-					Action:      "Use 'loadComponent: () => import(\"./" + c.Input + "\")' in routes or wrap in '@defer (on viewport)'.",
+					Action:      "",
 				})
 			}
 		}
@@ -151,12 +151,12 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 			res.Suggestions = append(res.Suggestions, Suggestion{
 				Rule:        "split-package",
 				Severity:    "LOW",
-				Title:       "Consolidate package usage for '" + p.Name + "'",
+				Title:       "Package '" + p.Name + "' split across initial and lazy chunks",
 				Target:      p.Name,
 				Savings:     p.InitialBytes,
 				SavingsGzip: p.InitialGzipBytes,
 				Description: "Package '" + p.Name + "' is included in both initial and lazy chunks.",
-				Action:      "Ensure lazy features import from shared services rather than importing library modules directly.",
+				Action:      "",
 			})
 		}
 	}
@@ -195,12 +195,12 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 				res.Suggestions = append(res.Suggestions, Suggestion{
 					Rule:        "duplicate-package",
 					Severity:    "MEDIUM",
-					Title:       fmt.Sprintf("Deduplicate bundled package '%s' (%d copies found)", pkgName, len(roots)),
+					Title:       fmt.Sprintf("Duplicate package '%s' (%d copies found in initial JS)", pkgName, len(roots)),
 					Target:      pkgName,
 					Savings:     estSavings,
 					SavingsGzip: int64(float64(estSavings) * 0.32),
-					Description: fmt.Sprintf("Multiple distinct copies of '%s' contribute to initial JS; deduplication savings are an estimate.", pkgName),
-					Action:      "Run 'npm dedupe' or align package version constraints in package.json.",
+					Description: fmt.Sprintf("Multiple distinct copies of '%s' contribute to initial JS.", pkgName),
+					Action:      "",
 				})
 			}
 		}
@@ -344,29 +344,28 @@ func isRootBootstrap(base string) bool {
 func generatePackageSuggestion(pkgName string, topo importerContext) (title, desc, action string) {
 	switch topo.role {
 	case "root-bootstrap":
-		title = fmt.Sprintf("Review root provider or module import for '%s'", pkgName)
-		desc = fmt.Sprintf("Package '%s' is imported directly by root bootstrap (%s) and bundled into initial JS.", pkgName, topo.importerFile)
-		action = "If not required for first paint, consider async providers (e.g. provide...Async()), lazy initialization, or scoping to feature routes."
+		title = fmt.Sprintf("Initial JS package '%s' imported by root bootstrap", pkgName)
+		desc = fmt.Sprintf("Package '%s' is bundled in initial JS because it is imported by root bootstrap '%s'.", pkgName, topo.importerFile)
+		action = ""
 
 	case "route-component":
-		title = fmt.Sprintf("Lazy-load route component '%s' to defer '%s'", path.Base(topo.importerFile), pkgName)
+		title = fmt.Sprintf("Initial JS package '%s' imported by eager component '%s'", pkgName, path.Base(topo.importerFile))
 		if topo.routeFile != "" && topo.routeFile != topo.importerFile {
-			desc = fmt.Sprintf("Package '%s' is pulled into initial JS because '%s' is eagerly imported via '%s'.", pkgName, topo.importerFile, topo.routeFile)
+			desc = fmt.Sprintf("Package '%s' is bundled in initial JS because '%s' is imported by route definition '%s'.", pkgName, topo.importerFile, topo.routeFile)
 		} else {
-			desc = fmt.Sprintf("Package '%s' is pulled into initial JS because '%s' is eagerly imported.", pkgName, topo.importerFile)
+			desc = fmt.Sprintf("Package '%s' is bundled in initial JS because '%s' is statically imported.", pkgName, topo.importerFile)
 		}
-		action = fmt.Sprintf("Lazy-load the parent route (e.g. 'loadComponent: () => import(...)') or wrap in an '@defer' block to move '%s' to a lazy chunk.", pkgName)
+		action = ""
 
 	default: // "general-module"
 		if topo.importerFile != "" {
-			title = fmt.Sprintf("De-couple or lazy-load '%s' in %s", pkgName, path.Base(topo.importerFile))
-			desc = fmt.Sprintf("Package '%s' contributes to initial JS via %s. If not needed during initial render, defer its loading.", pkgName, topo.importerFile)
-			action = "Consider dynamic import ('const ... = await import(...)'), template '@defer' block, or tree-shakable subpath imports if only used for specific user interactions."
+			title = fmt.Sprintf("Initial JS package '%s' imported by %s", pkgName, path.Base(topo.importerFile))
+			desc = fmt.Sprintf("Package '%s' contributes to initial JS via '%s'.", pkgName, topo.importerFile)
 		} else {
-			title = fmt.Sprintf("Move '%s' behind dynamic loading", pkgName)
-			desc = fmt.Sprintf("Package '%s' is bundled in initial JS. If not critical for first paint, dynamic loading can directly reduce initial bundle size.", pkgName)
-			action = "Consider dynamic import ('await import(...)'), '@defer', or moving non-critical logic to lazy routes."
+			title = fmt.Sprintf("Initial JS package '%s'", pkgName)
+			desc = fmt.Sprintf("Package '%s' contributes to initial JS.", pkgName)
 		}
+		action = ""
 	}
 	return title, desc, action
 }
