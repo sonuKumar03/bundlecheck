@@ -20,6 +20,9 @@ func TestNxWorkspaceCommands(t *testing.T) {
 	if _, err := os.Stat(nxRoot); os.IsNotExist(err) {
 		t.Skip("testdata/nx-workspace fixture not present")
 	}
+	if _, err := os.Stat(filepath.Join(nxRoot, "dist")); os.IsNotExist(err) {
+		t.Skip("testdata/nx-workspace/dist build artifacts not present")
+	}
 
 	if err := os.Chdir(nxRoot); err != nil {
 		t.Fatal(err)
