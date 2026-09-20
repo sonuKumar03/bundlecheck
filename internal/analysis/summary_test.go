@@ -122,8 +122,16 @@ func TestAnalyze_ApplicationSources(t *testing.T) {
 		t.Fatalf("Analyze failed: %v", err)
 	}
 
-	if len(res.Sources) == 0 {
-		t.Fatalf("expected application sources to be populated, got 0")
+	if len(res.Sources) != 2 {
+		t.Fatalf("expected 2 application sources, got %d: %+v", len(res.Sources), res.Sources)
+	}
+
+	// Verify deterministic sorting: movie-detail-page (initial: 20000) before person-page (initial: 0)
+	if res.Sources[0].Name != "projects/movies/src/app/pages/movie-detail-page" {
+		t.Errorf("expected first source to be movie-detail-page, got %q", res.Sources[0].Name)
+	}
+	if res.Sources[1].Name != "projects/movies/src/app/pages/person-page" {
+		t.Errorf("expected second source to be person-page, got %q", res.Sources[1].Name)
 	}
 
 	// Verify grouping by directory / component root
@@ -160,6 +168,26 @@ func TestAnalyze_ApplicationSources(t *testing.T) {
 	}
 	if !foundPerson {
 		t.Errorf("expected person-page in sources, got: %+v", res.Sources)
+	}
+}
+
+func TestSourceDir(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"main.ts", "main.ts"},
+		{"./main.ts", "main.ts"},
+		{"src/main.ts", "src"},
+		{"projects/movies/src/app/pages/movie-detail-page/movie-detail-page.component.ts", "projects/movies/src/app/pages/movie-detail-page"},
+		{`projects\movies\src\app\pages\movie-detail-page\movie-detail-page.component.html`, "projects/movies/src/app/pages/movie-detail-page"},
+		{`C:\app\src\app\app.component.ts`, "C:/app/src/app"},
+	}
+	for _, tt := range tests {
+		got := SourceDir(tt.input)
+		if got != tt.want {
+			t.Errorf("SourceDir(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 

@@ -18,5 +18,13 @@
       "totalBytes": 128,
       "totalGzipBytes": 11
     }
+  ],
+  "sources": [
+    {
+      "name": "src",
+      "initialBytes": 800,
+      "lazyBytes": 0,
+      "totalBytes": 800
+    }
   ]
 }
