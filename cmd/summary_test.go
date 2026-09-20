@@ -192,3 +192,59 @@ func TestSummaryPositionalProject(t *testing.T) {
 		t.Errorf("expected InitialJS > 0, got %d", res.Summary.InitialJS)
 	}
 }
+
+func TestSummaryDirectStatsPathInMultiOutputWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	minStats, err := os.ReadFile(filepath.Join("..", "testdata", "minimal", "stats.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	minHTML, err := os.ReadFile(filepath.Join("..", "testdata", "minimal", "browser", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	minJS, err := os.ReadFile(filepath.Join("..", "testdata", "minimal", "browser", "main.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create two distinct app build outputs
+	for _, app := range []string{"admin", "portal"} {
+		appDist := filepath.Join(tmpDir, "dist", "apps", app)
+		if err := os.MkdirAll(filepath.Join(appDist, "browser"), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(appDist, "stats.json"), minStats, 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(appDist, "browser", "index.html"), minHTML, 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(appDist, "browser", "main.js"), minJS, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// 1. Calling summary on root without flags fails with multiple candidates error
+	var outMulti, errMulti bytes.Buffer
+	codeMulti := Execute([]string{"summary", tmpDir}, &outMulti, &errMulti)
+	if codeMulti == 0 || !strings.Contains(errMulti.String(), "multiple Angular build outputs") {
+		t.Fatalf("expected multiple candidates error, got code %d: %s", codeMulti, errMulti.String())
+	}
+
+	// 2. Calling summary with direct stats.json path succeeds deterministically by selecting sibling browser directory
+	portalStats := filepath.Join(tmpDir, "dist", "apps", "portal", "stats.json")
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"summary", portalStats, "-f", "json"}, &out, &errOut)
+	if code != 0 || errOut.Len() != 0 {
+		t.Fatalf("expected direct stats.json to succeed deterministically, got exit %d: %s", code, errOut.String())
+	}
+
+	var res analysis.AnalysisResult
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("failed to unmarshal JSON: %v", err)
+	}
+	if res.Summary.InitialJS <= 0 {
+		t.Errorf("expected InitialJS > 0, got %d", res.Summary.InitialJS)
+	}
+}

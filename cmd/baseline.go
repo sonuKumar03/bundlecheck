@@ -368,90 +368,75 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 }
 
 func resolveBuildArtifactsInDir(rootDir, stats, dist, project string) (string, string, error) {
+	if rootDir == "" {
+		rootDir = "."
+	}
+	absPath := func(p string) string {
+		if p == "" || filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.Join(rootDir, p)
+	}
+
+	// 1. If stats points directly to an existing file, resolve dist deterministically
+	if stats != "" {
+		pStats := absPath(stats)
+		if fi, err := os.Stat(pStats); err == nil && !fi.IsDir() {
+			stats = pStats
+			if dist != "" {
+				return stats, absPath(dist), nil
+			}
+			dir := filepath.Dir(stats)
+			browserSub := filepath.Join(dir, "browser")
+			if bi, err := os.Stat(browserSub); err == nil && bi.IsDir() {
+				return stats, browserSub, nil
+			}
+			return stats, dir, nil
+		}
+	}
+
+	// 2. If both stats and dist are explicitly specified
+	if stats != "" && dist != "" {
+		pStats := absPath(stats)
+		pDist := absPath(dist)
+		if fi, err := os.Stat(pStats); err == nil && fi.IsDir() {
+			if _, errDist := os.Stat(pDist); os.IsNotExist(errDist) && project == "" {
+				return discovery.Locate(pStats, dist)
+			}
+		}
+		return pStats, pDist, nil
+	}
+
+	// 3. Positional project or directory in stats argument
 	searchDir := rootDir
 	if stats != "" && dist == "" {
-		p := stats
-		if !filepath.IsAbs(p) {
-			p = filepath.Join(rootDir, p)
-		}
-		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-			searchDir = p
-			stats = ""
-		} else if _, err := os.Stat(p); os.IsNotExist(err) && project == "" {
-			candidates, cErr := discovery.FindCandidates(searchDir)
-			if cErr == nil {
-				for _, c := range candidates {
-					if strings.EqualFold(c.Project, stats) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(stats)) {
-						project = stats
-						stats = ""
-						break
-					}
-				}
-			}
-		}
-	} else if stats != "" && dist != "" && project == "" {
-		// Could be: summary <dir> <project>
-		pStats := stats
-		if !filepath.IsAbs(pStats) {
-			pStats = filepath.Join(rootDir, pStats)
-		}
-		pDist := dist
-		if !filepath.IsAbs(pDist) {
-			pDist = filepath.Join(rootDir, pDist)
-		}
+		pStats := absPath(stats)
 		if fi, err := os.Stat(pStats); err == nil && fi.IsDir() {
-			if _, errDist := os.Stat(pDist); os.IsNotExist(errDist) {
-				candidates, cErr := discovery.FindCandidates(pStats)
-				if cErr == nil {
-					for _, c := range candidates {
-						if strings.EqualFold(c.Project, dist) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(dist)) {
-							searchDir = pStats
-							project = dist
-							stats = ""
-							dist = ""
-							break
-						}
-					}
-				}
-			}
+			searchDir = pStats
+			stats = ""
+		} else if _, err := os.Stat(pStats); os.IsNotExist(err) && project == "" && !strings.HasSuffix(strings.ToLower(stats), ".json") {
+			project = stats
+			stats = ""
 		}
 	}
 
-	if stats != "" && dist != "" {
-		if !filepath.IsAbs(stats) {
-			stats = filepath.Join(rootDir, stats)
-		}
-		if !filepath.IsAbs(dist) {
-			dist = filepath.Join(rootDir, dist)
-		}
-		return stats, dist, nil
-	}
-
+	// 4. Auto-discovery
 	discoveredStats, discoveredDist, err := discovery.Locate(searchDir, project)
 	if err != nil {
-		if stats == "" && dist == "" {
-			return "", "", err
-		}
-		if stats == "" {
-			return "", "", fmt.Errorf("missing --stats file path: %w", err)
-		}
-		if dist == "" {
+		if stats != "" && dist == "" {
 			return "", "", fmt.Errorf("missing --dist directory path: %w", err)
 		}
+		if dist != "" && stats == "" {
+			return "", "", fmt.Errorf("missing --stats file path: %w", err)
+		}
+		return "", "", err
 	}
-
 	if stats == "" {
 		stats = discoveredStats
-	} else if !filepath.IsAbs(stats) {
-		stats = filepath.Join(rootDir, stats)
 	}
-
 	if dist == "" {
 		dist = discoveredDist
-	} else if !filepath.IsAbs(dist) {
-		dist = filepath.Join(rootDir, dist)
 	}
-
 	return stats, dist, nil
 }
 

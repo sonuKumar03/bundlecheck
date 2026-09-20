@@ -88,3 +88,39 @@ func TestRejectUnsupportedConfigFields(t *testing.T) {
 		t.Fatal("unsupported budget setting must not silently disable enforcement")
 	}
 }
+
+func TestDocsConfigLoadsCleanly(t *testing.T) {
+	// Exact configuration snippet published on docs/index.html and README.md
+	docConfig := `
+budgets:
+  initial_js_max: 250kb
+  total_max: 1.5mb
+  max_delta_increase: 50kb
+
+rules:
+  disallow_packages:
+    - moment
+    - lodash
+`
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".bundlecheck.yml")
+	if err := os.WriteFile(cfgPath, []byte(docConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.LoadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("published docs config failed to load: %v", err)
+	}
+	if cfg.Budgets.InitialJSMax != "250kb" {
+		t.Errorf("expected initial_js_max 250kb, got %q", cfg.Budgets.InitialJSMax)
+	}
+	if cfg.Budgets.TotalMax != "1.5mb" {
+		t.Errorf("expected total_max 1.5mb, got %q", cfg.Budgets.TotalMax)
+	}
+	if cfg.Budgets.MaxDeltaIncrease != "50kb" {
+		t.Errorf("expected max_delta_increase 50kb, got %q", cfg.Budgets.MaxDeltaIncrease)
+	}
+	if len(cfg.Rules.DisallowPackages) != 2 || cfg.Rules.DisallowPackages[0] != "moment" || cfg.Rules.DisallowPackages[1] != "lodash" {
+		t.Errorf("expected disallow_packages [moment, lodash], got %v", cfg.Rules.DisallowPackages)
+	}
+}
