@@ -16,8 +16,7 @@ func TestSuggestCommand(t *testing.T) {
 	// 1. JSON test for suggest command
 	argsJSON := []string{
 		"suggest",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"-f", "json",
 	}
 
@@ -40,8 +39,7 @@ func TestSuggestCommand(t *testing.T) {
 	errOut.Reset()
 	argsText := []string{
 		"suggest",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"--gzip",
 	}
 
@@ -59,8 +57,7 @@ func TestSummaryWithGzipAndSuggest(t *testing.T) {
 
 	args := []string{
 		"summary",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"--gzip",
 		"--suggest",
 	}
@@ -79,8 +76,7 @@ func TestSuggestMarkdown(t *testing.T) {
 	base := filepath.Join("..", "testdata", "lazy-import")
 	args := []string{
 		"suggest",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"-f", "markdown",
 		"--gzip",
 	}

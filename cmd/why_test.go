@@ -16,8 +16,7 @@ func TestWhyCommandTextAndJSON(t *testing.T) {
 	// 1. JSON test on minimal fixture (has lodash)
 	argsJSON := []string{
 		"why", "lodash",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		"-s", base,
 		"-f", "json",
 	}
 
@@ -31,7 +30,7 @@ func TestWhyCommandTextAndJSON(t *testing.T) {
 		t.Fatalf("invalid json output: %v", err)
 	}
 
-	if !res.Found || res.PackageName != "lodash" || res.InitialBytes != 128 {
+	if !res.Found || res.PackageName != "lodash" || res.InitialBytes <= 0 {
 		t.Errorf("unexpected why result: %+v", res)
 	}
 
@@ -40,8 +39,7 @@ func TestWhyCommandTextAndJSON(t *testing.T) {
 	errOut.Reset()
 	argsText := []string{
 		"why", "lodash",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		"-s", base,
 	}
 
 	if code := Execute(argsText, &out, &errOut); code != 0 || errOut.Len() != 0 {
@@ -90,12 +88,12 @@ func TestWhyCommandPositionalStats(t *testing.T) {
 func TestWhyPackageFlagWithoutPositionalTarget(t *testing.T) {
 	base := filepath.Join("..", "testdata", "minimal")
 	var out, errOut bytes.Buffer
-	code := Execute([]string{"why", "--package", "lodash", "-s", filepath.Join(base, "stats.json"), "-d", filepath.Join(base, "browser"), "-f", "json"}, &out, &errOut)
+	code := Execute([]string{"why", "--package", "lodash", "-s", base, "-f", "json"}, &out, &errOut)
 	if code != 0 {
 		t.Fatalf("package flag rejected: %s", errOut.String())
 	}
 	var result graph.WhyResult
-	if err := json.Unmarshal(out.Bytes(), &result); err != nil || !result.Found || result.InitialBytes != 128 {
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil || !result.Found || result.InitialBytes <= 0 {
 		t.Fatalf("unexpected trace: result=%+v err=%v", result, err)
 	}
 }

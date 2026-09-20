@@ -12,7 +12,6 @@ import (
 	"bundlecheck/internal/analysis"
 	"bundlecheck/internal/build"
 	"bundlecheck/internal/compression"
-	"bundlecheck/internal/discovery"
 	"bundlecheck/internal/report"
 	"bundlecheck/internal/snapshot"
 )
@@ -129,40 +128,11 @@ func summaryCommand() *cobra.Command {
 }
 
 func resolveBuildArtifacts(stats, dist, project string) (string, string, error) {
-	if stats != "" && dist != "" {
-		return stats, dist, nil
-	}
-
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", "", fmt.Errorf("get working directory: %w", err)
 	}
-
-	discoveredStats, discoveredDist, err := discovery.Locate(wd, project)
-	if err != nil {
-		if stats == "" && dist == "" {
-			return "", "", err
-		}
-		if stats == "" {
-			return "", "", fmt.Errorf("missing --stats file path: %w", err)
-		}
-		if dist == "" {
-			return "", "", fmt.Errorf("missing --dist directory path: %w", err)
-		}
-	}
-
-	if stats == "" {
-		stats = discoveredStats
-	}
-	if dist == "" {
-		dist = discoveredDist
-	}
-
-	if stats == "" || dist == "" {
-		return "", "", fmt.Errorf("--stats and --dist require nonempty paths")
-	}
-
-	return stats, dist, nil
+	return resolveBuildArtifactsInDir(wd, stats, dist, project)
 }
 
 func runAnalysis(stats, dist string) (*analysis.AnalysisResult, error) {

@@ -368,6 +368,18 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 }
 
 func resolveBuildArtifactsInDir(rootDir, stats, dist, project string) (string, string, error) {
+	searchDir := rootDir
+	if stats != "" && dist == "" {
+		p := stats
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(rootDir, p)
+		}
+		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
+			searchDir = p
+			stats = ""
+		}
+	}
+
 	if stats != "" && dist != "" {
 		if !filepath.IsAbs(stats) {
 			stats = filepath.Join(rootDir, stats)
@@ -378,7 +390,7 @@ func resolveBuildArtifactsInDir(rootDir, stats, dist, project string) (string, s
 		return stats, dist, nil
 	}
 
-	discoveredStats, discoveredDist, err := discovery.Locate(rootDir, project)
+	discoveredStats, discoveredDist, err := discovery.Locate(searchDir, project)
 	if err != nil {
 		if stats == "" && dist == "" {
 			return "", "", err

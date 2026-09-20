@@ -14,8 +14,7 @@ func TestCheckCommand(t *testing.T) {
 	// Pass: max initial 2KB (minimal fixture is 1KB)
 	argsPass := []string{
 		"check",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"--max-initial", "2KB",
 	}
 	var out, errOut bytes.Buffer
@@ -26,8 +25,7 @@ func TestCheckCommand(t *testing.T) {
 	// Fail: max initial 500B
 	argsFail := []string{
 		"check",
-		"-s", filepath.Join(base, "stats.json"),
-		"-d", filepath.Join(base, "browser"),
+		base,
 		"--max-initial", "500B",
 	}
 	out.Reset()
@@ -111,7 +109,7 @@ func TestCheckRejectsMalformedAutoLoadedConfig(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	base := filepath.Join(origWd, "..", "testdata", "minimal")
 	var out, errOut bytes.Buffer
-	code := Execute([]string{"check", "-s", filepath.Join(base, "stats.json"), "-d", filepath.Join(base, "browser"), "--max-total", "1MB"}, &out, &errOut)
+	code := Execute([]string{"check", base, "--max-total", "1MB"}, &out, &errOut)
 	if code == 0 || !strings.Contains(errOut.String(), "config") {
 		t.Fatalf("invalid config must fail before checking permissive CLI budgets: exit=%d err=%s", code, errOut.String())
 	}
