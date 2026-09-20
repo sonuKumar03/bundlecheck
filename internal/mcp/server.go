@@ -26,7 +26,7 @@ import (
 )
 
 // ServerVersion is the bundlecheck MCP server version.
-const ServerVersion = "0.2.0"
+const ServerVersion = "0.3.0"
 
 // NewServer creates and initializes a bundlecheck MCP server with all tools and resources.
 func NewServer() *server.MCPServer {

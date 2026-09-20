@@ -10,7 +10,7 @@ import (
 	"bundlecheck/internal/snapshot"
 )
 
-const ToolVersion = "0.2.0"
+const ToolVersion = "0.3.0"
 
 type AnalysisResult struct {
 	SchemaVersion string             `json:"schemaVersion"`
