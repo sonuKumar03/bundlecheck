@@ -10,7 +10,9 @@ import (
 	"bundlecheck/internal/snapshot"
 )
 
-const ToolVersion = "0.3.0"
+// ToolVersion is the bundlecheck version, which can be overridden at compile time via:
+// go build -ldflags "-X bundlecheck/internal/analysis.ToolVersion=vX.Y.Z"
+var ToolVersion = "0.3.0"
 
 type AnalysisResult struct {
 	SchemaVersion string             `json:"schemaVersion"`

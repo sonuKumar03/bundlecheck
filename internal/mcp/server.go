@@ -25,8 +25,8 @@ import (
 	"bundlecheck/internal/workspace"
 )
 
-// ServerVersion is the bundlecheck MCP server version.
-const ServerVersion = "0.3.0"
+// ServerVersion references analysis.ToolVersion as the single source of truth.
+var ServerVersion = analysis.ToolVersion
 
 // NewServer creates and initializes a bundlecheck MCP server with all tools and resources.
 func NewServer() *server.MCPServer {

@@ -7,7 +7,8 @@
     "bundlecheck": "bin/bundlecheck.js"
   },
   "scripts": {
-    "test": "node bin/bundlecheck.js --help"
+    "test": "node bin/bundlecheck.js --help",
+    "bump": "../../scripts/bump-version.sh"
   },
   "repository": {
     "type": "git",
