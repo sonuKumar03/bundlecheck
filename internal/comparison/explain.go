@@ -24,7 +24,7 @@ func CompareWithSnapshot(before, after *analysis.AnalysisResult, snap *snapshot.
 //  2. Changed contributors are associated with emitted chunks when snapshot data is available.
 //  3. Shortest stable import paths are traced from entry points via existing graph tracing.
 //     No import paths are reconstructed or invented from aggregate baseline JSON.
-//  4. Any unexplained byte deltas between the reported total delta and sum of positive packages
+//  4. Any unexplained byte deltas between the reported total delta and sum of positive packages and sources
 //     are explicitly marked as "(unattributed)".
 //  5. Findings reconciliation: sum(attributed) + sum(unattributed) == total positive delta.
 func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {

@@ -58,8 +58,11 @@ func ComparisonTextWithOptions(w io.Writer, r *comparison.Result, opts TextOptio
 		fmt.Fprintln(table, "\nRegression explanation")
 		for _, f := range r.Findings {
 			target := f.Name
+			if f.Kind == "source" {
+				target = "[source] " + target
+			}
 			if len(f.Chunks) > 0 {
-				target = fmt.Sprintf("%s -> %s", f.Name, strings.Join(f.Chunks, ", "))
+				target = fmt.Sprintf("%s -> %s", target, strings.Join(f.Chunks, ", "))
 			}
 			if f.Reason != "" {
 				target = fmt.Sprintf("%s (%s)", target, f.Reason)

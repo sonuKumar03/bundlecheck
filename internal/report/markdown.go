@@ -132,7 +132,16 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 			if f.Reason != "" {
 				reasonInfo = fmt.Sprintf(" *(%s)*", f.Reason)
 			}
-			fmt.Fprintf(&sb, "- **`%s`** (`%s`)%s%s\n", f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
+			icon := "📦"
+			switch f.Kind {
+			case "source":
+				icon = "📁"
+			case "unattributed":
+				icon = "⚪"
+			case "package":
+				icon = "📦"
+			}
+			fmt.Fprintf(&sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
 			if len(f.TracePath) > 0 {
 				sb.WriteString("  - **Import path:** `" + strings.Join(f.TracePath, "` → `") + "`\n")
 			}

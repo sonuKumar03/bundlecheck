@@ -136,3 +136,32 @@ func TestComparisonTextWithFindings(t *testing.T) {
 		}
 	}
 }
+
+func TestComparisonText_SourceFinding(t *testing.T) {
+	r := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 20480},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "projects/movies/src/app/pages/movie-detail-page",
+				DeltaBytes: 20480,
+				Kind:       "source",
+				Chunks:     []string{"main.js"},
+				Reason:     "Application component moved into initial bundle",
+			},
+		},
+	}
+	var out bytes.Buffer
+	if err := ComparisonText(&out, r); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	if !strings.Contains(text, "movie-detail-page") {
+		t.Errorf("expected movie-detail-page in output:\n%s", text)
+	}
+	if !strings.Contains(text, "[source]") {
+		t.Errorf("expected [source] in output:\n%s", text)
+	}
+}
+

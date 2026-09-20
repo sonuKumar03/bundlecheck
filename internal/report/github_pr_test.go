@@ -202,12 +202,46 @@ func TestComparisonGitHubPRWithFindings(t *testing.T) {
 	out := buf.String()
 	for _, want := range []string{
 		"### 🔎 Regression Explanation",
-		"- **`chart.js`** (`+31 KB`) → emitted in `dist/browser/main.js`",
+		"- 📦 **`chart.js`** (`+31 KB`) → emitted in `dist/browser/main.js`",
 		"- **Import path:** `src/main.ts` → `node_modules/chart.js/auto.js`",
-		"- **`(unattributed)`** (`+11 KB`) *(Growth in application sources)*",
+		"- ⚪ **`(unattributed)`** (`+11 KB`) *(Growth in application sources)*",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in PR output:\n%s", want, out)
 		}
 	}
 }
+
+func TestRenderPRComment_SourceFinding(t *testing.T) {
+	res := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 20480},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "projects/movies/src/app/pages/movie-detail-page",
+				DeltaBytes: 20480,
+				Kind:       "source",
+				Chunks:     []string{"main.js"},
+				Reason:     "Application component moved into initial bundle",
+			},
+		},
+	}
+	var buf bytes.Buffer
+	err := report.ComparisonGitHubPR(&buf, res, budget.CheckResult{Passed: true}, report.TextOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "movie-detail-page") {
+		t.Errorf("expected movie-detail-page in PR comment, got:\n%s", out)
+	}
+	if !strings.Contains(out, "📁") && !strings.Contains(out, "source") {
+		t.Errorf("expected source indicator in PR comment, got:\n%s", out)
+	}
+	wantLine := "- 📁 **`projects/movies/src/app/pages/movie-detail-page`** (`+20 KB`) → emitted in `main.js` *(Application component moved into initial bundle)*"
+	if !strings.Contains(out, wantLine) {
+		t.Errorf("expected %q in PR comment, got:\n%s", wantLine, out)
+	}
+}
+
