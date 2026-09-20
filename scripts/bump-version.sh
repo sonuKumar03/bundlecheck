@@ -96,7 +96,21 @@ with open('README.md', 'w') as f:
 cp README.md npm/bundlecheck/README.md
 echo "  ✓ Updated README.md and npm/bundlecheck/README.md"
 
-# 7. Run test verification
+# 7. Update golden contracts testdata
+python3 -c "
+import glob, json
+for path in glob.glob('testdata/contracts/v1/*.json'):
+    with open(path, 'r') as f:
+        data = json.load(f)
+    if 'toolVersion' in data:
+        data['toolVersion'] = '$NEW_VER'
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+            f.write('\n')
+"
+echo "  ✓ Updated testdata/contracts/v1/*.json"
+
+# 8. Run test verification
 echo "Running test suite verification..."
 go test ./... > /dev/null
 echo "  ✓ All Go tests pass with version $NEW_VER"

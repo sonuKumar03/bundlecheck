@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1",
-  "toolVersion": "0.3.0",
+  "toolVersion": "0.4.0",
   "command": "suggest",
   "suggestions": [],
   "totalPotentialSavings": 0

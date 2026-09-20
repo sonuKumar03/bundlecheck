@@ -265,7 +265,24 @@ bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-
 
 ---
 
-### 8. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
+### 8. `bundlecheck init`
+Assisted setup to generate or propose a reviewable `.bundlecheck.yml` configuration:
+
+```bash
+# Preview proposed budgets with 5% headroom over measured size
+bundlecheck init
+
+# Import budgets directly from angular.json
+bundlecheck init --from-angular-budgets
+
+# Save proposed configuration to .bundlecheck.yml
+bundlecheck init --write --headroom 10
+```
+*Creates `.bundlecheck.yml` only if it does not already exist.*
+
+---
+
+### 9. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
 
 Compare app sizes, shared library costs, and duplicate npm dependencies across an Nx or Angular multi-app workspace:
 
@@ -285,7 +302,7 @@ Supported builders include `@nx/angular:application`, `@nx/angular:browser-esbui
 
 ---
 
-### 9. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
+### 10. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
 
 Launch a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server over standard I/O for AI coding assistants (**Claude Code**, **Antigravity**, **Cursor**, **Claude Desktop**).
 
@@ -308,7 +325,7 @@ bundlecheck mcp
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.3.0`)
+### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.4.0`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -334,7 +351,7 @@ jobs:
       - run: npx ng build --configuration production --stats-json
 
       - name: Run bundlecheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.3.0
+        uses: sonuKumar03/bundlecheck@v0.4.0
         with:
           stats: dist/my-app/stats.json
           max-initial: '250kb'
@@ -433,7 +450,7 @@ claude mcp add bundlecheck -- bundlecheck mcp
 }
 ```
 
-### 2. Companion Agent Skill ([`SKILL.md`](https://github.com/sonuKumar03/bundlecheck/blob/master/.agents/skills/bundlecheck/SKILL.md))
+### 2. Companion Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
 Install the official skill definition to your local agent library:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
@@ -445,7 +462,7 @@ Autonomous agents use `bundlecheck` in their inner coding loop to:
 3. Trace exact importing files with `bundle_why`.
 4. Verify byte reductions before committing code.
 
-For complete agent documentation and JSON contracts, see [**docs/agents.md**](https://github.com/sonuKumar03/bundlecheck/blob/master/docs/agents.md).
+For complete agent documentation and JSON contracts, see [**docs/agents.md**](docs/agents.md).
 
 ---
 

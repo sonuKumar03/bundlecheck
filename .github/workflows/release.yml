@@ -150,3 +150,15 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
+
+      - name: Update Moving Major Action Tag
+        run: |
+          # Extract major version number (e.g. "0" from "v0.4.0", or "1" from "v1.0.0")
+          TAG="${GITHUB_REF_NAME}"
+          MAJOR="${TAG%%.*}"
+          echo "Updating moving major tag $MAJOR to point to $TAG..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$MAJOR" -m "Update $MAJOR to point to $TAG"
+          git push origin "$MAJOR" --force
+

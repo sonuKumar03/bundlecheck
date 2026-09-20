@@ -325,7 +325,7 @@ bundlecheck mcp
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.3.0`)
+### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.4.0`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -351,7 +351,7 @@ jobs:
       - run: npx ng build --configuration production --stats-json
 
       - name: Run bundlecheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.3.0
+        uses: sonuKumar03/bundlecheck@v0.4.0
         with:
           stats: dist/my-app/stats.json
           max-initial: '250kb'
