@@ -168,3 +168,43 @@ func TestCompareEmptyAndLimits(t *testing.T) {
 		}
 	}
 }
+
+func TestCompare_Sources(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 5000, TotalJS: 5000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/shared", InitialBytes: 1000, LazyBytes: 0, TotalBytes: 1000},
+			{Name: "src/app/removed-dir", InitialBytes: 500, LazyBytes: 0, TotalBytes: 500},
+			{Name: "src/app/unchanged-dir", InitialBytes: 200, LazyBytes: 0, TotalBytes: 200},
+		},
+	}
+	after := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 6500, TotalJS: 6500},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/shared", InitialBytes: 2500, LazyBytes: 0, TotalBytes: 2500},
+			{Name: "src/app/added-dir", InitialBytes: 500, LazyBytes: 0, TotalBytes: 500},
+			{Name: "src/app/unchanged-dir", InitialBytes: 200, LazyBytes: 0, TotalBytes: 200},
+		},
+	}
+
+	r := Compare(before, after)
+	if len(r.Sources) != 4 {
+		t.Fatalf("expected 4 source changes, got %d: %+v", len(r.Sources), r.Sources)
+	}
+
+	// Verify order: shared (delta 1500), added-dir (delta 500), removed-dir (delta -500), unchanged-dir (delta 0)
+	if r.Sources[0].Name != "src/app/shared" || r.Sources[0].Status != "changed" || r.Sources[0].Delta.InitialBytes != 1500 {
+		t.Errorf("expected shared changed +1500, got %+v", r.Sources[0])
+	}
+	if r.Sources[1].Name != "src/app/added-dir" || r.Sources[1].Status != "added" || r.Sources[1].Delta.InitialBytes != 500 {
+		t.Errorf("expected added-dir added +500, got %+v", r.Sources[1])
+	}
+	if r.Sources[2].Name != "src/app/removed-dir" || r.Sources[2].Status != "removed" || r.Sources[2].Delta.InitialBytes != -500 {
+		t.Errorf("expected removed-dir removed -500, got %+v", r.Sources[2])
+	}
+	if r.Sources[3].Name != "src/app/unchanged-dir" || r.Sources[3].Status != "unchanged" || r.Sources[3].Delta.InitialBytes != 0 {
+		t.Errorf("expected unchanged-dir unchanged, got %+v", r.Sources[3])
+	}
+}

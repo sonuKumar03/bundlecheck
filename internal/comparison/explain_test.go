@@ -1,6 +1,7 @@
 package comparison_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/sonuKumar03/bundlecheck/internal/analysis"
@@ -290,5 +291,242 @@ func TestGenerateFindings_MissingGraphData(t *testing.T) {
 	}
 	if len(res.Findings[0].Chunks) != 0 || len(res.Findings[0].TracePath) != 0 {
 		t.Errorf("expected empty chunks and trace path, got chunks=%v, trace=%v", res.Findings[0].Chunks, res.Findings[0].TracePath)
+	}
+}
+
+func TestGenerateFindings_AttributedSources(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 100000, TotalJS: 100000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "projects/movies/src/app/pages/movie-detail-page", InitialBytes: 0, LazyBytes: 20000, TotalBytes: 20000},
+		},
+	}
+	after := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 120000, TotalJS: 100000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "projects/movies/src/app/pages/movie-detail-page", InitialBytes: 20000, LazyBytes: 0, TotalBytes: 20000},
+		},
+	}
+	snap := &snapshot.BundleSnapshot{
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:    "main.js",
+				Initial: true,
+				Inputs: []snapshot.Contribution{
+					{Input: "projects/movies/src/app/pages/movie-detail-page/movie-detail-page.component.ts", Bytes: 20000},
+				},
+			},
+		},
+	}
+
+	res := comparison.Compare(before, after)
+	findings := comparison.GenerateFindings(res, snap)
+
+	if len(findings) == 0 {
+		t.Fatalf("expected findings, got 0")
+	}
+
+	var sourceFinding *comparison.Finding
+	for i := range findings {
+		if findings[i].Kind == "source" {
+			sourceFinding = &findings[i]
+			break
+		}
+	}
+	if sourceFinding == nil {
+		t.Fatalf("expected finding with Kind='source', got: %+v", findings)
+	}
+	if !strings.Contains(sourceFinding.Name, "movie-detail-page") {
+		t.Errorf("expected movie-detail-page in finding name, got %q", sourceFinding.Name)
+	}
+	if sourceFinding.DeltaBytes != 20000 {
+		t.Errorf("expected 20000 delta bytes, got %d", sourceFinding.DeltaBytes)
+	}
+}
+
+func TestGenerateFindings_AttributedSourcesWithGraph(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 10000, TotalJS: 10000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/pages/profile", InitialBytes: 0, LazyBytes: 5000, TotalBytes: 5000},
+		},
+	}
+	after := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 15000, TotalJS: 15000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/pages/profile", InitialBytes: 5000, LazyBytes: 0, TotalBytes: 5000},
+		},
+	}
+	snap := &snapshot.BundleSnapshot{
+		Inputs: []snapshot.Module{
+			{
+				Path: "src/main.ts",
+				Imports: []snapshot.Import{
+					{Path: "src/app/pages/profile/profile.component.ts"},
+				},
+			},
+			{
+				Path: "src/app/pages/profile/profile.component.ts",
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "dist/main.js",
+				EntryPoint: "src/main.ts",
+				Initial:    true,
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 10000},
+					{Input: "src/app/pages/profile/profile.component.ts", Bytes: 5000},
+				},
+			},
+		},
+	}
+
+	res := comparison.CompareWithSnapshot(before, after, snap)
+	if len(res.Findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d: %+v", len(res.Findings), res.Findings)
+	}
+	f := res.Findings[0]
+	if f.Kind != "source" {
+		t.Errorf("expected kind 'source', got %q", f.Kind)
+	}
+	if f.Name != "src/app/pages/profile" {
+		t.Errorf("expected name 'src/app/pages/profile', got %q", f.Name)
+	}
+	if f.DeltaBytes != 5000 {
+		t.Errorf("expected 5000 delta bytes, got %d", f.DeltaBytes)
+	}
+	if len(f.Chunks) != 1 || f.Chunks[0] != "dist/main.js" {
+		t.Errorf("expected chunks [dist/main.js], got %v", f.Chunks)
+	}
+	if len(f.TracePath) != 2 || f.TracePath[0] != "src/main.ts" || f.TracePath[1] != "src/app/pages/profile/profile.component.ts" {
+		t.Errorf("expected trace path [src/main.ts, src/app/pages/profile/profile.component.ts], got %v", f.TracePath)
+	}
+	if f.Reason != "Application component moved into initial bundle" {
+		t.Errorf("expected Reason 'Application component moved into initial bundle', got %q", f.Reason)
+	}
+}
+
+func TestGenerateFindings_SourcesReconciliationMixed(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary: snapshot.Totals{InitialJS: 100000, TotalJS: 100000},
+		Packages: []snapshot.Package{
+			{Name: "rxjs", InitialBytes: 20000, TotalBytes: 20000},
+		},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/feature-a", InitialBytes: 10000, TotalBytes: 10000},
+		},
+	}
+	after := &analysis.AnalysisResult{
+		// Total grew by 50000
+		Summary: snapshot.Totals{InitialJS: 150000, TotalJS: 150000},
+		Packages: []snapshot.Package{
+			{Name: "rxjs", InitialBytes: 20000, TotalBytes: 20000},
+			// Package grew by 20000
+			{Name: "chart.js", InitialBytes: 20000, TotalBytes: 20000},
+		},
+		Sources: []analysis.SourceContribution{
+			// Source grew by 15000
+			{Name: "src/app/feature-a", InitialBytes: 25000, TotalBytes: 25000},
+		},
+	}
+
+	res := comparison.Compare(before, after)
+	findings := comparison.GenerateFindings(res, nil)
+
+	if len(findings) != 3 {
+		t.Fatalf("expected 3 findings (chart.js, feature-a, unattributed), got %d: %+v", len(findings), findings)
+	}
+
+	// 1. First finding: chart.js (20000)
+	if findings[0].Name != "chart.js" || findings[0].DeltaBytes != 20000 || findings[0].Kind != "package" {
+		t.Errorf("expected chart.js 20000 package, got %+v", findings[0])
+	}
+	// 2. Second finding: src/app/feature-a (15000)
+	if findings[1].Name != "src/app/feature-a" || findings[1].DeltaBytes != 15000 || findings[1].Kind != "source" {
+		t.Errorf("expected feature-a 15000 source, got %+v", findings[1])
+	}
+	// 3. Third finding: (unattributed) (15000)
+	if findings[2].Name != "(unattributed)" || findings[2].DeltaBytes != 15000 || findings[2].Kind != "unattributed" {
+		t.Errorf("expected (unattributed) 15000, got %+v", findings[2])
+	}
+
+	// Reconciliation invariant: sum(findings) == 50000
+	var sum int64
+	for _, f := range findings {
+		sum += f.DeltaBytes
+	}
+	if sum != 50000 {
+		t.Errorf("reconciliation failed: sum %d != 50000", sum)
+	}
+}
+
+func TestGenerateFindings_SourceEqualByteTies(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 1000, TotalJS: 1000},
+		Packages: []snapshot.Package{},
+		Sources:  []analysis.SourceContribution{},
+	}
+	after := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 2000, TotalJS: 2000},
+		Packages: []snapshot.Package{},
+		Sources: []analysis.SourceContribution{
+			{Name: "src/app/zebra", InitialBytes: 500, TotalBytes: 500},
+			{Name: "src/app/alpha", InitialBytes: 500, TotalBytes: 500},
+		},
+	}
+
+	res := comparison.Compare(before, after)
+	findings := comparison.GenerateFindings(res, nil)
+
+	if len(findings) != 2 {
+		t.Fatalf("expected 2 findings, got %d: %+v", len(findings), findings)
+	}
+	if findings[0].Name != "src/app/alpha" || findings[1].Name != "src/app/zebra" {
+		t.Errorf("expected [src/app/alpha, src/app/zebra], got [%s, %s]", findings[0].Name, findings[1].Name)
+	}
+}
+
+func TestGenerateFindings_LegacyBaselineSourceFallback(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 1000, TotalJS: 1000},
+		Packages: []snapshot.Package{},
+		// Sources is nil (legacy baseline v0.4.1)
+	}
+	after := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 2500, TotalJS: 2500},
+		Packages: []snapshot.Package{},
+		// Sources is nil (e.g. not populated or legacy)
+	}
+	snap := &snapshot.BundleSnapshot{
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:    "dist/main.js",
+				Initial: true,
+				Inputs: []snapshot.Contribution{
+					{Input: "src/app/app.component.ts", Bytes: 1500},
+				},
+			},
+		},
+	}
+
+	res := comparison.Compare(before, after)
+	findings := comparison.GenerateFindings(res, snap)
+
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding from snap fallback, got %d: %+v", len(findings), findings)
+	}
+	if findings[0].Kind != "source" {
+		t.Errorf("expected kind 'source', got %q", findings[0].Kind)
+	}
+	if findings[0].Name != "src/app" {
+		t.Errorf("expected name 'src/app', got %q", findings[0].Name)
+	}
+	if findings[0].DeltaBytes != 1500 {
+		t.Errorf("expected 1500 delta bytes, got %d", findings[0].DeltaBytes)
 	}
 }

@@ -40,12 +40,21 @@ type Finding struct {
 	Reason       string   `json:"reason,omitempty"`
 }
 
+type SourceChange struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Before Bytes  `json:"before"`
+	After  Bytes  `json:"after"`
+	Delta  Bytes  `json:"delta"`
+}
+
 type Result struct {
 	SchemaVersion string          `json:"schemaVersion"`
 	ToolVersion   string          `json:"toolVersion"`
 	Command       string          `json:"command"`
 	Summary       SummaryChange   `json:"summary"`
 	Packages      []PackageChange `json:"packages"`
+	Sources       []SourceChange  `json:"sources,omitempty"`
 	Findings      []Finding       `json:"findings,omitempty"`
 }
 
@@ -101,6 +110,52 @@ func Compare(before, after *analysis.AnalysisResult) *Result {
 		}
 		return cmp.Compare(a.Name, b.Name)
 	})
+	if before.Sources != nil {
+		r.Sources = []SourceChange{}
+		oldSrc := make(map[string]analysis.SourceContribution)
+		newSrc := make(map[string]analysis.SourceContribution)
+		for _, s := range before.Sources {
+			oldSrc[s.Name] = s
+		}
+		for _, s := range after.Sources {
+			newSrc[s.Name] = s
+		}
+		appendSource := func(name string) {
+			b, existed := oldSrc[name]
+			a, exists := newSrc[name]
+			s := SourceChange{Name: name, Status: "changed",
+				Before: Bytes{b.InitialBytes, b.LazyBytes, b.TotalBytes},
+				After:  Bytes{a.InitialBytes, a.LazyBytes, a.TotalBytes},
+				Delta:  Bytes{a.InitialBytes - b.InitialBytes, a.LazyBytes - b.LazyBytes, a.TotalBytes - b.TotalBytes},
+			}
+			switch {
+			case !existed:
+				s.Status = "added"
+			case !exists:
+				s.Status = "removed"
+			case s.Delta == (Bytes{}):
+				s.Status = "unchanged"
+			}
+			r.Sources = append(r.Sources, s)
+		}
+		for name := range oldSrc {
+			appendSource(name)
+		}
+		for name := range newSrc {
+			if _, exists := oldSrc[name]; !exists {
+				appendSource(name)
+			}
+		}
+		slices.SortFunc(r.Sources, func(a, b SourceChange) int {
+			if n := cmp.Compare(abs(b.Delta.InitialBytes), abs(a.Delta.InitialBytes)); n != 0 {
+				return n
+			}
+			if n := cmp.Compare(abs(b.Delta.LazyBytes), abs(a.Delta.LazyBytes)); n != 0 {
+				return n
+			}
+			return cmp.Compare(a.Name, b.Name)
+		})
+	}
 	return r
 }
 
