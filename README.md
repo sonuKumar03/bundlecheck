@@ -25,7 +25,7 @@
 
 Modern Angular applications build with **esbuild** for incredible compilation speed. However, esbuild's raw `stats.json` files are massive, complex, and unreadable for quick human inspection or CI pull request reviews.
 
-`bundlecheck` is a compiled Go binary (sub-10ms native execution, <1ms graph query & attribution) and zero-dependency npm tool that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**.
+`bundlecheck` is a self-contained Go binary with zero runtime dependencies that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**. Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.
 
 ```text
 $ bundlecheck summary dist/my-app/stats.json --gzip --suggest
@@ -56,8 +56,8 @@ TOP CONTRIBUTING NPM PACKAGES
 
 | Feature | `bundlecheck` | `webpack-bundle-analyzer` | `source-map-explorer` | Standard `angular.json` Budgets |
 | :--- | :---: | :---: | :---: | :---: |
-| **Execution Speed** | **`< 10ms` (Compiled Go)** | ~3–8 seconds (Node.js) | ~4–10 seconds (Node.js) | Integrated into build |
-| **Runtime Dependencies** | **Zero** (Standalone Binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
+| **Execution** | **Fast native analysis** | Node.js process | Node.js process | Integrated into build |
+| **Runtime Dependencies** | **Zero** (Self-contained binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
 | **Import Chain Tracer (`why`)** | **Yes (ASCII Tree)** | ❌ No | ❌ No | ❌ No |
 | **Optimization Advisor (`suggest`)** | **Yes (Automated Rules)** | ❌ No (Visual only) | ❌ No | ❌ No |
 | **Gzip Wire Modeling** | **Yes (`--gzip`)** | Yes | Yes | ❌ Raw bytes only |
@@ -450,12 +450,21 @@ Bundlecheck enforces limits strictly according to the following deterministic pr
 
 ---
 
-## 🤖 AI Agent Integration: MCP & Skills
+## 🤖 AI Agent Integration
 
-`bundlecheck` is built from the ground up for agentic workflows, providing two integration options for AI coding agents (**Antigravity**, **Claude Code**, **Cursor**, **OpenAI Codex**):
+Give your coding agent a measured bundle optimization loop:
 
-### 1. Model Context Protocol (MCP) Server
-Add `bundlecheck` to your agent's MCP configuration:
+**baseline → diagnose → trace → edit → rebuild/test → measure → gate**
+
+- **Agent Skill**: the reasoning and optimization workflow.
+- **MCP**: the preferred structured tool interface when available.
+- **CLI JSON**: the universal fallback, using `--format json`.
+
+The installed `bundlecheck` binary and Angular esbuild `stats.json` are prerequisites. The Skill chooses MCP or CLI transport without changing the workflow.
+
+### MCP server
+
+Add the preferred structured interface to your agent's MCP configuration:
 
 **Claude Code:**
 ```bash
@@ -474,17 +483,21 @@ claude mcp add bundlecheck -- bundlecheck mcp
 }
 ```
 
-### 2. Companion Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
-Install the official skill definition to your local agent library:
+### Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
+
+Install the binary and complete skill tree for generic agents, Claude Code, and Codex:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
-Autonomous agents use `bundlecheck` in their inner coding loop to:
-1. Capture a baseline before refactoring (`bundle_measure` or `bundlecheck baseline`).
-2. Read `bundle_suggest` for prioritized refactoring targets.
-3. Trace exact importing files with `bundle_why`.
-4. Verify byte reductions before committing code.
+Use `--skill-dir <path>` to install only to an explicit custom skill location.
+
+Try this prompt:
+
+> Reduce the initial JavaScript bundle by at least 50 KB without changing
+> application behavior. Establish a baseline first, identify the highest-confidence
+> optimization, trace its import path, make the change, rebuild, run tests, and
+> report the measured delta.
 
 For complete agent documentation and JSON contracts, see [**docs/agents.md**](docs/agents.md).
 

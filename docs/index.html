@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>bundlecheck — Fast Angular esbuild Bundle Inspector & CI Budget Gate</title>
-  <meta name="description" content="Lightning-fast zero-dependency CLI & GitHub Action for analyzing Angular esbuild bundles, catching budget regressions, and suggesting actionable optimizations.">
+  <meta name="description" content="Self-contained Go binary and GitHub Action for analyzing Angular esbuild bundles, catching budget regressions, and suggesting actionable optimizations with zero runtime dependencies.">
   <meta name="author" content="Sonu Kumar">
   <meta name="theme-color" content="#030712">
   <link rel="canonical" href="https://sonukumar03.github.io/bundlecheck/">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sonukumar03.github.io/bundlecheck/">
   <meta property="og:title" content="bundlecheck — Fast Angular esbuild Bundle Inspector">
-  <meta property="og:description" content="Sub-millisecond Angular esbuild bundle inspector and CI budget gate.">
+  <meta property="og:description" content="Angular esbuild bundle inspector and CI budget gate with a measured optimization workflow.">
   <meta property="og:site_name" content="bundlecheck">
   <meta name="twitter:card" content="summary_large_image">
 
@@ -283,7 +283,7 @@
 
       <!-- Sidebar Footer -->
       <div class="p-4 border-t border-slate-800/80 text-[11px] text-slate-500 space-y-1">
-        <div>MIT License • Go v1.23+</div>
+        <div>MIT License</div>
         <div>Angular v17+ (esbuild)</div>
       </div>
     </aside>
@@ -298,9 +298,9 @@
       <section id="overview" class="scroll-mt-20 space-y-8 relative">
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono backdrop-blur">
           <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
-          <span>Zero-Dependency Go CLI</span>
+          <span>Self-contained Go binary</span>
           <span class="text-slate-500">•</span>
-          <span>&lt; 5ms Execution</span>
+          <span>Zero runtime dependencies</span>
         </div>
 
         <div class="space-y-4 max-w-3xl">
@@ -311,15 +311,15 @@
             </span>
           </h1>
           <p class="text-base sm:text-lg text-slate-300 leading-relaxed">
-            A lightning-fast command-line tool and GitHub Action that turns Angular esbuild <code class="text-indigo-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-xs">stats.json</code> files into clear dependency insights, root-cause traces, optimization suggestions, and hard budget gates.
+            A self-contained command-line tool and GitHub Action that turns Angular esbuild <code class="text-indigo-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-xs">stats.json</code> files into clear dependency insights, root-cause traces, optimization suggestions, and hard budget gates.
           </p>
         </div>
 
         <!-- 4 Quick Pillars -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-            <div class="text-xs font-mono font-bold text-emerald-400">⚡ SUB-MILLISECOND SPEED</div>
-            <div class="text-xs text-slate-300">Pure compiled Go binary. Zero Node/npm startup overhead or heavy dependencies.</div>
+            <div class="text-xs font-mono font-bold text-emerald-400">⚡ NATIVE ANALYSIS</div>
+            <div class="text-xs text-slate-300">Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.</div>
           </div>
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-indigo-400">🎯 ROOT-CAUSE TRACING</div>
@@ -825,7 +825,7 @@ jobs:
             <span>AI Agents & Model Context Protocol (MCP)</span>
           </h2>
           <p class="text-sm text-slate-300 max-w-3xl">
-            Equip autonomous coding agents (<strong class="text-white">Claude Code</strong>, <strong class="text-white">Antigravity</strong>, <strong class="text-white">Cursor</strong>) with native bundle inspection tools, dependency path tracing, and real-time regression gates through the standardized Model Context Protocol or zero-dependency CLI skill.
+            Give your coding agent a measured bundle optimization loop: baseline → diagnose → trace → edit → rebuild/test → measure → gate. The Agent Skill supplies the reasoning workflow, MCP is the preferred structured interface when available, and CLI JSON is the universal fallback.
           </p>
         </div>
 
@@ -943,7 +943,10 @@ jobs:
             <h3 class="text-sm font-bold text-white">Companion Agent Skill Definition (<code class="text-indigo-300 font-mono">SKILL.md</code>)</h3>
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">
-            For coding assistants without direct MCP connections, bundlecheck provides an official skill file following standard agent prompts. Agents can capture baselines, parse structured JSON (<code class="text-indigo-300 font-mono">--format json</code>), and verify size reductions during autonomous code editing loops.
+            Install the self-contained binary and complete skill tree for generic agents, Claude Code, and Codex. The binary and Angular esbuild <code>stats.json</code> are prerequisites; use <code>--skill-dir &lt;path&gt;</code> for a custom skill location. The installed Skill uses MCP when available and CLI JSON otherwise.
+          </p>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Prompt: “Reduce the initial JavaScript bundle by at least 50 KB without changing application behavior. Establish a baseline first, identify the highest-confidence optimization, trace its import path, make the change, rebuild, run tests, and report the measured delta.”
           </p>
           <div class="flex flex-wrap items-center gap-3 pt-1">
             <div class="p-2.5 rounded-lg bg-black/50 border border-slate-800 font-mono text-xs text-slate-200 flex-1 min-w-[280px]">

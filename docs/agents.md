@@ -1,10 +1,27 @@
 # Using bundlecheck as an AI Coding Agent
 
-Use `bundlecheck` to establish verifiable bundle-size facts, diagnose regressions, trace dependency chains, and validate budgets for Angular applications using esbuild.
+Give your coding agent a measured bundle optimization loop for Angular applications using esbuild:
 
-Agents can interact with `bundlecheck` in two ways:
-1. **Model Context Protocol (MCP) Server**: Direct native tool calling via `bundlecheck mcp` over stdio (Claude Code, Antigravity, Cursor, Claude Desktop).
-2. **CLI & Skill Integration**: Shell commands returning structured JSON (`--format json`) with the companion [`.agents/skills/bundlecheck/SKILL.md`](../.agents/skills/bundlecheck/SKILL.md).
+**baseline → diagnose → trace → edit → rebuild/test → measure → gate**
+
+- **Agent Skill**: the reasoning and optimization workflow.
+- **MCP**: the preferred structured tool interface when available.
+- **CLI JSON**: the universal fallback, using `--format json`.
+
+The installed `bundlecheck` binary and compatible Angular esbuild `stats.json` are prerequisites. Install the binary and complete skill tree for generic agents, Claude Code, and Codex with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+```
+
+Use `--skill-dir <path>` to install only to a custom skill location. Do not assume the BundleCheck source checkout is available.
+
+Example prompt:
+
+> Reduce the initial JavaScript bundle by at least 50 KB without changing
+> application behavior. Establish a baseline first, identify the highest-confidence
+> optimization, trace its import path, make the change, rebuild, run tests, and
+> report the measured delta.
 
 ---
 
@@ -187,7 +204,7 @@ bundlecheck measure -b pre-refactor --max-initial-delta 0B
 | Field | Meaning |
 | :--- | :--- |
 | `schemaVersion` | JSON contract version; currently `"1"`. |
-| `toolVersion` | Tool release version; currently `"0.3.0"`. |
+| `toolVersion` | Tool release version; currently `"0.4.2"`. |
 | `command` | The string `"summary"`. |
 | `summary.initialJs`, `summary.initialGzipJs` | Raw & Gzip bytes of browser JS in static bootstrap closure. |
 | `summary.lazyJs`, `summary.lazyGzipJs` | Raw & Gzip bytes of lazy JS outputs. |

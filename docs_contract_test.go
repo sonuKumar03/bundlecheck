@@ -157,6 +157,60 @@ func TestDocumentationContract_VersionSync(t *testing.T) {
 	if !strings.Contains(string(modData), "module github.com/sonuKumar03/bundlecheck") {
 		t.Errorf("go.mod does not declare module github.com/sonuKumar03/bundlecheck")
 	}
+
+	agentDocs, err := os.ReadFile(filepath.Join("docs", "agents.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	agentVersion := regexp.MustCompile("toolVersion.*currently `\\\"([^\\\"]+)\\\"`").FindSubmatch(agentDocs)
+	if len(agentVersion) != 2 || string(agentVersion[1]) != version {
+		t.Errorf("docs/agents.md toolVersion = %q, want %q", agentVersion, version)
+	}
+
+	website, err := os.ReadFile(filepath.Join("docs", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for label, pattern := range map[string]string{
+		"softwareVersion": `"softwareVersion": "([^"]+)"`,
+		"visible badge":   `data-version-badge>bundlecheck v([^<]+)<`,
+	} {
+		match := regexp.MustCompile(pattern).FindSubmatch(website)
+		if len(match) != 2 || string(match[1]) != version {
+			t.Errorf("docs/index.html %s = %q, want %q", label, match, version)
+		}
+	}
+}
+
+func TestDocumentationContract_MarketingClaims(t *testing.T) {
+	website, err := os.ReadFile(filepath.Join("docs", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, claim := range []string{
+		"Zero-Dependency Go CLI",
+		"SUB-MILLISECOND SPEED",
+		"< 5ms Execution",
+		"Go v1.23+",
+		"For coding assistants without direct MCP connections",
+	} {
+		if bytes.Contains(website, []byte(claim)) {
+			t.Errorf("docs/index.html contains unsupported claim %q", claim)
+		}
+	}
+
+	for _, name := range []string{"README.md", filepath.Join("npm", "bundlecheck", "README.md"), filepath.Join("docs", "index.html")} {
+		data, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lower := strings.ToLower(string(data))
+		for _, term := range []string{"self-contained", "runtime dependencies"} {
+			if !strings.Contains(lower, term) {
+				t.Errorf("%s must describe %q", name, term)
+			}
+		}
+	}
 }
 
 // TestDocumentationContract_CLICommandsAndFlags verifies that all commands and flags
