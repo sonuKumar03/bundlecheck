@@ -136,7 +136,7 @@
           </svg>
         </button>
 
-        <a href="#overview" class="flex items-center space-x-2.5 group" aria-label="bundlecheck home">
+        <a href="#overview" class="flex items-center space-x-2.5 group">
           <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform" aria-hidden="true">
             ⚡
           </div>
@@ -146,7 +146,7 @@
       </div>
 
       <!-- Center: Quick Search Bar (Command Palette Trigger) -->
-      <button onclick="openSearchModal()" aria-label="Search documentation (Press Cmd+K)" class="hidden sm:flex items-center space-x-3 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-700/80 text-xs text-slate-400 hover:text-slate-200 transition-all w-64 md:w-80 justify-between focus:ring-2 focus:ring-indigo-400 min-h-[44px]">
+      <button onclick="openSearchModal()" class="hidden sm:flex items-center space-x-3 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-700/80 text-xs text-slate-400 hover:text-slate-200 transition-all w-64 md:w-80 justify-between focus:ring-2 focus:ring-indigo-400 min-h-[44px]">
         <div class="flex items-center space-x-2">
           <svg class="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <span>Search docs, commands...</span>
@@ -178,7 +178,7 @@
   <div class="flex-1 flex w-full max-w-[1600px] mx-auto">
     
     <!-- LEFT SIDEBAR (STICKY ON DESKTOP) -->
-    <aside id="sidebar" aria-hidden="true" class="fixed inset-y-0 left-0 z-30 w-64 bg-[#030712] border-r border-slate-800 lg:sticky lg:top-14 lg:self-start lg:h-[calc(100vh-3.5rem)] -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between overflow-y-auto flex-shrink-0 pt-16 lg:pt-4">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-[#030712] border-r border-slate-800 lg:sticky lg:top-14 lg:self-start lg:h-[calc(100vh-3.5rem)] -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between overflow-y-auto flex-shrink-0 pt-16 lg:pt-4">
       <div class="p-4 space-y-6">
         
         <!-- 1. Overview & Problem -->
@@ -217,35 +217,35 @@
           <nav class="space-y-1 font-mono text-xs">
             <a href="#cmd-summary" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>summary</span>
-              <span class="text-[10px] text-slate-500">Breakdown</span>
+              <span class="text-[10px] text-slate-400">Breakdown</span>
             </a>
             <a href="#cmd-inspect" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>inspect &lt;chunk&gt;</span>
-              <span class="text-[10px] text-slate-500">Chunk deep-dive</span>
+              <span class="text-[10px] text-slate-400">Chunk deep-dive</span>
             </a>
             <a href="#cmd-why" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>why &lt;pkg&gt;</span>
-              <span class="text-[10px] text-slate-500">Trace chain</span>
+              <span class="text-[10px] text-slate-400">Trace chain</span>
             </a>
             <a href="#cmd-suggest" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>suggest</span>
-              <span class="text-[10px] text-slate-500">Tips</span>
+              <span class="text-[10px] text-slate-400">Tips</span>
             </a>
             <a href="#cmd-baseline" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>baseline</span>
-              <span class="text-[10px] text-slate-500">Snapshots</span>
+              <span class="text-[10px] text-slate-400">Snapshots</span>
             </a>
             <a href="#cmd-measure" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>measure</span>
-              <span class="text-[10px] text-slate-500">Live delta</span>
+              <span class="text-[10px] text-slate-400">Live delta</span>
             </a>
             <a href="#cmd-compare" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>compare</span>
-              <span class="text-[10px] text-slate-500">JSON diff</span>
+              <span class="text-[10px] text-slate-400">JSON diff</span>
             </a>
             <a href="#cmd-check" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>check</span>
-              <span class="text-[10px] text-slate-500">CI gate</span>
+              <span class="text-[10px] text-slate-400">CI gate</span>
             </a>
             <a href="#cmd-init" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>init</span>
@@ -284,7 +284,7 @@
       </div>
 
       <!-- Sidebar Footer -->
-      <div class="p-4 border-t border-slate-800/80 text-[11px] text-slate-500 space-y-1">
+      <div class="p-4 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1">
         <div>MIT License</div>
         <div>Angular v17+ (esbuild)</div>
       </div>
@@ -437,7 +437,7 @@
         <!-- Install Command Box -->
         <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-xs gap-3">
           <div class="overflow-x-auto break-all text-slate-200 min-w-0">
-            <span class="text-slate-500 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+            <span class="text-slate-400 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
           </div>
           <button onclick="copyText('curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh', 'install-copy-btn')" aria-label="Copy install command" class="min-h-[44px] min-w-[44px] px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 flex-shrink-0 transition-colors flex items-center justify-center">
             <span id="install-copy-btn">Copy</span>
@@ -447,8 +447,8 @@
         <!-- With Skill Flag -->
         <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between font-mono text-xs gap-3">
           <div class="overflow-x-auto break-all text-slate-300 min-w-0">
-            <span class="text-slate-500 select-none"># Install binary + AI Agent Skill:</span><br>
-            <span class="text-slate-500 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+            <span class="text-slate-400 select-none"># Install binary + AI Agent Skill:</span><br>
+            <span class="text-slate-400 select-none">$ </span>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
           </div>
           <button onclick="copyText('curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill', 'install-skill-btn')" aria-label="Copy install with skill command" class="min-h-[44px] min-w-[44px] px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 flex-shrink-0 transition-colors flex items-center justify-center">
             <span id="install-skill-btn">Copy</span>
@@ -715,7 +715,7 @@ Saved Baselines (.bundlecheck/baselines/):<br>
               <div class="text-emerald-300 font-bold">✓ BUDGET CHECK PASSED: Initial JS is 248.50 KB (budget: 300.00 KB)</div>
               <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --max-initial=200KB</div>
               <div class="text-rose-400 font-bold">✗ BUDGET CHECK FAILED: Initial JS is 248.50 KB (budget: 200.00 KB, exceeded by +48.50 KB)</div>
-              <div class="text-slate-500 text-[11px]">Process exited with status code 1. Pipeline failed.</div>
+              <div class="text-slate-400 text-[11px]">Process exited with status code 1. Pipeline failed.</div>
             </div>
           </div>
 
@@ -1037,123 +1037,123 @@ jobs:
             <span class="text-indigo-400">⚡</span>
             <span class="font-medium font-sans">Overview & Introduction</span>
           </div>
-          <span class="text-[10px] text-slate-500">Intro</span>
+          <span class="text-[10px] text-slate-400">Intro</span>
         </a>
         <a href="#the-problem" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-rose-400">⚠️</span>
             <span class="font-medium font-sans">The Problem (Why Bundles Bloat)</span>
           </div>
-          <span class="text-[10px] text-slate-500">Problem</span>
+          <span class="text-[10px] text-slate-400">Problem</span>
         </a>
         <a href="#install" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">📦</span>
             <span class="font-medium font-sans">Installation</span>
           </div>
-          <span class="text-[10px] text-slate-500">Setup</span>
+          <span class="text-[10px] text-slate-400">Setup</span>
         </a>
         <a href="#quickstart" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-sky-400">🚀</span>
             <span class="font-medium font-sans">Quickstart</span>
           </div>
-          <span class="text-[10px] text-slate-500">Run</span>
+          <span class="text-[10px] text-slate-400">Run</span>
         </a>
         <a href="#cmd-summary" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-indigo-400">$</span>
             <span>bundlecheck summary</span>
           </div>
-          <span class="text-[10px] text-slate-500">Breakdown</span>
+          <span class="text-[10px] text-slate-400">Breakdown</span>
         </a>
         <a href="#cmd-inspect" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-blue-400">$</span>
             <span>bundlecheck inspect &lt;chunk&gt;</span>
           </div>
-          <span class="text-[10px] text-slate-500">Deep-dive</span>
+          <span class="text-[10px] text-slate-400">Deep-dive</span>
         </a>
         <a href="#cmd-why" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-sky-400">$</span>
             <span>bundlecheck why &lt;pkg&gt;</span>
           </div>
-          <span class="text-[10px] text-slate-500">Trace</span>
+          <span class="text-[10px] text-slate-400">Trace</span>
         </a>
         <a href="#cmd-suggest" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-amber-400">$</span>
             <span>bundlecheck suggest</span>
           </div>
-          <span class="text-[10px] text-slate-500">Tips</span>
+          <span class="text-[10px] text-slate-400">Tips</span>
         </a>
         <a href="#cmd-baseline" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-purple-400">$</span>
             <span>bundlecheck baseline [save|list|use|rebuild]</span>
           </div>
-          <span class="text-[10px] text-slate-500">Worktree</span>
+          <span class="text-[10px] text-slate-400">Worktree</span>
         </a>
         <a href="#cmd-measure" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-teal-400">$</span>
             <span>bundlecheck measure [-b name]</span>
           </div>
-          <span class="text-[10px] text-slate-500">Live delta</span>
+          <span class="text-[10px] text-slate-400">Live delta</span>
         </a>
         <a href="#cmd-compare" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">$</span>
             <span>bundlecheck compare</span>
           </div>
-          <span class="text-[10px] text-slate-500">JSON diff</span>
+          <span class="text-[10px] text-slate-400">JSON diff</span>
         </a>
         <a href="#cmd-check" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-rose-400">$</span>
             <span>bundlecheck check (CI)</span>
           </div>
-          <span class="text-[10px] text-slate-500">Budget</span>
+          <span class="text-[10px] text-slate-400">Budget</span>
         </a>
         <a href="#cmd-workspace" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-cyan-400">$</span>
             <span>bundlecheck workspace summary</span>
           </div>
-          <span class="text-[10px] text-slate-500">Nx Monorepo</span>
+          <span class="text-[10px] text-slate-400">Nx Monorepo</span>
         </a>
         <a href="#cmd-mcp" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-fuchsia-400">$</span>
             <span>bundlecheck mcp</span>
           </div>
-          <span class="text-[10px] text-slate-500">MCP Server</span>
+          <span class="text-[10px] text-slate-400">MCP Server</span>
         </a>
         <a href="#config-file" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-slate-400">⚙️</span>
             <span class="font-medium font-sans">Config (.bundlecheck.yml)</span>
           </div>
-          <span class="text-[10px] text-slate-500">YAML</span>
+          <span class="text-[10px] text-slate-400">YAML</span>
         </a>
         <a href="#github-action" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-purple-400">🛡️</span>
             <span class="font-medium font-sans">GitHub Action Workflow</span>
           </div>
-          <span class="text-[10px] text-slate-500">CI</span>
+          <span class="text-[10px] text-slate-400">CI</span>
         </a>
         <a href="#agent-skill" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">🤖</span>
             <span class="font-medium font-sans">Agent Skill Workflow</span>
           </div>
-          <span class="text-[10px] text-slate-500">Skill</span>
+          <span class="text-[10px] text-slate-400">Skill</span>
         </a>
       </div>
 
-      <div class="p-2.5 border-t border-slate-800/80 text-[10px] text-slate-500 flex justify-between font-mono">
+      <div class="p-2.5 border-t border-slate-800/80 text-[10px] text-slate-400 flex justify-between font-mono">
         <span>Navigation: Jump to section</span>
         <span data-version-badge>bundlecheck v0.6.0</span>
       </div>
@@ -1190,6 +1190,22 @@ jobs:
     }
 
     // Mobile Sidebar Drawer with ARIA & Accessibility State
+    function updateSidebarAria() {
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+      sidebar.removeAttribute('aria-hidden');
+      if (window.innerWidth >= 1024) {
+        sidebar.removeAttribute('inert');
+      } else {
+        const isClosed = sidebar.classList.contains('-translate-x-full');
+        if (isClosed) {
+          sidebar.setAttribute('inert', '');
+        } else {
+          sidebar.removeAttribute('inert');
+        }
+      }
+    }
+
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const backdrop = document.getElementById('sidebar-backdrop');
@@ -1198,12 +1214,14 @@ jobs:
 
       if (isClosed) {
         sidebar.classList.remove('-translate-x-full');
-        sidebar.setAttribute('aria-hidden', 'false');
+        sidebar.removeAttribute('inert');
         backdrop.classList.remove('hidden');
         if (btn) btn.setAttribute('aria-expanded', 'true');
       } else {
         sidebar.classList.add('-translate-x-full');
-        sidebar.setAttribute('aria-hidden', 'true');
+        if (window.innerWidth < 1024) {
+          sidebar.setAttribute('inert', '');
+        }
         backdrop.classList.add('hidden');
         if (btn) btn.setAttribute('aria-expanded', 'false');
       }
@@ -1215,11 +1233,14 @@ jobs:
       const btn = document.getElementById('mobile-menu-btn');
       if (window.innerWidth < 1024) {
         sidebar.classList.add('-translate-x-full');
-        sidebar.setAttribute('aria-hidden', 'true');
+        sidebar.setAttribute('inert', '');
         backdrop.classList.add('hidden');
         if (btn) btn.setAttribute('aria-expanded', 'false');
       }
     }
+
+    window.addEventListener('resize', updateSidebarAria);
+    updateSidebarAria();
 
     // Search Modal (Cmd + K) with Focus Management
     let previousActiveElement = null;
