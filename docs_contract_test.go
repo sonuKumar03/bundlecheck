@@ -315,3 +315,50 @@ func TestDocumentationContract_EntryDocumentation(t *testing.T) {
 		}
 	}
 }
+
+func TestDocumentationContract_AgentPositioning(t *testing.T) {
+	website, err := os.ReadFile(filepath.Join("docs", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	lower := strings.ToLower(string(website))
+	for _, term := range []string{
+		"mcp server",
+		"agent skill",
+		`href="#cmd-mcp"`,
+		`href="#agent-skill"`,
+		`id="cmd-mcp"`,
+		`id="agent-skill"`,
+	} {
+		if !strings.Contains(lower, term) {
+			t.Errorf("docs/index.html must contain %q", term)
+		}
+	}
+
+	for _, metadata := range []struct {
+		start string
+		end   string
+	}{
+		{"<title>", "</title>"},
+		{`<meta name="description"`, ">"},
+		{`<meta property="og:title"`, ">"},
+		{`<meta property="og:description"`, ">"},
+	} {
+		start := strings.Index(lower, metadata.start)
+		if start < 0 {
+			t.Errorf("docs/index.html is missing %q", metadata.start)
+			continue
+		}
+		content := lower[start+len(metadata.start):]
+		end := strings.Index(content, metadata.end)
+		if end < 0 {
+			t.Errorf("docs/index.html has malformed %q", metadata.start)
+			continue
+		}
+		declaration := content[:end]
+		if !strings.Contains(declaration, "mcp") || !strings.Contains(declaration, "agent skill") {
+			t.Errorf("%s must name MCP and Agent Skill", declaration)
+		}
+	}
+}

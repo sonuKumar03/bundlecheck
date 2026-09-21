@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>bundlecheck — Fast Angular esbuild Bundle Inspector & CI Budget Gate</title>
-  <meta name="description" content="Self-contained Go binary and GitHub Action for analyzing Angular esbuild bundles, catching budget regressions, and suggesting actionable optimizations with zero runtime dependencies.">
+  <title>bundlecheck — Angular Bundle Inspector, MCP Server &amp; Agent Skill</title>
+  <meta name="description" content="Analyze Angular esbuild bundles through a fast CLI, GitHub Actions, an MCP server, and an installable Agent Skill. Trace dependencies, measure optimizations, and enforce bundle budgets.">
   <meta name="author" content="Sonu Kumar">
   <meta name="theme-color" content="#030712">
   <link rel="canonical" href="https://sonukumar03.github.io/bundlecheck/">
@@ -15,8 +15,8 @@
   <!-- Open Graph / Social -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sonukumar03.github.io/bundlecheck/">
-  <meta property="og:title" content="bundlecheck — Fast Angular esbuild Bundle Inspector">
-  <meta property="og:description" content="Angular esbuild bundle inspector and CI budget gate with a measured optimization workflow.">
+  <meta property="og:title" content="bundlecheck — Angular Bundle Inspector, MCP Server &amp; Agent Skill">
+  <meta property="og:description" content="Analyze Angular esbuild bundles through a fast CLI, GitHub Actions, an MCP server, and an installable Agent Skill. Trace dependencies, measure optimizations, and enforce bundle budgets.">
   <meta property="og:site_name" content="bundlecheck">
   <meta name="twitter:card" content="summary_large_image">
 
@@ -33,7 +33,7 @@
       "price": "0",
       "priceCurrency": "USD"
     },
-    "description": "Fast Angular esbuild bundle inspector and CI budget gate written in Go with zero runtime dependencies.",
+    "description": "Analyze Angular esbuild bundles through a fast CLI, GitHub Actions, an MCP server, and an installable Agent Skill. Trace dependencies, measure optimizations, and enforce bundle budgets.",
     "softwareVersion": "0.6.0",
     "url": "https://sonukumar03.github.io/bundlecheck/",
     "codeRepository": "https://github.com/sonuKumar03/bundlecheck",
@@ -160,12 +160,14 @@
           <svg class="w-5 h-5 stroke-current" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
 
-        <a href="https://github.com/sonuKumar03/bundlecheck" target="_blank" rel="noopener noreferrer" aria-label="View bundlecheck on GitHub (opens in new tab)" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs font-mono border border-slate-700 transition-all focus:ring-2 focus:ring-indigo-400 min-h-[44px] flex-shrink-0">
+        <a href="https://github.com/sonuKumar03/bundlecheck" target="_blank" rel="noopener noreferrer" aria-label="View bundlecheck on GitHub (opens in new tab)" class="flex items-center justify-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs font-mono border border-slate-700 transition-all focus:ring-2 focus:ring-indigo-400 min-h-[44px] min-w-[44px] flex-shrink-0">
           <svg class="w-4 h-4 fill-current text-white inline-block flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
           </svg>
-          <span class="font-sans font-medium">GitHub</span>
-          <span class="text-amber-400 font-mono text-[11px]">★</span>
+          <span class="hidden sm:flex items-center space-x-1.5">
+            <span class="font-sans font-medium">GitHub</span>
+            <span class="text-amber-400 font-mono text-[11px]">★</span>
+          </span>
         </a>
       </div>
 
@@ -274,7 +276,7 @@
             </a>
             <a href="#agent-skill" onclick="closeMobileSidebar()" class="flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 group">
               <span class="text-emerald-400 group-hover:scale-110 transition-transform">🤖</span>
-              <span>AI Agents & MCP</span>
+              <span>Agent Skill</span>
             </a>
           </nav>
         </div>
@@ -298,9 +300,7 @@
       <section id="overview" class="scroll-mt-20 space-y-8 relative">
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono backdrop-blur">
           <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
-          <span>Self-contained Go binary</span>
-          <span class="text-slate-500">•</span>
-          <span>Zero runtime dependencies</span>
+          <span>CLI • GitHub Action • MCP • Agent Skill</span>
         </div>
 
         <div class="space-y-4 max-w-3xl">
@@ -311,7 +311,7 @@
             </span>
           </h1>
           <p class="text-base sm:text-lg text-slate-300 leading-relaxed">
-            A self-contained command-line tool and GitHub Action that turns Angular esbuild <code class="text-indigo-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-xs">stats.json</code> files into clear dependency insights, root-cause traces, optimization suggestions, and hard budget gates.
+            Analyze Angular esbuild <code class="text-indigo-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-xs">stats.json</code> through a fast CLI, GitHub Actions, a native MCP server, or an installable Agent Skill—then trace dependencies, measure optimizations, and enforce bundle budgets.
           </p>
         </div>
 
@@ -319,7 +319,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-emerald-400">⚡ NATIVE ANALYSIS</div>
-            <div class="text-xs text-slate-300">Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.</div>
+            <div class="text-xs text-slate-300">Fast native analysis with zero runtime dependencies; reported timings exclude Angular builds and external Nx subprocesses.</div>
           </div>
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-indigo-400">🎯 ROOT-CAUSE TRACING</div>
@@ -332,6 +332,48 @@
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <div class="text-xs font-mono font-bold text-fuchsia-400">🤖 AI AGENTS &amp; MCP</div>
             <div class="text-xs text-slate-300">Native Model Context Protocol server over stdio for Claude Code, Antigravity, and Cursor.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI AGENTS ENTRY BLOCK -->
+      <section class="scroll-mt-20 space-y-4">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Use BundleCheck with AI coding agents</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">⚡</span>
+                <h3 class="text-base font-semibold text-white">MCP Server</h3>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Six typed tools let an agent inspect bundles, trace import paths, measure deltas, and enforce budgets through structured calls.
+              </p>
+            </div>
+            <div>
+              <a href="#cmd-mcp" class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs font-semibold border border-slate-700 transition-colors focus:ring-2 focus:ring-indigo-400 min-h-[44px]">
+                <span>Set up the MCP server</span>
+                <span>→</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg">🤖</span>
+                <h3 class="text-base font-semibold text-white">Agent Skill</h3>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                An installable optimization workflow guides an agent from baseline and diagnosis through source edits, rebuilds, tests, and measured verification.
+              </p>
+            </div>
+            <div>
+              <a href="#agent-skill" class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors focus:ring-2 focus:ring-indigo-400 min-h-[44px]">
+                <span>Install the Agent Skill</span>
+                <span>→</span>
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -389,7 +431,7 @@
           <h2 class="text-2xl font-bold text-white tracking-tight">Installation</h2>
         </div>
         <p class="text-sm text-slate-300">
-          Install the prebuilt binary directly to <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">/usr/local/bin</code> (or specify <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">--bin-dir ~/.local/bin</code>).
+          Install the self-contained binary with zero runtime dependencies directly to <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">/usr/local/bin</code> (or specify <code class="text-slate-200 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 font-mono">--bin-dir ~/.local/bin</code>).
         </p>
 
         <!-- Install Command Box -->
@@ -949,7 +991,7 @@ jobs:
             Prompt: “Reduce the initial JavaScript bundle by at least 50 KB without changing application behavior. Establish a baseline first, identify the highest-confidence optimization, trace its import path, make the change, rebuild, run tests, and report the measured delta.”
           </p>
           <div class="flex flex-wrap items-center gap-3 pt-1">
-            <div class="p-2.5 rounded-lg bg-black/50 border border-slate-800 font-mono text-xs text-slate-200 flex-1 min-w-[280px]">
+            <div class="p-2.5 rounded-lg bg-black/50 border border-slate-800 font-mono text-xs text-slate-200 flex-1 min-w-0 overflow-x-auto break-all">
               <code>curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill</code>
             </div>
             <a href="https://github.com/sonuKumar03/bundlecheck/blob/master/docs/agents.md" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors flex items-center space-x-1.5 whitespace-nowrap">
@@ -1105,9 +1147,9 @@ jobs:
         <a href="#agent-skill" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-emerald-400">🤖</span>
-            <span class="font-medium font-sans">AI Agents &amp; MCP Protocol</span>
+            <span class="font-medium font-sans">Agent Skill Workflow</span>
           </div>
-          <span class="text-[10px] text-slate-500">AI / MCP</span>
+          <span class="text-[10px] text-slate-500">Skill</span>
         </a>
       </div>
 
