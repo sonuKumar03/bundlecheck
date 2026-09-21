@@ -13,6 +13,31 @@ import (
 	"testing"
 )
 
+var skillFiles = []string{
+	"SKILL.md",
+	"references/cli.md",
+	"references/json-schema.md",
+	"references/nx.md",
+	"references/ci.md",
+}
+
+func assertSkillTree(t *testing.T, root, installed string) {
+	t.Helper()
+	for _, rel := range skillFiles {
+		want, err := os.ReadFile(filepath.Join(root, ".agents", "skills", "bundlecheck", rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(installed, rel))
+		if err != nil {
+			t.Fatalf("read installed %s: %v", rel, err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("installed %s differs from source", rel)
+		}
+	}
+}
+
 func TestInstall(t *testing.T) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -103,7 +128,7 @@ func TestInstall(t *testing.T) {
 			if (err == nil) != tt.binary {
 				t.Fatalf("binary presence: %v", err)
 			}
-			installed, err := os.ReadFile(filepath.Join(skillDir, "SKILL.md"))
+			_, err = os.ReadFile(filepath.Join(skillDir, "SKILL.md"))
 			if (err == nil) != tt.skill {
 				t.Fatalf("skill presence: %v", err)
 			}
@@ -117,9 +142,12 @@ func TestInstall(t *testing.T) {
 				}
 			}
 			if tt.skill {
-				source, err := os.ReadFile(filepath.Join(root, ".agents", "skills", "bundlecheck", "SKILL.md"))
-				if err != nil || !bytes.Equal(installed, source) {
-					t.Fatalf("installed skill differs from source: %v", err)
+				for _, dir := range []string{
+					skillDir,
+					filepath.Join(home, ".claude", "skills", "bundlecheck"),
+					filepath.Join(home, ".codex", "skills", "bundlecheck"),
+				} {
+					assertSkillTree(t, root, dir)
 				}
 				notes, err := os.ReadFile(filepath.Join(skillDir, "notes.txt"))
 				if err != nil || string(notes) != "keep me" {
@@ -159,9 +187,98 @@ func TestInstallCustomSkillDir(t *testing.T) {
 		t.Fatalf("install with --skill-dir failed: %s, %v", out, err)
 	}
 
-	skillFile := filepath.Join(customDir, "SKILL.md")
-	if _, err := os.Stat(skillFile); err != nil {
-		t.Fatalf("expected skill at %s, got err: %v", skillFile, err)
+	assertSkillTree(t, root, customDir)
+	for _, dir := range []string{".agents", ".claude", ".codex"} {
+		if _, err := os.Stat(filepath.Join(base, dir, "skills", "bundlecheck", "SKILL.md")); !os.IsNotExist(err) {
+			t.Fatalf("custom install unexpectedly populated %s", dir)
+		}
+	}
+}
+
+func TestRemoteSkillInstallDownloadsReferences(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX installer transport fixture")
+	}
+	root, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := t.TempDir()
+	installer := filepath.Join(base, "install.sh")
+	source, err := os.ReadFile(filepath.Join(root, "install.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(installer, source, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	body := []byte("#!/bin/sh\necho bundlecheck version 9.8.7\n")
+	var archive bytes.Buffer
+	gz := gzip.NewWriter(&archive)
+	tw := tar.NewWriter(gz)
+	if err := tw.WriteHeader(&tar.Header{Name: "bundlecheck", Mode: 0755, Size: int64(len(body))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write(body); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	archivePath := filepath.Join(base, "release.tar.gz")
+	if err := os.WriteFile(archivePath, archive.Bytes(), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	mockBin := filepath.Join(base, "transport")
+	if err := os.MkdirAll(mockBin, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, script := range map[string]string{
+		"uname": "#!/bin/sh\nif [ \"$1\" = -s ]; then echo Linux; else echo x86_64; fi\n",
+		"go":    "#!/bin/sh\nexit 42\n",
+		"curl": `#!/bin/sh
+url="$2"
+dest="$4"
+case "$url" in
+  https://api.github.com/*) printf '{"tag_name":"v9.8.7"}' > "$dest" ;;
+  https://github.com/*/releases/download/*) cp "$BUNDLECHECK_TEST_ARCHIVE" "$dest" ;;
+  https://raw.githubusercontent.com/*/.agents/skills/bundlecheck/*)
+    prefix="https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/.agents/skills/bundlecheck/"
+    rel=${url#"$prefix"}
+    cp "$BUNDLECHECK_TEST_SKILL_ROOT/$rel" "$dest"
+    ;;
+  *) exit 22 ;;
+esac
+`,
+	} {
+		if err := os.WriteFile(filepath.Join(mockBin, name), []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	home := filepath.Join(base, "home")
+	cmd := exec.Command("sh", installer, "--with-skill")
+	cmd.Env = append(os.Environ(),
+		"PATH="+mockBin+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"HOME="+home,
+		"GOBIN="+filepath.Join(base, "bin"),
+		"BUNDLECHECK_TEST_ARCHIVE="+archivePath,
+		"BUNDLECHECK_TEST_SKILL_ROOT="+filepath.Join(root, ".agents", "skills", "bundlecheck"),
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("remote skill install failed: %v\n%s", err, out)
+	}
+	for _, dir := range []string{
+		filepath.Join(home, ".agents", "skills", "bundlecheck"),
+		filepath.Join(home, ".claude", "skills", "bundlecheck"),
+		filepath.Join(home, ".codex", "skills", "bundlecheck"),
+	} {
+		assertSkillTree(t, root, dir)
 	}
 }
 

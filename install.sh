@@ -147,30 +147,44 @@ install_binary() {
   fi
 }
 
-install_skill_file() {
-  dest="$1"
-  mkdir -p "$(dirname "$dest")"
-  if [ -n "$script_dir" ] && [ -f "$script_dir/.agents/skills/bundlecheck/SKILL.md" ]; then
-    cp "$script_dir/.agents/skills/bundlecheck/SKILL.md" "$dest"
-  else
-    download_file "https://raw.githubusercontent.com/${REPO}/master/.agents/skills/bundlecheck/SKILL.md" "$dest"
-  fi
+skill_files='SKILL.md
+references/cli.md
+references/json-schema.md
+references/nx.md
+references/ci.md'
+
+install_skill_tree() {
+  skill_dest="$1"
+  printf '%s\n' "$skill_files" | while IFS= read -r rel; do
+    target="$skill_dest/$rel"
+    mkdir -p "$(dirname "$target")"
+    if [ -n "$script_dir" ] && [ -f "$script_dir/.agents/skills/bundlecheck/$rel" ]; then
+      cp "$script_dir/.agents/skills/bundlecheck/$rel" "$target"
+    else
+      download_file "https://raw.githubusercontent.com/${REPO}/master/.agents/skills/bundlecheck/$rel" "$target"
+    fi
+  done
 }
 
 install_binary
 
 if [ "$with_skill" = true ]; then
   if [ -n "$custom_skill_dir" ]; then
-    install_skill_file "$custom_skill_dir/SKILL.md"
+    install_skill_tree "$custom_skill_dir"
     printf 'Installed bundlecheck skill at %s\n' "$custom_skill_dir"
   else
-    skill_dir="$HOME/.agents/skills/bundlecheck"
-    install_skill_file "$skill_dir/SKILL.md"
-    printf 'Installed bundlecheck skill at %s\n' "$skill_dir"
+    for skill_dir in \
+      "$HOME/.agents/skills/bundlecheck" \
+      "$HOME/.claude/skills/bundlecheck" \
+      "$HOME/.codex/skills/bundlecheck"
+    do
+      install_skill_tree "$skill_dir"
+      printf 'Installed bundlecheck skill at %s\n' "$skill_dir"
+    done
 
     if [ -d "$HOME/.gemini/antigravity-cli/skills" ]; then
       agy_dir="$HOME/.gemini/antigravity-cli/skills/bundlecheck"
-      install_skill_file "$agy_dir/SKILL.md"
+      install_skill_tree "$agy_dir"
       printf 'Installed bundlecheck skill at %s\n' "$agy_dir"
     fi
   fi
