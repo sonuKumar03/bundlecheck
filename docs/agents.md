@@ -204,7 +204,7 @@ bundlecheck measure -b pre-refactor --max-initial-delta 0B
 | Field | Meaning |
 | :--- | :--- |
 | `schemaVersion` | JSON contract version; currently `"1"`. |
-| `toolVersion` | Tool release version; currently `"0.5.0"`. |
+| `toolVersion` | Tool release version; currently `"0.5.1"`. |
 | `command` | The string `"summary"`. |
 | `summary.initialJs`, `summary.initialGzipJs` | Raw & Gzip bytes of browser JS in static bootstrap closure. |
 | `summary.lazyJs`, `summary.lazyGzipJs` | Raw & Gzip bytes of lazy JS outputs. |
