@@ -208,8 +208,8 @@ runs:
           else
             COMPARISON_STATUS="unavailable"
             COMPARISON_MESSAGE="Failed to build or analyze base git ref '$TARGET_BASE_REF'"
-            if [ "$HAS_DELTA_BUDGET" = "true" ] || [ -n "$INPUT_BASE_REF" ]; then
-              echo "::error::$COMPARISON_MESSAGE, and delta budget or explicit base-ref was requested."
+            if [ "$HAS_DELTA_BUDGET" = "true" ]; then
+              echo "::error::$COMPARISON_MESSAGE, and delta budget was requested."
               exit 1
             else
               echo "::warning::$COMPARISON_MESSAGE. Proceeding with current build summary."
