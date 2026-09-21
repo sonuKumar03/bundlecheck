@@ -168,6 +168,140 @@ func TestHandleSummary(t *testing.T) {
 	})
 }
 
+func TestHandleSummary_EntryRecovery(t *testing.T) {
+	ctx := context.Background()
+	setup := func(t *testing.T, withAngularConfig bool) string {
+		t.Helper()
+		root := t.TempDir()
+		dist := filepath.Join(root, "dist", "app")
+		browser := filepath.Join(dist, "browser")
+		if err := os.MkdirAll(browser, 0755); err != nil {
+			t.Fatal(err)
+		}
+		stats := `{
+			"inputs":{"src/main.ts":{"bytes":4000,"imports":[]}},
+			"outputs":{"main.js":{"bytes":1024,"entryPoint":"src/main.ts","imports":[],"exports":[],"inputs":{"src/main.ts":{"bytesInOutput":800}}}}
+		}`
+		if err := os.WriteFile(filepath.Join(dist, "stats.json"), []byte(stats), 0644); err != nil {
+			t.Fatal(err)
+		}
+		index := `<script type="module" src="ENV_polyfills.js"></script><script type="module" src="main.js"></script>`
+		if err := os.WriteFile(filepath.Join(browser, "index.html"), []byte(index), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(browser, "main.js"), []byte("console.log(1)"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if withAngularConfig {
+			angularJSON := `{"projects":{"app":{"root":"","projectType":"application","architect":{"build":{"builder":"@angular/build:application","options":{"browser":"src/main.ts","outputPath":"dist/app"},"configurations":{"production":{}}}}}}}`
+			if err := os.WriteFile(filepath.Join(root, "angular.json"), []byte(angularJSON), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return filepath.Join(dist, "stats.json")
+	}
+
+	assertInitial := func(t *testing.T, args map[string]any) {
+		t.Helper()
+		res, err := handleSummary(ctx, mcpspec.CallToolRequest{Params: mcpspec.CallToolParams{
+			Name:      "bundle_summary",
+			Arguments: args,
+		}})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.IsError {
+			t.Fatalf("expected recovery, got %v", res.Content[0])
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		var summary analysis.AnalysisResult
+		if err := json.Unmarshal([]byte(textContent.Text), &summary); err != nil {
+			t.Fatal(err)
+		}
+		if summary.Summary.InitialJS != 1024 {
+			t.Fatalf("initial JS = %d, want 1024", summary.Summary.InitialJS)
+		}
+	}
+
+	t.Run("explicit entry bypasses unmatched ENV polyfills script", func(t *testing.T) {
+		assertInitial(t, map[string]any{"path": setup(t, false), "entry": "src/main.ts"})
+	})
+
+	t.Run("unresolved mismatch tells the agent which entry to use", func(t *testing.T) {
+		res, err := handleSummary(ctx, mcpspec.CallToolRequest{Params: mcpspec.CallToolParams{
+			Name:      "bundle_summary",
+			Arguments: map[string]any{"path": setup(t, false)},
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		textContent, _ := mcpspec.AsTextContent(res.Content[0])
+		if !res.IsError || !strings.Contains(textContent.Text, "retry with entry set to one of: src/main.ts") {
+			t.Fatalf("expected actionable entry error, got %q", textContent.Text)
+		}
+	})
+
+	t.Run("Angular browser option recovers unmatched ENV polyfills script", func(t *testing.T) {
+		assertInitial(t, map[string]any{"path": setup(t, true), "project": "app"})
+	})
+
+	t.Run("Nx project.json browser option recovers unmatched ENV polyfills script", func(t *testing.T) {
+		statsPath := setup(t, false)
+		root := filepath.Dir(filepath.Dir(filepath.Dir(statsPath)))
+		if err := os.WriteFile(filepath.Join(root, "nx.json"), []byte(`{}`), 0644); err != nil {
+			t.Fatal(err)
+		}
+		projectDir := filepath.Join(root, "apps", "app")
+		if err := os.MkdirAll(projectDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		projectJSON := `{"name":"app","projectType":"application","targets":{"build":{"executor":"@nx/angular:application","options":{"browser":"src/main.ts","outputPath":"dist/app"},"configurations":{"production":{}}}}}`
+		if err := os.WriteFile(filepath.Join(projectDir, "project.json"), []byte(projectJSON), 0644); err != nil {
+			t.Fatal(err)
+		}
+		assertInitial(t, map[string]any{"path": statsPath, "project": "app"})
+	})
+
+	t.Run("other bundle tools honor explicit entry", func(t *testing.T) {
+		statsPath := setup(t, false)
+		baseArgs := map[string]any{"path": statsPath, "entry": "src/main.ts"}
+		requests := []struct {
+			name   string
+			handle func(context.Context, mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error)
+			args   map[string]any
+		}{
+			{"why", handleWhy, map[string]any{"path": statsPath, "entry": "src/main.ts", "package": "src/main.ts"}},
+			{"suggest", handleSuggest, baseArgs},
+			{"check", handleCheck, map[string]any{"path": statsPath, "entry": "src/main.ts", "max_initial": "2KB"}},
+		}
+		for _, test := range requests {
+			t.Run(test.name, func(t *testing.T) {
+				res, err := test.handle(ctx, mcpspec.CallToolRequest{Params: mcpspec.CallToolParams{Arguments: test.args}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if res.IsError {
+					t.Fatalf("expected entry-scoped success, got %v", res.Content[0])
+				}
+			})
+		}
+
+		baselinePath, err := filepath.Abs("../../testdata/comparison/before.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := handleMeasure(ctx, mcpspec.CallToolRequest{Params: mcpspec.CallToolParams{Arguments: map[string]any{
+			"path": statsPath, "entry": "src/main.ts", "baseline": baselinePath,
+		}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.IsError {
+			t.Fatalf("measure entry-scoped success: %v", res.Content[0])
+		}
+	})
+}
+
 func TestHandleSummary_NxProject(t *testing.T) {
 	ctx := context.Background()
 	workspacePath, _ := filepath.Abs("../../testdata/nx-workspace")
@@ -1030,6 +1164,18 @@ func TestToolSchemas_ArrayProperties(t *testing.T) {
 		toolMap[tObj["name"].(string)] = tObj
 	}
 
+	for _, name := range []string{"bundle_summary", "bundle_why", "bundle_suggest", "bundle_check", "bundle_measure"} {
+		tool, ok := toolMap[name]
+		if !ok {
+			t.Fatalf("%s tool missing", name)
+		}
+		properties := tool["inputSchema"].(map[string]any)["properties"].(map[string]any)
+		entry, ok := properties["entry"].(map[string]any)
+		if !ok || entry["type"] != "string" {
+			t.Errorf("%s entry schema = %v, want string", name, properties["entry"])
+		}
+	}
+
 	// 1. Check bundle_check.disallowed_packages
 	checkTool, ok := toolMap["bundle_check"]
 	if !ok {
@@ -1662,4 +1808,3 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 		}
 	})
 }
-

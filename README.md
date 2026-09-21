@@ -320,12 +320,14 @@ bundlecheck mcp
 ```
 
 **Exposed MCP Tools:**
-- `bundle_summary`: Inspects bundle sizes, initial vs. lazy JS breakdown, and ranked npm contributors (with `path`, `project`, `top`, `filter`).
+- `bundle_summary`: Inspects bundle sizes, initial vs. lazy JS breakdown, and ranked npm contributors (with `path`, `project`, `entry`, `top`, `filter`).
 - `bundle_why`: Traces dependency import paths from entrypoints to any target module.
 - `bundle_suggest`: Proposes prioritized optimization recommendations with estimated byte savings.
 - `bundle_check`: Evaluates absolute budgets and disallowed package rules.
 - `bundle_measure`: Measures size deltas against baseline snapshots with regression thresholds.
 - `workspace_summary`: Analyzes multi-app Nx workspaces, shared libraries, and cross-application duplicate dependencies.
+
+All bundle MCP tools accept `entry`. If `index.html` contains an injected script such as `ENV_polyfills.js` that is absent from `stats.json`, the server retries with the configured Angular `browser`/`main` entry when it matches the stats; otherwise it returns valid entry selectors for an agent retry.
 
 **Exposed MCP Resource:**
 - `bundlecheck://rules`: Standard bundle optimization heuristics and modern replacement guidelines for common heavy packages.

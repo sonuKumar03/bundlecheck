@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/sonuKumar03/bundlecheck/internal/advisor"
 	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/artifact"
 	"github.com/sonuKumar03/bundlecheck/internal/baseline"
 	"github.com/sonuKumar03/bundlecheck/internal/budget"
 	"github.com/sonuKumar03/bundlecheck/internal/build"
@@ -55,6 +57,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path. Defaults to current working directory.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app Nx or Angular workspace (e.g. 'portal').")),
+		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when index.html references a script absent from stats.")),
 		mcpspec.WithInteger("top", mcpspec.Description("Max number of top packages to include in summary. Defaults to 10.")),
 		mcpspec.WithString("filter", mcpspec.Description("Optional substring to filter package names.")),
 	), handleSummary)
@@ -70,6 +73,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithString("package", mcpspec.Required(), mcpspec.Description("Name of the package or module to trace (e.g. 'lodash' or 'moment').")),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
+		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when possible.")),
 		mcpspec.WithBoolean("initial_only", mcpspec.Description("If true, only trace import paths leading to initial (startup) JS bundles.")),
 		mcpspec.WithInteger("max_chains", mcpspec.Description("Max number of import chains to return. Defaults to 5.")),
 	), handleWhy)
@@ -84,6 +88,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
+		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when possible.")),
 		mcpspec.WithInteger("min_savings", mcpspec.Description("Minimum potential byte savings to report. Defaults to 1024.")),
 	), handleSuggest)
 
@@ -97,6 +102,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithOpenWorldHintAnnotation(false),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
+		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when possible.")),
 		mcpspec.WithString("config", mcpspec.Description("Optional path to .bundlecheck.yml configuration file.")),
 		mcpspec.WithString("baseline", mcpspec.Description("Optional path to baseline summary JSON or saved baseline name for regression checks.")),
 		mcpspec.WithString("max_initial", mcpspec.Description("Maximum initial JS budget (e.g. '500KB', '1.5MB').")),
@@ -118,6 +124,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithString("baseline", mcpspec.Required(), mcpspec.Description("Name of saved baseline snapshot or file path to baseline JSON.")),
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path for the current build.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
+		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when possible.")),
 		mcpspec.WithString("max_initial_delta", mcpspec.Description("Maximum allowed increase in initial JS (e.g. '50KB', '0B').")),
 		mcpspec.WithString("max_total_delta", mcpspec.Description("Maximum allowed increase in total JS (e.g. '50KB', '0B').")),
 	), handleMeasure)
@@ -174,9 +181,35 @@ func resolveArtifacts(path, project string) (string, string, error) {
 	return discovery.Resolve("", path, "", project)
 }
 
+func loadBuild(statsFile, distDir, entry, project string) (*snapshot.BundleSnapshot, string, error) {
+	if entry != "" {
+		snap, err := build.LoadWithEntry(statsFile, distDir, entry)
+		return snap, entry, err
+	}
+
+	snap, err := build.Load(statsFile, distDir)
+	if err == nil {
+		return snap, "", nil
+	}
+	var mismatch *artifact.IndexScriptMismatchError
+	if !errors.As(err, &mismatch) {
+		return nil, "", err
+	}
+	inferred, ok := workspace.ResolveConfiguredEntry(statsFile, project)
+	if !ok {
+		return nil, "", err
+	}
+	snap, retryErr := build.LoadWithEntry(statsFile, distDir, inferred)
+	if retryErr != nil {
+		return nil, "", fmt.Errorf("%v; configured entry %q also failed: %w", err, inferred, retryErr)
+	}
+	return snap, inferred, nil
+}
+
 func handleSummary(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	entry := req.GetString("entry", "")
 	top := req.GetInt("top", 10)
 	filter := req.GetString("filter", "")
 
@@ -185,7 +218,7 @@ func handleSummary(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to resolve build artifacts: %v", err)), nil
 	}
 
-	snap, err := build.Load(statsFile, distDir)
+	snap, _, err := loadBuild(statsFile, distDir, entry, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil
 	}
@@ -227,6 +260,7 @@ func handleWhy(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallT
 	}
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	entry := req.GetString("entry", "")
 	initialOnly := req.GetBool("initial_only", false)
 	maxChains := req.GetInt("max_chains", 5)
 
@@ -235,12 +269,17 @@ func handleWhy(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallT
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to resolve build artifacts: %v", err)), nil
 	}
 
-	snap, err := build.Load(statsFile, distDir)
+	snap, effectiveEntry, err := loadBuild(statsFile, distDir, entry, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil
 	}
 
-	whyResult, err := graph.TracePackage(snap, pkgName, initialOnly, maxChains)
+	var whyResult *graph.WhyResult
+	if effectiveEntry != "" {
+		whyResult, err = graph.TracePackageWithEntry(snap, pkgName, effectiveEntry, initialOnly, maxChains)
+	} else {
+		whyResult, err = graph.TracePackage(snap, pkgName, initialOnly, maxChains)
+	}
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Trace error: %v", err)), nil
 	}
@@ -256,6 +295,7 @@ func handleWhy(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallT
 func handleSuggest(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	entry := req.GetString("entry", "")
 	minSavings := req.GetInt("min_savings", 1024)
 
 	statsFile, distDir, err := resolveArtifacts(path, project)
@@ -263,7 +303,7 @@ func handleSuggest(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to resolve build artifacts: %v", err)), nil
 	}
 
-	snap, err := build.Load(statsFile, distDir)
+	snap, effectiveEntry, err := loadBuild(statsFile, distDir, entry, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil
 	}
@@ -273,9 +313,18 @@ func handleSuggest(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 	}
 	compression.AttachCompression(snap, distDir)
 
-	suggestions := advisor.Analyze(snap, advisor.AdvisorOptions{
+	advisorOpts := advisor.AdvisorOptions{
 		MinSavings: int64(minSavings),
-	})
+	}
+	var suggestions *advisor.AdvisorResult
+	if effectiveEntry != "" {
+		suggestions, err = advisor.AnalyzeWithEntry(snap, advisorOpts, effectiveEntry)
+		if err != nil {
+			return mcpspec.NewToolResultError(fmt.Sprintf("Failed to analyze entry: %v", err)), nil
+		}
+	} else {
+		suggestions = advisor.Analyze(snap, advisorOpts)
+	}
 
 	data, err := json.MarshalIndent(suggestions, "", "  ")
 	if err != nil {
@@ -316,6 +365,7 @@ type measureResponse struct {
 func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.CallToolResult, error) {
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	entry := req.GetString("entry", "")
 	configPath := req.GetString("config", "")
 	baselinePath := req.GetString("baseline", "")
 	maxInitial := req.GetString("max_initial", "")
@@ -398,7 +448,7 @@ func handleCheck(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.Cal
 		}
 	}
 
-	snap, err := build.Load(statsFile, distDir)
+	snap, _, err := loadBuild(statsFile, distDir, entry, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil
 	}
@@ -460,6 +510,7 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 	}
 	path := req.GetString("path", "")
 	project := req.GetString("project", "")
+	entry := req.GetString("entry", "")
 	maxInitialDeltaStr := req.GetString("max_initial_delta", "")
 	maxTotalDeltaStr := req.GetString("max_total_delta", "")
 
@@ -468,7 +519,7 @@ func handleMeasure(ctx context.Context, req mcpspec.CallToolRequest) (*mcpspec.C
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to resolve build artifacts: %v", err)), nil
 	}
 
-	currentSnap, err := build.Load(statsFile, distDir)
+	currentSnap, _, err := loadBuild(statsFile, distDir, entry, project)
 	if err != nil {
 		return mcpspec.NewToolResultError(fmt.Sprintf("Failed to load build: %v", err)), nil
 	}

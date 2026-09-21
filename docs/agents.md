@@ -82,12 +82,14 @@ The MCP server provides 6 typed tools formatted for LLM consumption:
 
 | Tool | Parameters | Description |
 | :--- | :--- | :--- |
-| `bundle_summary` | `path` (opt), `project` (opt), `top` (opt, def 10), `filter` (opt) | Summarizes initial, lazy, and total JS sizes and top npm package contributors. |
-| `bundle_why` | `package` (required), `path` (opt), `project` (opt), `initial_only` (opt), `max_chains` (opt) | Traces exact static & dynamic import chains from entrypoints to target package. |
-| `bundle_suggest` | `path` (opt), `project` (opt), `min_savings` (opt) | Generates prioritized, actionable bundle optimization recommendations. |
-| `bundle_check` | `path` (opt), `project` (opt), `max_initial` (opt), `max_total` (opt), `disallowed_packages` (opt) | Enforces size budgets and verifies disallowed package constraints. |
-| `bundle_measure` | `baseline` (required), `path` (opt), `project` (opt), `max_initial_delta` (opt) | Measures size deltas against a saved baseline and gates regressions. |
+| `bundle_summary` | `path` (opt), `project` (opt), `entry` (opt), `top` (opt, def 10), `filter` (opt) | Summarizes initial, lazy, and total JS sizes and top npm package contributors. |
+| `bundle_why` | `package` (required), `path` (opt), `project` (opt), `entry` (opt), `initial_only` (opt), `max_chains` (opt) | Traces exact static & dynamic import chains from entrypoints to target package. |
+| `bundle_suggest` | `path` (opt), `project` (opt), `entry` (opt), `min_savings` (opt) | Generates prioritized, actionable bundle optimization recommendations. |
+| `bundle_check` | `path` (opt), `project` (opt), `entry` (opt), `max_initial` (opt), `max_total` (opt), `disallowed_packages` (opt) | Enforces size budgets and verifies disallowed package constraints. |
+| `bundle_measure` | `baseline` (required), `path` (opt), `project` (opt), `entry` (opt), `max_initial_delta` (opt) | Measures size deltas against a saved baseline and gates regressions. |
 | `workspace_summary`| `root` (opt), `projects` (opt array) | Analyzes all Angular applications and shared libraries across an Nx workspace. |
+
+When `index.html` references a script absent from `stats.json`, bundle tools retry with the `browser` or `main` entry from `angular.json`/Nx `project.json` when it matches the stats. Otherwise the error lists valid selectors so the agent can retry with `entry`.
 
 ### Exposed MCP Resources
 

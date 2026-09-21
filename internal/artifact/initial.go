@@ -16,6 +16,21 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
+// IndexScriptMismatchError reports an index script that is absent from stats
+// together with valid entry selectors from the same build.
+type IndexScriptMismatchError struct {
+	Script  string
+	Entries []string
+}
+
+func (e *IndexScriptMismatchError) Error() string {
+	message := fmt.Sprintf("local script %q in index.html has no matching emitted browser JS output in stats", e.Script)
+	if len(e.Entries) > 0 {
+		message += fmt.Sprintf("; retry with entry set to one of: %s", strings.Join(e.Entries, ", "))
+	}
+	return message
+}
+
 // MatchEntryOutputs matches outputs against an entry pattern using EntryPoint,
 // output Path, or output basename. Matches are deduplicated and sorted by
 // normalized output path.
@@ -125,7 +140,17 @@ func BrowserOutputsWithEntry(outputs []snapshot.BundleOutput, dist, entry string
 	for _, ref := range refs {
 		p, exists := byFile[ref]
 		if !exists {
-			return nil, nil, fmt.Errorf("local script %q in index.html has no matching emitted browser JS output in stats", ref)
+			entries := make([]string, 0, len(selected))
+			for _, output := range selected {
+				selector := output.EntryPoint
+				if selector == "" {
+					selector = output.Path
+				}
+				entries = append(entries, snapshot.CleanPath(selector))
+			}
+			slices.Sort(entries)
+			entries = slices.Compact(entries)
+			return nil, nil, &IndexScriptMismatchError{Script: ref, Entries: entries}
 		}
 		if !seen[p] {
 			roots = append(roots, p)
