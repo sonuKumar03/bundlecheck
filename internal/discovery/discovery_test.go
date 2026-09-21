@@ -106,6 +106,42 @@ func TestDiscoveryMultiProjectWithFilter(t *testing.T) {
 	}
 }
 
+func TestDiscoverySubstringProjectCollision(t *testing.T) {
+	tmp := t.TempDir()
+
+	// App 1: portal
+	portalDist := filepath.Join(tmp, "dist", "portal", "browser")
+	_ = os.MkdirAll(portalDist, 0755)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "portal", "stats.json"), []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "index.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "main.js"), []byte(`console.log(1)`), 0644)
+
+	// App 2: partner-portal (contains "portal" as substring)
+	partnerDist := filepath.Join(tmp, "dist", "partner-portal", "browser")
+	_ = os.MkdirAll(partnerDist, 0755)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "partner-portal", "stats.json"), []byte(`{}`), 0644)
+	_ = os.WriteFile(filepath.Join(partnerDist, "index.html"), []byte(`<html></html>`), 0644)
+	_ = os.WriteFile(filepath.Join(partnerDist, "main.js"), []byte(`console.log(2)`), 0644)
+
+	// Disambiguate exact match "portal" despite "partner-portal" containing "portal"
+	stats, dist, err := discovery.Locate(tmp, "portal")
+	if err != nil {
+		t.Fatalf("unexpected error resolving 'portal': %v", err)
+	}
+	if dist != portalDist || stats != filepath.Join(tmp, "dist", "portal", "stats.json") {
+		t.Errorf("expected portal artifacts, got stats=%s dist=%s", stats, dist)
+	}
+
+	// Disambiguate exact match "partner-portal"
+	stats2, dist2, err := discovery.Locate(tmp, "partner-portal")
+	if err != nil {
+		t.Fatalf("unexpected error resolving 'partner-portal': %v", err)
+	}
+	if dist2 != partnerDist || stats2 != filepath.Join(tmp, "dist", "partner-portal", "stats.json") {
+		t.Errorf("expected partner-portal artifacts, got stats=%s dist=%s", stats2, dist2)
+	}
+}
+
 func TestDiscoveryMissing(t *testing.T) {
 	tmp := t.TempDir()
 	_, _, err := discovery.Locate(tmp, "")

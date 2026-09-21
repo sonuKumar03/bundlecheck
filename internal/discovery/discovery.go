@@ -32,23 +32,36 @@ func Locate(rootDir string, projectName string) (string, string, error) {
 	}
 
 	if projectName != "" {
-		filtered := []Candidate{}
+		var exactMatches []Candidate
 		for _, c := range candidates {
-			if strings.EqualFold(c.Project, projectName) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(projectName)) {
-				filtered = append(filtered, c)
+			if strings.EqualFold(c.Project, projectName) {
+				exactMatches = append(exactMatches, c)
 			}
 		}
-		if len(filtered) == 1 {
-			return filtered[0].Stats, filtered[0].Dist, nil
+		if len(exactMatches) == 1 {
+			return exactMatches[0].Stats, exactMatches[0].Dist, nil
 		}
-		if len(filtered) == 0 {
-			available := make([]string, 0, len(candidates))
+		if len(exactMatches) > 1 {
+			candidates = exactMatches
+		} else {
+			var substringMatches []Candidate
 			for _, c := range candidates {
-				available = append(available, c.Project)
+				if strings.Contains(strings.ToLower(c.Project), strings.ToLower(projectName)) || strings.Contains(strings.ToLower(c.Stats), strings.ToLower(projectName)) {
+					substringMatches = append(substringMatches, c)
+				}
 			}
-			return "", "", fmt.Errorf("project %q not found among build artifacts; available projects: %s", projectName, strings.Join(available, ", "))
+			if len(substringMatches) == 1 {
+				return substringMatches[0].Stats, substringMatches[0].Dist, nil
+			}
+			if len(substringMatches) == 0 {
+				available := make([]string, 0, len(candidates))
+				for _, c := range candidates {
+					available = append(available, c.Project)
+				}
+				return "", "", fmt.Errorf("project %q not found among build artifacts; available projects: %s", projectName, strings.Join(available, ", "))
+			}
+			candidates = substringMatches
 		}
-		candidates = filtered
 	}
 
 	if len(candidates) == 1 {
