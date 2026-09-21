@@ -530,3 +530,78 @@ func TestGenerateFindings_LegacyBaselineSourceFallback(t *testing.T) {
 		t.Errorf("expected 1500 delta bytes, got %d", findings[0].DeltaBytes)
 	}
 }
+
+func TestGenerateFindings_InitialPackageRegression_ApplicationTrace(t *testing.T) {
+	before := &analysis.AnalysisResult{
+		Summary:  snapshot.Totals{InitialJS: 1000, TotalJS: 1000},
+		Packages: []snapshot.Package{},
+	}
+	after := &analysis.AnalysisResult{
+		Summary: snapshot.Totals{InitialJS: 11000, TotalJS: 11000},
+		Packages: []snapshot.Package{
+			{
+				Name:         "moment-timezone",
+				InitialBytes: 10000,
+				TotalBytes:   10000,
+			},
+		},
+	}
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Inputs: []snapshot.Module{
+			{Path: "apps/portal/src/main.ts", Bytes: 100, Imports: []snapshot.Import{
+				{Path: "apps/portal/src/app/app.module.ts"},
+			}},
+			{Path: "apps/portal/src/app/app.module.ts", Bytes: 200, Imports: []snapshot.Import{
+				{Path: "libs/timezone-scheduler/src/index.ts"},
+			}},
+			{Path: "libs/timezone-scheduler/src/index.ts", Bytes: 150, Imports: []snapshot.Import{
+				{Path: "node_modules/moment-timezone/index.js"},
+			}},
+			{Path: "node_modules/moment-timezone/index.js", Bytes: 500},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "main.js",
+				Initial:    true,
+				EntryPoint: "apps/portal/src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "apps/portal/src/main.ts", Bytes: 100},
+				},
+			},
+			{
+				Path:       "chunk-lazy.js",
+				Initial:    false,
+				EntryPoint: "libs/timezone-scheduler/src/index.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "libs/timezone-scheduler/src/index.ts", Bytes: 150},
+					{Input: "node_modules/moment-timezone/index.js", Bytes: 500},
+				},
+			},
+			{
+				Path:    "chunk-vendor.js",
+				Initial: true,
+				Inputs: []snapshot.Contribution{
+					{Input: "node_modules/moment-timezone/index.js", Bytes: 500},
+					{Input: "apps/portal/src/app/app.module.ts", Bytes: 200},
+					{Input: "libs/timezone-scheduler/src/index.ts", Bytes: 150},
+				},
+			},
+		},
+	}
+
+	res := comparison.Compare(before, after)
+	findings := comparison.GenerateFindings(res, snap)
+	if len(findings) == 0 {
+		t.Fatalf("expected at least 1 finding, got 0")
+	}
+
+	f := findings[0]
+	if f.Name != "moment-timezone" {
+		t.Fatalf("expected finding name 'moment-timezone', got %s", f.Name)
+	}
+	if len(f.TracePath) == 0 || f.TracePath[0] != "apps/portal/src/main.ts" {
+		t.Errorf("expected TracePath to start with apps/portal/src/main.ts, got: %v", f.TracePath)
+	}
+}
+

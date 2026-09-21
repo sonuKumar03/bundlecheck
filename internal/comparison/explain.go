@@ -99,13 +99,20 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 	}
 
 	// Helper to trace import path
-	traceImportPath := func(target string) []string {
+	traceImportPath := func(target string, initialOnly bool) []string {
 		if g == nil {
 			return nil
 		}
-		whyRes, err := g.TracePackage(target, false, 1)
+		whyRes, err := g.TracePackage(target, initialOnly, 1)
 		if err == nil && whyRes != nil && len(whyRes.Chains) > 0 {
 			return whyRes.Chains[0].Path
+		}
+		// Fallback without initialOnly filter if no chain found
+		if initialOnly {
+			whyRes, err = g.TracePackage(target, false, 1)
+			if err == nil && whyRes != nil && len(whyRes.Chains) > 0 {
+				return whyRes.Chains[0].Path
+			}
 		}
 		return nil
 	}
@@ -122,6 +129,7 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 			effectiveDelta = p.Delta.InitialBytes
 		}
 
+		isInitialRegression := p.Delta.InitialBytes > 0
 		finding := Finding{
 			Name:         p.Name,
 			DeltaBytes:   effectiveDelta,
@@ -129,7 +137,7 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 			LazyDelta:    p.Delta.LazyBytes,
 			Kind:         "package",
 			Chunks:       findEmittedChunks(p.Name),
-			TracePath:    traceImportPath(p.Name),
+			TracePath:    traceImportPath(p.Name, isInitialRegression),
 		}
 		attributedDelta += effectiveDelta
 		findings = append(findings, finding)
@@ -158,6 +166,7 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 				reason = "Application component moved into initial bundle"
 			}
 
+			isInitialRegression := s.Delta.InitialBytes > 0
 			candidateSources = append(candidateSources, Finding{
 				Name:         s.Name,
 				DeltaBytes:   effectiveDelta,
@@ -165,7 +174,7 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 				LazyDelta:    s.Delta.LazyBytes,
 				Kind:         "source",
 				Chunks:       findSourceEmittedChunks(s.Name),
-				TracePath:    traceImportPath(s.Name),
+				TracePath:    traceImportPath(s.Name, isInitialRegression),
 				Reason:       reason,
 			})
 		}
@@ -231,7 +240,7 @@ func GenerateFindings(res *Result, snap *snapshot.BundleSnapshot) []Finding {
 				InitialDelta: delta,
 				Kind:         "source",
 				Chunks:       findSourceEmittedChunks(src.name),
-				TracePath:    traceImportPath(src.name),
+				TracePath:    traceImportPath(src.name, true),
 				Reason:       "Application source in initial chunk",
 			}
 			attributedDelta += delta
