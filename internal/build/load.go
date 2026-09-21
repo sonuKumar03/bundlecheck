@@ -7,8 +7,8 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
-// Load converts build artifacts into the bundler-independent snapshot model.
-func Load(stats, dist string) (*snapshot.BundleSnapshot, error) {
+// LoadWithEntry converts build artifacts into the bundler-independent snapshot model using the specified entry.
+func LoadWithEntry(stats, dist, entry string) (*snapshot.BundleSnapshot, error) {
 	meta, err := angular.Parse(stats)
 	if err != nil {
 		return nil, err
@@ -17,7 +17,7 @@ func Load(stats, dist string) (*snapshot.BundleSnapshot, error) {
 	if err != nil {
 		return nil, err
 	}
-	outputs, roots, err := artifact.BrowserOutputs(s.Outputs, dist)
+	outputs, roots, err := artifact.BrowserOutputsWithEntry(s.Outputs, dist, entry)
 	if err != nil {
 		return nil, err
 	}
@@ -26,4 +26,9 @@ func Load(stats, dist string) (*snapshot.BundleSnapshot, error) {
 	}
 	s.Outputs = outputs
 	return s, nil
+}
+
+// Load converts build artifacts into the bundler-independent snapshot model.
+func Load(stats, dist string) (*snapshot.BundleSnapshot, error) {
+	return LoadWithEntry(stats, dist, "")
 }

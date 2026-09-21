@@ -16,11 +16,90 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
-func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.BundleOutput, []string, error) {
+// MatchEntryOutputs matches outputs against an entry pattern using EntryPoint,
+// output Path, or output basename. Matches are deduplicated and sorted by
+// normalized output path.
+func MatchEntryOutputs(outputs []snapshot.BundleOutput, pattern string) ([]snapshot.BundleOutput, error) {
+	cleanPattern := snapshot.CleanPath(pattern)
+	if _, err := path.Match(cleanPattern, ""); err != nil {
+		return nil, fmt.Errorf("invalid entry selector %q: %w", pattern, err)
+	}
+
+	var matched []snapshot.BundleOutput
+	seen := make(map[string]bool)
+	for _, o := range outputs {
+		normPath := snapshot.CleanPath(o.Path)
+		if seen[normPath] {
+			continue
+		}
+		candidates := make([]string, 0, 3)
+		if o.EntryPoint != "" {
+			candidates = append(candidates, snapshot.CleanPath(o.EntryPoint))
+		}
+		candidates = append(candidates, normPath, path.Base(normPath))
+
+		isMatch := false
+		for _, c := range candidates {
+			if c == cleanPattern {
+				isMatch = true
+				break
+			}
+			m, err := path.Match(cleanPattern, c)
+			if err != nil {
+				return nil, fmt.Errorf("invalid entry selector %q: %w", pattern, err)
+			}
+			if m {
+				isMatch = true
+				break
+			}
+		}
+		if isMatch {
+			seen[normPath] = true
+			o.Path = normPath
+			if o.EntryPoint != "" {
+				o.EntryPoint = snapshot.CleanPath(o.EntryPoint)
+			}
+			matched = append(matched, o)
+		}
+	}
+
+	if len(matched) == 0 {
+		return nil, fmt.Errorf("entry selector %q matched no browser outputs", pattern)
+	}
+
+	slices.SortFunc(matched, func(a, b snapshot.BundleOutput) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return matched, nil
+}
+
+// BrowserOutputsWithEntry resolves emitted browser files and identifies bootstrap
+// roots. When entry is empty, roots are discovered from index.html scripts. When
+// entry is non-empty, matching outputs become roots without requiring index.html.
+func BrowserOutputsWithEntry(outputs []snapshot.BundleOutput, dist, entry string) ([]snapshot.BundleOutput, []string, error) {
 	abs, err := filepath.Abs(dist)
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve dist: %w", err)
 	}
+
+	selected, byFile, err := filterEmittedBrowserOutputs(outputs, dist, abs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if entry != "" {
+		matched, err := MatchEntryOutputs(selected, entry)
+		if err != nil {
+			return nil, nil, err
+		}
+		roots := make([]string, 0, len(matched))
+		for _, m := range matched {
+			roots = append(roots, m.Path)
+		}
+		return selected, roots, nil
+	}
+
 	indexPath, err := findIndexFile(abs)
 	if err != nil {
 		return nil, nil, err
@@ -36,8 +115,39 @@ func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.Bu
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse index.html: %w", err)
 	}
+
+	refs, err := scriptPaths(doc)
+	if err != nil {
+		return nil, nil, err
+	}
+	roots := []string{}
+	seen := make(map[string]bool)
+	for _, ref := range refs {
+		p, exists := byFile[ref]
+		if !exists {
+			return nil, nil, fmt.Errorf("local script %q in index.html has no matching emitted browser JS output in stats", ref)
+		}
+		if !seen[p] {
+			roots = append(roots, p)
+			seen[p] = true
+		}
+	}
+	if len(roots) == 0 {
+		return nil, nil, fmt.Errorf("index.html contains no local browser bootstrap scripts")
+	}
+	slices.Sort(roots)
+	return selected, roots, nil
+}
+
+// BrowserOutputs is a backwards-compatible wrapper around BrowserOutputsWithEntry
+// using empty entry selection.
+func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.BundleOutput, []string, error) {
+	return BrowserOutputsWithEntry(outputs, dist, "")
+}
+
+func filterEmittedBrowserOutputs(outputs []snapshot.BundleOutput, dist, abs string) ([]snapshot.BundleOutput, map[string]string, error) {
 	files := make(map[string]bool)
-	err = filepath.WalkDir(abs, func(p string, entry fs.DirEntry, err error) error {
+	err := filepath.WalkDir(abs, func(p string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -79,27 +189,7 @@ func BrowserOutputs(outputs []snapshot.BundleOutput, dist string) ([]snapshot.Bu
 		o.DiskPath = filepath.Join(abs, filepath.FromSlash(rel))
 		selected = append(selected, o)
 	}
-	refs, err := scriptPaths(doc)
-	if err != nil {
-		return nil, nil, err
-	}
-	roots := []string{}
-	seen := make(map[string]bool)
-	for _, ref := range refs {
-		p, exists := byFile[ref]
-		if !exists {
-			return nil, nil, fmt.Errorf("local script %q in index.html has no matching emitted browser JS output in stats", ref)
-		}
-		if !seen[p] {
-			roots = append(roots, p)
-			seen[p] = true
-		}
-	}
-	if len(roots) == 0 {
-		return nil, nil, fmt.Errorf("index.html contains no local browser bootstrap scripts")
-	}
-	slices.Sort(roots)
-	return selected, roots, nil
+	return selected, byFile, nil
 }
 
 // browserPath accepts dist-relative keys, actual absolute paths, or relocated

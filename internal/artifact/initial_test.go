@@ -118,3 +118,165 @@ func TestIndexCsrHtmlSupport(t *testing.T) {
 		t.Fatalf("unexpected outputs: got=%v roots=%v", got, roots)
 	}
 }
+
+func TestMatchEntryOutputs(t *testing.T) {
+	outputs := []snapshot.BundleOutput{
+		{Path: "browser/main.js", EntryPoint: "src/main.ts"},
+		{Path: "browser/worker.js", EntryPoint: "src/crypto.worker.ts"},
+		{Path: "browser/main-es2015.js", EntryPoint: "src/main.ts"},
+		{Path: "browser/chunk-A.js"},
+		{Path: "browser/z.js"},
+		{Path: "browser/a.js"},
+	}
+
+	tests := []struct {
+		name        string
+		pattern     string
+		customOuts  []snapshot.BundleOutput
+		wantPaths   []string
+		wantErrPart string
+	}{
+		{
+			name:      "source path",
+			pattern:   "src/main.ts",
+			wantPaths: []string{"browser/main-es2015.js", "browser/main.js"},
+		},
+		{
+			name:      "full output path",
+			pattern:   "browser/worker.js",
+			wantPaths: []string{"browser/worker.js"},
+		},
+		{
+			name:      "basename",
+			pattern:   "chunk-A.js",
+			wantPaths: []string{"browser/chunk-A.js"},
+		},
+		{
+			name:      "main-*.js",
+			pattern:   "main-*.js",
+			wantPaths: []string{"browser/main-es2015.js"},
+		},
+		{
+			name:    "backslash normalization",
+			pattern: `src\main.ts`,
+			customOuts: []snapshot.BundleOutput{
+				{Path: `browser\main.js`, EntryPoint: `src\main.ts`},
+			},
+			wantPaths: []string{"browser/main.js"},
+		},
+		{
+			name:    "two sorted matches",
+			pattern: "browser/*.js",
+			customOuts: []snapshot.BundleOutput{
+				{Path: "browser/z.js"},
+				{Path: "browser/a.js"},
+			},
+			wantPaths: []string{"browser/a.js", "browser/z.js"},
+		},
+		{
+			name:        "malformed [",
+			pattern:     "[",
+			wantErrPart: "[",
+		},
+		{
+			name:        "no match",
+			pattern:     "missing.js",
+			wantErrPart: "missing.js",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outs := outputs
+			if tt.customOuts != nil {
+				outs = tt.customOuts
+			}
+			got, err := MatchEntryOutputs(outs, tt.pattern)
+			if tt.wantErrPart != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrPart)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrPart) {
+					t.Fatalf("expected error containing %q, got %v", tt.wantErrPart, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var gotPaths []string
+			for _, o := range got {
+				gotPaths = append(gotPaths, o.Path)
+			}
+			if !reflect.DeepEqual(gotPaths, tt.wantPaths) {
+				t.Fatalf("got paths %v, want %v", gotPaths, tt.wantPaths)
+			}
+		})
+	}
+}
+
+func TestBrowserOutputsWithEntry_NoIndexHtml(t *testing.T) {
+	dist := filepath.Join(t.TempDir(), "browser")
+	if err := os.MkdirAll(dist, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"main.js", "worker.js"} {
+		if err := os.WriteFile(filepath.Join(dist, f), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	outputs := []snapshot.BundleOutput{
+		{Path: "browser/main.js", EntryPoint: "src/main.ts"},
+		{Path: "browser/worker.js", EntryPoint: "src/worker.ts"},
+	}
+
+	// In entry mode, dist does not need index.html, returns all browser outputs,
+	// and roots contains only the selected entry output.
+	got, roots, err := BrowserOutputsWithEntry(outputs, dist, "src/worker.ts")
+	if err != nil {
+		t.Fatalf("BrowserOutputsWithEntry failed: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 outputs, got %d", len(got))
+	}
+	wantRoots := []string{"browser/worker.js"}
+	if !reflect.DeepEqual(roots, wantRoots) {
+		t.Fatalf("roots %v, want %v", roots, wantRoots)
+	}
+
+	// Calling BrowserOutputs without entry should fail because index.html is missing.
+	if _, _, err := BrowserOutputs(outputs, dist); err == nil || !strings.Contains(err.Error(), "index.html") {
+		t.Fatalf("expected index.html error, got %v", err)
+	}
+}
+
+func TestBrowserOutputs_Regression(t *testing.T) {
+	dist := filepath.Join(t.TempDir(), "browser")
+	if err := os.MkdirAll(dist, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dist, "index.html"), []byte(`<script src="main.js"></script>`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"main.js", "lazy.js"} {
+		if err := os.WriteFile(filepath.Join(dist, f), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	outputs := []snapshot.BundleOutput{
+		{Path: "browser/main.js"},
+		{Path: "browser/lazy.js"},
+	}
+
+	got, roots, err := BrowserOutputs(outputs, dist)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 outputs, got %d", len(got))
+	}
+	wantRoots := []string{"browser/main.js"}
+	if !reflect.DeepEqual(roots, wantRoots) {
+		t.Fatalf("roots %v, want %v", roots, wantRoots)
+	}
+}
