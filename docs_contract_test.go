@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,7 +17,7 @@ import (
 )
 
 // TestDocumentationContract_ActionInputs parses action.yml and verifies that all
-// inputs referenced in README.md, npm/bundlecheck/README.md, and docs/index.html
+// inputs referenced in README.md and docs/index.html
 // correspond to real, declared inputs in action.yml.
 func TestDocumentationContract_ActionInputs(t *testing.T) {
 	actionData, err := os.ReadFile("action.yml")
@@ -39,7 +38,6 @@ func TestDocumentationContract_ActionInputs(t *testing.T) {
 
 	docFiles := []string{
 		"README.md",
-		filepath.Join("npm", "bundlecheck", "README.md"),
 		filepath.Join("docs", "index.html"),
 	}
 
@@ -83,7 +81,6 @@ func TestDocumentationContract_ActionInputs(t *testing.T) {
 func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 	docFiles := []string{
 		"README.md",
-		filepath.Join("npm", "bundlecheck", "README.md"),
 		filepath.Join("docs", "index.html"),
 	}
 
@@ -128,25 +125,6 @@ func TestDocumentationContract_VersionSync(t *testing.T) {
 
 	if analysis.ToolVersion != version {
 		t.Errorf("analysis.ToolVersion (%s) != VERSION (%s)", analysis.ToolVersion, version)
-	}
-
-	// npm package version
-	pkgData, err := os.ReadFile(filepath.Join("npm", "bundlecheck", "package.json"))
-	if err != nil {
-		t.Fatalf("failed to read package.json: %v", err)
-	}
-	var pkg struct {
-		Name    string `json:"name"`
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(pkgData, &pkg); err != nil {
-		t.Fatalf("failed to parse package.json: %v", err)
-	}
-	if pkg.Version != version {
-		t.Errorf("npm package version (%s) != VERSION (%s)", pkg.Version, version)
-	}
-	if pkg.Name != "@sonukumar03/bundlecheck" {
-		t.Errorf("expected scoped package name @sonukumar03/bundlecheck, got %s", pkg.Name)
 	}
 
 	// go.mod module path
@@ -199,7 +177,7 @@ func TestDocumentationContract_MarketingClaims(t *testing.T) {
 		}
 	}
 
-	for _, name := range []string{"README.md", filepath.Join("npm", "bundlecheck", "README.md"), filepath.Join("docs", "index.html")} {
+	for _, name := range []string{"README.md", filepath.Join("docs", "index.html")} {
 		data, err := os.ReadFile(name)
 		if err != nil {
 			t.Fatal(err)
@@ -261,7 +239,7 @@ func TestDocumentationContract_CLICommandsAndFlags(t *testing.T) {
 
 // TestDocumentationContract_EntryDocumentation verifies that --entry / -e, the Action input 'entry',
 // source and glob examples, and the TotalJS whole-browser invariant are documented across
-// README.md, npm/bundlecheck/README.md, docs/index.html, and action.yml.
+// README.md, docs/index.html, and action.yml.
 func TestDocumentationContract_EntryDocumentation(t *testing.T) {
 	actionData, err := os.ReadFile("action.yml")
 	if err != nil {
@@ -294,7 +272,6 @@ func TestDocumentationContract_EntryDocumentation(t *testing.T) {
 
 	docFiles := []string{
 		"README.md",
-		filepath.Join("npm", "bundlecheck", "README.md"),
 		filepath.Join("docs", "index.html"),
 	}
 

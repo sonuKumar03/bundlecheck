@@ -69,20 +69,7 @@ TOP CONTRIBUTING NPM PACKAGES
 
 ## 📦 Installation
 
-### Option 1: NPX / Zero-Install Runner (Recommended for Frontend Devs)
-
-Run instantly without installing Go or compilers:
-
-```bash
-# Run on demand
-npx @sonukumar03/bundlecheck summary dist/my-app/stats.json
-
-# Or add to project devDependencies
-npm install -D @sonukumar03/bundlecheck
-npx bundlecheck summary dist/my-app/stats.json
-```
-
-### Option 2: 1-Line Standalone Shell Installer
+### Option 1: 1-Line Standalone Shell Installer
 
 Downloads the latest precompiled native binary to `$GOBIN` when set, otherwise `/usr/local/bin` (or `~/.local/bin`). No Go installation is needed for release binaries. Running the installer from a source checkout builds that checkout using Go:
 
@@ -95,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/inst
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
 ```
 
-### Option 3: Precompiled Multi-Arch Binaries
+### Option 2: Precompiled Multi-Arch Binaries
 
 Download standalone binaries directly from the [**GitHub Releases**](https://github.com/sonuKumar03/bundlecheck/releases/latest):
 - 🍏 **macOS Apple Silicon (M1/M2/M3/M4)**: `bundlecheck_*_darwin_arm64.tar.gz`
@@ -104,7 +91,7 @@ Download standalone binaries directly from the [**GitHub Releases**](https://git
 - 🐧 **Linux ARM64**: `bundlecheck_*_linux_arm64.tar.gz`
 - 🪟 **Windows x64**: `bundlecheck_*_windows_amd64.zip`
 
-### Option 4: Go Install
+### Option 3: Go Install
 
 ```bash
 go install github.com/sonuKumar03/bundlecheck@latest

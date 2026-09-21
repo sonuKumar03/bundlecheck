@@ -1,7 +1,6 @@
 package analysis
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,7 +9,7 @@ import (
 )
 
 // TestVersionSyncContract verifies that root VERSION, ToolVersion,
-// npm/bundlecheck/package.json, docs/index.html, and README.md stay in exact sync.
+// docs/index.html and README.md stay in exact sync.
 // If any file drifts, this test fails in local dev and GitHub Actions CI.
 func TestVersionSyncContract(t *testing.T) {
 	// Locate repository root relative to internal/analysis/
@@ -34,23 +33,7 @@ func TestVersionSyncContract(t *testing.T) {
 		t.Errorf("internal/analysis.ToolVersion mismatch: got %q, want %q (from VERSION)", ToolVersion, rootVersion)
 	}
 
-	// 2. Check npm/bundlecheck/package.json
-	pkgFile := filepath.Join(repoRoot, "npm", "bundlecheck", "package.json")
-	pkgBytes, err := os.ReadFile(pkgFile)
-	if err != nil {
-		t.Fatalf("failed to read %s: %v", pkgFile, err)
-	}
-	var pkg struct {
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(pkgBytes, &pkg); err != nil {
-		t.Fatalf("failed to parse package.json: %v", err)
-	}
-	if pkg.Version != rootVersion {
-		t.Errorf("npm/bundlecheck/package.json version mismatch: got %q, want %q", pkg.Version, rootVersion)
-	}
-
-	// 3. Check docs/index.html contains softwareVersion matching rootVersion
+	// 2. Check docs/index.html contains softwareVersion matching rootVersion
 	indexHTMLFile := filepath.Join(repoRoot, "docs", "index.html")
 	indexHTMLBytes, err := os.ReadFile(indexHTMLFile)
 	if err != nil {
@@ -65,7 +48,7 @@ func TestVersionSyncContract(t *testing.T) {
 		t.Errorf("docs/index.html softwareVersion mismatch: got %q, want %q", match[1], rootVersion)
 	}
 
-	// 4. Check README.md contains GitHub Action ref @v<rootVersion>
+	// 3. Check README.md contains GitHub Action ref @v<rootVersion>
 	readmeFile := filepath.Join(repoRoot, "README.md")
 	readmeBytes, err := os.ReadFile(readmeFile)
 	if err != nil {
@@ -80,7 +63,7 @@ func TestVersionSyncContract(t *testing.T) {
 		t.Errorf("README.md Action reference version mismatch: got %q, want %q", actionMatch[1], rootVersion)
 	}
 
-	// 5. Check go.mod declares the correct module path
+	// 4. Check go.mod declares the correct module path
 	goModFile := filepath.Join(repoRoot, "go.mod")
 	goModBytes, err := os.ReadFile(goModFile)
 	if err != nil {

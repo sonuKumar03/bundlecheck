@@ -22,20 +22,10 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-
       - name: Verify release version consistency
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(node -p "require('./npm/bundlecheck/package.json').version")"
           ROOT_VERSION="$(cat VERSION | tr -d '[:space:]')"
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Tag version $TAG_VERSION does not match npm package version $PACKAGE_VERSION" >&2
-            exit 1
-          fi
           if [ "$TAG_VERSION" != "$ROOT_VERSION" ]; then
             echo "Tag version $TAG_VERSION does not match VERSION file $ROOT_VERSION" >&2
             exit 1
@@ -62,7 +52,7 @@ jobs:
           ./bundlecheck check testdata/minimal --max-initial 5MB
 
   publish:
-    name: Build & Publish Release
+    name: Build & Publish GitHub Release
     needs: [verify]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -79,12 +69,6 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
-
-      - name: Set up Node for NPM Publish
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Build Multi-Arch Binaries
         id: build
@@ -130,17 +114,6 @@ jobs:
           sha256sum * > checksums.txt
           cd ..
 
-      - name: Publish to NPM (if NPM_TOKEN configured)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -n "$NODE_AUTH_TOKEN" ]; then
-            cd npm/bundlecheck
-            npm publish --access public
-          else
-            echo "::notice::NPM_TOKEN not set; skipping npm package publication."
-          fi
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -161,4 +134,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -fa "$MAJOR" -m "Update $MAJOR to point to $TAG"
           git push origin "$MAJOR" --force
-

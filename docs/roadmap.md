@@ -58,7 +58,7 @@ flowchart TD
 - **Delivered Architecture**: Pure Go zero-dependency static parser scanning `project.json` manifests via bounded traversal (depth <= 4), with transparent automatic fallback to `node nx graph --print` if dynamic plugins, unsupported targets, or zero applications are encountered.
 
 #### 4. Documentation Benchmark Qualification
-- **Target**: `README.md` and `npm/bundlecheck/README.md`
+- **Target**: `README.md`
 - **Target Architecture**: Document realistic native execution ranges (sub-10ms standard bundle analysis, <1ms graph query & attribution, excluding external Node.js subprocess invocation).
 
 ---

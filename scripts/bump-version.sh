@@ -48,19 +48,7 @@ with open('internal/analysis/summary.go', 'w') as f:
 "
 echo "  ✓ Updated internal/analysis/summary.go"
 
-# 3. Update npm/bundlecheck/package.json
-python3 -c "
-import json
-with open('npm/bundlecheck/package.json', 'r') as f:
-    pkg = json.load(f)
-pkg['version'] = '$NEW_VER'
-with open('npm/bundlecheck/package.json', 'w') as f:
-    json.dump(pkg, f, indent=2)
-    f.write('\n')
-"
-echo "  ✓ Updated npm/bundlecheck/package.json"
-
-# 4. Update docs/index.html
+# 3. Update docs/index.html
 python3 -c "
 with open('docs/index.html', 'r') as f:
     html = f.read()
@@ -73,7 +61,7 @@ with open('docs/index.html', 'w') as f:
 "
 echo "  ✓ Updated docs/index.html"
 
-# 5. Update docs/agents.md
+# 4. Update docs/agents.md
 python3 -c "
 with open('docs/agents.md', 'r') as f:
     doc = f.read()
@@ -88,7 +76,7 @@ with open('docs/agents.md', 'w') as f:
 "
 echo "  ✓ Updated docs/agents.md"
 
-# 6. Update README.md and sync npm/bundlecheck/README.md
+# 5. Update README.md
 python3 -c "
 with open('README.md', 'r') as f:
     readme = f.read()
@@ -97,10 +85,9 @@ readme = re.sub(r'uses: sonuKumar03/bundlecheck@v[0-9.]+', f'uses: sonuKumar03/b
 with open('README.md', 'w') as f:
     f.write(readme)
 "
-cp README.md npm/bundlecheck/README.md
-echo "  ✓ Updated README.md and npm/bundlecheck/README.md"
+echo "  ✓ Updated README.md"
 
-# 7. Update golden contracts testdata
+# 6. Update golden contracts testdata
 python3 -c "
 import glob, json
 for path in glob.glob('testdata/contracts/v1/*.json'):
@@ -114,7 +101,7 @@ for path in glob.glob('testdata/contracts/v1/*.json'):
 "
 echo "  ✓ Updated testdata/contracts/v1/*.json"
 
-# 8. Run test verification
+# 7. Run test verification
 echo "Running test suite verification..."
 go test ./... > /dev/null
 echo "  ✓ All Go tests pass with version $NEW_VER"
