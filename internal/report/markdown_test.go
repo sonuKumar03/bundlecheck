@@ -197,3 +197,41 @@ func TestComparisonMarkdown_SourceFinding(t *testing.T) {
 	}
 }
 
+func TestComparisonMarkdown_ImportPath(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 50 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "moment-timezone",
+				DeltaBytes: 50 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"dist/browser/main.js"},
+				TracePath: []string{
+					"apps/portal/src/main.ts",
+					"apps/portal/src/app/app.config.ts",
+					"apps/portal/src/app/app.module.ts",
+					"libs/timezone-scheduler/src/index.ts",
+					"node_modules/moment-timezone/index.js",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := report.ComparisonMarkdown(&buf, comp, report.TextOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	want := "- **Import path:** `apps/portal/src/main.ts` → `apps/portal/src/app/app.module.ts` → `libs/timezone-scheduler/src/index.ts` → `node_modules/moment-timezone/index.js`"
+	if !strings.Contains(out, want) {
+		t.Errorf("expected formatted import path in markdown:\n  want: %s\n  got:\n%s", want, out)
+	}
+	if strings.Contains(out, "app.config.ts") {
+		t.Errorf("expected redundant intermediate hop 'app.config.ts' to be omitted, got:\n%s", out)
+	}
+}
+

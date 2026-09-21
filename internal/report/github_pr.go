@@ -6,8 +6,10 @@ import (
 	"math"
 	"strings"
 
+	"github.com/sonuKumar03/bundlecheck/internal/analysis"
 	"github.com/sonuKumar03/bundlecheck/internal/budget"
 	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 // IsGitHubPRFormat returns true if format represents a GitHub PR comment format.
@@ -101,7 +103,7 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 			}
 			fmt.Fprintf(&sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
 			if len(f.TracePath) > 0 {
-				sb.WriteString("  - **Import path:** `" + strings.Join(f.TracePath, "` → `") + "`\n")
+				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
 			}
 		}
 		sb.WriteString("\n")
@@ -209,3 +211,143 @@ func CheckGitHubPR(w io.Writer, res budget.CheckResult) error {
 	_, err := io.WriteString(w, sb.String())
 	return err
 }
+
+// CompactTracePath reduces a long trace path (> 4 hops) to highlight essential hops:
+// 1. Root application entrypoint (e.g. apps/portal/src/main.ts)
+// 2. Application file bridging/importing the library or feature (e.g. apps/portal/src/app/app.module.ts)
+// 3. Library boundary if present (e.g. libs/timezone-scheduler/src/index.ts)
+// 4. Emitted dependency or target package (e.g. node_modules/moment-timezone/index.js)
+// If the path is already concise (<= 4 hops), it is returned unmodified.
+func CompactTracePath(path []string) []string {
+	n := len(path)
+	if n <= 4 {
+		return path
+	}
+
+	// Categorize nodes:
+	// 0: application code
+	// 1: library code (workspace libs)
+	// 2: external package (node_modules)
+	categorize := func(p string) int {
+		cleaned := snapshot.CleanPath(p)
+		if analysis.IsPackage(cleaned) || strings.Contains(cleaned, "node_modules") {
+			return 2
+		}
+		if strings.HasPrefix(cleaned, "libs/") || strings.Contains(cleaned, "/libs/") ||
+			strings.HasPrefix(cleaned, "packages/") || strings.Contains(cleaned, "/packages/") {
+			return 1
+		}
+		return 0
+	}
+
+	firstLib := -1
+	firstPkg := -1
+	for i, p := range path {
+		cat := categorize(p)
+		if cat == 1 && firstLib == -1 {
+			firstLib = i
+		}
+		if cat == 2 && firstPkg == -1 {
+			firstPkg = i
+		}
+	}
+
+	var selectedIndices []int
+
+	if firstLib != -1 {
+		// Case A: Library boundary is present
+		if firstLib > 1 {
+			// Entrypoint, app bridging file, library boundary, target
+			selectedIndices = []int{0, firstLib - 1, firstLib, n - 1}
+		} else if firstLib == 1 {
+			// Entrypoint immediately imports library
+			boundaryTarget := n - 1
+			if firstPkg > 0 {
+				boundaryTarget = firstPkg
+			}
+			importer := boundaryTarget - 1
+			if importer > firstLib {
+				selectedIndices = []int{0, firstLib, importer, n - 1}
+			} else {
+				selectedIndices = []int{0, firstLib, boundaryTarget, n - 1}
+			}
+		}
+	} else if firstPkg != -1 {
+		// Case B: No library boundary, but external package is present
+		importer := firstPkg - 1
+		if importer <= 0 {
+			importer = n - 2
+		}
+
+		// Look for an intermediate app bridge (module, component, routes) between root (0) and importer
+		bridge := -1
+		for i := importer - 1; i >= 1; i-- {
+			lower := strings.ToLower(path[i])
+			if strings.Contains(lower, "module") || strings.Contains(lower, "component") || strings.Contains(lower, "routes") {
+				bridge = i
+				break
+			}
+		}
+		if bridge == -1 && importer > 1 {
+			bridge = 1
+		}
+
+		if bridge != -1 && bridge != importer && bridge != 0 {
+			selectedIndices = []int{0, bridge, importer, n - 1}
+		} else {
+			selectedIndices = []int{0, importer, n - 1}
+		}
+	} else {
+		// Case C: All hops are internal application or library files
+		importer := n - 2
+		bridge := -1
+		for i := importer - 1; i >= 1; i-- {
+			lower := strings.ToLower(path[i])
+			if strings.Contains(lower, "module") || strings.Contains(lower, "component") || strings.Contains(lower, "routes") {
+				bridge = i
+				break
+			}
+		}
+		if bridge == -1 && importer > 1 {
+			bridge = 1
+		}
+
+		if bridge != -1 && bridge != importer && bridge != 0 {
+			selectedIndices = []int{0, bridge, importer, n - 1}
+		} else {
+			selectedIndices = []int{0, importer, n - 1}
+		}
+	}
+
+	// Filter and deduplicate indices while preserving order
+	var result []string
+	seen := make(map[int]bool)
+	for _, idx := range selectedIndices {
+		if idx >= 0 && idx < n && !seen[idx] {
+			seen[idx] = true
+			result = append(result, path[idx])
+		}
+	}
+
+	if len(result) < 2 {
+		return path
+	}
+
+	return result
+}
+
+// FormatTracePath formats a trace path into a Markdown string with backticks and arrow separators,
+// compacting long paths (> 4 hops) to highlight essential boundaries.
+func FormatTracePath(path []string) string {
+	if len(path) == 0 {
+		return ""
+	}
+	compacted := CompactTracePath(path)
+	return "`" + strings.Join(compacted, "` → `") + "`"
+}
+
+// formatTracePath is an unexported alias for FormatTracePath.
+func formatTracePath(path []string) string {
+	return FormatTracePath(path)
+}
+

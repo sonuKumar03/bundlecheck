@@ -245,3 +245,139 @@ func TestRenderPRComment_SourceFinding(t *testing.T) {
 	}
 }
 
+func TestGitHubPR_ImportPath(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 50 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "moment-timezone",
+				DeltaBytes: 50 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"dist/browser/main.js"},
+				TracePath: []string{
+					"apps/portal/src/main.ts",
+					"apps/portal/src/app/app.config.ts",
+					"apps/portal/src/app/app.module.ts",
+					"libs/timezone-scheduler/src/index.ts",
+					"node_modules/moment-timezone/index.js",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := report.ComparisonGitHubPR(&buf, comp, budget.CheckResult{Passed: true}, report.TextOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	want := "- **Import path:** `apps/portal/src/main.ts` → `apps/portal/src/app/app.module.ts` → `libs/timezone-scheduler/src/index.ts` → `node_modules/moment-timezone/index.js`"
+	if !strings.Contains(out, want) {
+		t.Errorf("expected formatted import path:\n  want: %s\n  got:\n%s", want, out)
+	}
+	if strings.Contains(out, "app.config.ts") {
+		t.Errorf("expected redundant intermediate hop 'app.config.ts' to be omitted, got:\n%s", out)
+	}
+}
+
+func TestFormatTracePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path []string
+		want string
+	}{
+		{
+			name: "empty path",
+			path: nil,
+			want: "",
+		},
+		{
+			name: "single hop",
+			path: []string{"apps/portal/src/main.ts"},
+			want: "`apps/portal/src/main.ts`",
+		},
+		{
+			name: "two hops",
+			path: []string{"src/main.ts", "node_modules/chart.js/auto.js"},
+			want: "`src/main.ts` → `node_modules/chart.js/auto.js`",
+		},
+		{
+			name: "three hops",
+			path: []string{"src/main.ts", "src/app/app.module.ts", "node_modules/chart.js/auto.js"},
+			want: "`src/main.ts` → `src/app/app.module.ts` → `node_modules/chart.js/auto.js`",
+		},
+		{
+			name: "four hops preserved",
+			path: []string{"apps/portal/src/main.ts", "apps/portal/src/app/app.module.ts", "libs/tz/src/index.ts", "node_modules/tz/index.js"},
+			want: "`apps/portal/src/main.ts` → `apps/portal/src/app/app.module.ts` → `libs/tz/src/index.ts` → `node_modules/tz/index.js`",
+		},
+		{
+			name: "five hops with library boundary",
+			path: []string{
+				"apps/portal/src/main.ts",
+				"apps/portal/src/app/app.config.ts",
+				"apps/portal/src/app/app.module.ts",
+				"libs/timezone-scheduler/src/index.ts",
+				"node_modules/moment-timezone/index.js",
+			},
+			want: "`apps/portal/src/main.ts` → `apps/portal/src/app/app.module.ts` → `libs/timezone-scheduler/src/index.ts` → `node_modules/moment-timezone/index.js`",
+		},
+		{
+			name: "multiple lib hops",
+			path: []string{
+				"apps/portal/src/main.ts",
+				"apps/portal/src/app/app.module.ts",
+				"libs/tz/src/index.ts",
+				"libs/tz/src/internal.ts",
+				"node_modules/tz/index.js",
+			},
+			want: "`apps/portal/src/main.ts` → `apps/portal/src/app/app.module.ts` → `libs/tz/src/index.ts` → `node_modules/tz/index.js`",
+		},
+		{
+			name: "five hops without library",
+			path: []string{
+				"src/main.ts",
+				"src/app/core.ts",
+				"src/app/app.module.ts",
+				"src/app/feature.ts",
+				"node_modules/chart.js/auto.js",
+			},
+			want: "`src/main.ts` → `src/app/app.module.ts` → `src/app/feature.ts` → `node_modules/chart.js/auto.js`",
+		},
+		{
+			name: "five internal hops",
+			path: []string{
+				"src/main.ts",
+				"src/app/core.ts",
+				"src/app/app.module.ts",
+				"src/app/pages/about.ts",
+				"src/app/pages/about-details.ts",
+			},
+			want: "`src/main.ts` → `src/app/app.module.ts` → `src/app/pages/about.ts` → `src/app/pages/about-details.ts`",
+		},
+		{
+			name: "first hop directly imports library",
+			path: []string{
+				"apps/portal/src/main.ts",
+				"libs/tz/src/index.ts",
+				"libs/tz/src/internal.ts",
+				"libs/tz/src/deep.ts",
+				"node_modules/tz/index.js",
+			},
+			want: "`apps/portal/src/main.ts` → `libs/tz/src/index.ts` → `libs/tz/src/deep.ts` → `node_modules/tz/index.js`",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := report.FormatTracePath(tt.path)
+			if got != tt.want {
+				t.Errorf("FormatTracePath() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+

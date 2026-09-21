@@ -143,7 +143,7 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 			}
 			fmt.Fprintf(&sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
 			if len(f.TracePath) > 0 {
-				sb.WriteString("  - **Import path:** `" + strings.Join(f.TracePath, "` → `") + "`\n")
+				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
 			}
 		}
 		sb.WriteString("\n")
