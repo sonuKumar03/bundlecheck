@@ -40,6 +40,12 @@ type AdvisorOptions struct {
 
 // Analyze evaluates the bundle snapshot and returns prioritized optimization suggestions.
 func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
+	res, _ := AnalyzeWithEntry(s, opts, "")
+	return res
+}
+
+// AnalyzeWithEntry evaluates the bundle snapshot scoped to an entry and returns prioritized optimization suggestions.
+func AnalyzeWithEntry(s *snapshot.BundleSnapshot, opts AdvisorOptions, entry string) (*AdvisorResult, error) {
 	res := &AdvisorResult{
 		SchemaVersion: "1",
 		ToolVersion:   analysis.ToolVersion,
@@ -47,7 +53,7 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 		Suggestions:   []Suggestion{},
 	}
 	if s == nil {
-		return res
+		return res, nil
 	}
 
 	minSavings := opts.MinSavings
@@ -56,7 +62,10 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 	}
 
 	// Pre-build indexed graph once for the entire analysis
-	g := graph.NewGraph(s)
+	g, err := graph.NewGraphWithEntry(s, entry)
+	if err != nil {
+		return nil, err
+	}
 
 	// Rule 1: Heavy Initial Third-Party Utilities
 	frameworkPackages := map[string]bool{
@@ -243,7 +252,7 @@ func Analyze(s *snapshot.BundleSnapshot, opts AdvisorOptions) *AdvisorResult {
 	}
 	res.TotalPotentialSavings = totalSavings
 
-	return res
+	return res, nil
 }
 
 type importerContext struct {

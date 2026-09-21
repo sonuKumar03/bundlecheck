@@ -433,4 +433,128 @@ func TestAdvisorTransitiveNodeModulesImporter(t *testing.T) {
 	}
 }
 
+func TestAnalyzeWithEntry_DistinctImporters(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Totals: snapshot.Totals{
+			InitialJS: 200 * 1024,
+			LazyJS:    100 * 1024,
+			TotalJS:   300 * 1024,
+		},
+		Inputs: []snapshot.Module{
+			{
+				Path:    "src/main.ts",
+				Bytes:   1000,
+				Imports: []snapshot.Import{{Path: "src/app/app.config.ts"}},
+			},
+			{
+				Path:    "src/app/app.config.ts",
+				Bytes:   2000,
+				Imports: []snapshot.Import{{Path: "node_modules/heavy-pkg/index.js"}},
+			},
+			{
+				Path:    "src/worker.ts",
+				Bytes:   800,
+				Imports: []snapshot.Import{{Path: "src/worker/compute.service.ts"}},
+			},
+			{
+				Path:    "src/worker/compute.service.ts",
+				Bytes:   1500,
+				Imports: []snapshot.Import{{Path: "node_modules/heavy-pkg/index.js"}},
+			},
+			{
+				Path:  "node_modules/heavy-pkg/index.js",
+				Bytes: 50 * 1024,
+			},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "browser/main.js",
+				EntryPoint: "src/main.ts",
+				Initial:    true,
+				Inputs: []snapshot.Contribution{
+					{Input: "src/main.ts", Bytes: 1000},
+					{Input: "src/app/app.config.ts", Bytes: 2000},
+					{Input: "node_modules/heavy-pkg/index.js", Bytes: 50 * 1024},
+				},
+			},
+			{
+				Path:       "browser/worker.js",
+				EntryPoint: "src/worker.ts",
+				Initial:    true,
+				Inputs: []snapshot.Contribution{
+					{Input: "src/worker.ts", Bytes: 800},
+					{Input: "src/worker/compute.service.ts", Bytes: 1500},
+					{Input: "node_modules/heavy-pkg/index.js", Bytes: 50 * 1024},
+				},
+			},
+		},
+		Packages: []snapshot.Package{
+			{
+				Name:         "heavy-pkg",
+				InitialBytes: 50 * 1024,
+				TotalBytes:   50 * 1024,
+			},
+		},
+	}
+
+	opts := advisor.AdvisorOptions{MinSavings: 1024}
+
+	// 1. Analyze with main entry: chain derives from src/main.ts -> src/app/app.config.ts (root bootstrap)
+	resMain, err := advisor.AnalyzeWithEntry(snap, opts, "src/main.ts")
+	if err != nil {
+		t.Fatalf("AnalyzeWithEntry(main) failed: %v", err)
+	}
+	var suggMain *advisor.Suggestion
+	for i := range resMain.Suggestions {
+		if resMain.Suggestions[i].Target == "heavy-pkg" {
+			suggMain = &resMain.Suggestions[i]
+			break
+		}
+	}
+	if suggMain == nil {
+		t.Fatal("expected suggestion for heavy-pkg with main entry")
+	}
+	if suggMain.File != "src/app/app.config.ts" {
+		t.Errorf("main entry: expected importer file src/app/app.config.ts, got %s", suggMain.File)
+	}
+	if !strings.Contains(suggMain.Title, "root bootstrap") {
+		t.Errorf("main entry: expected title referencing root bootstrap, got %s", suggMain.Title)
+	}
+
+	// 2. Analyze with worker entry: chain derives from src/worker.ts -> src/worker/compute.service.ts
+	resWorker, err := advisor.AnalyzeWithEntry(snap, opts, "src/worker.ts")
+	if err != nil {
+		t.Fatalf("AnalyzeWithEntry(worker) failed: %v", err)
+	}
+	var suggWorker *advisor.Suggestion
+	for i := range resWorker.Suggestions {
+		if resWorker.Suggestions[i].Target == "heavy-pkg" {
+			suggWorker = &resWorker.Suggestions[i]
+			break
+		}
+	}
+	if suggWorker == nil {
+		t.Fatal("expected suggestion for heavy-pkg with worker entry")
+	}
+	if suggWorker.File != "src/worker/compute.service.ts" {
+		t.Errorf("worker entry: expected importer file src/worker/compute.service.ts, got %s", suggWorker.File)
+	}
+	if !strings.Contains(suggWorker.Title, "compute.service.ts") {
+		t.Errorf("worker entry: expected title referencing compute.service.ts, got %s", suggWorker.Title)
+	}
+
+	// 3. AnalyzeWithEntry with invalid entry returns error
+	if _, err := advisor.AnalyzeWithEntry(snap, opts, "missing.js"); err == nil {
+		t.Fatal("expected error for unmatched entry selector in AnalyzeWithEntry, got nil")
+	}
+
+	// 4. Default Analyze (no entry) continues to work
+	resDef := advisor.Analyze(snap, opts)
+	if len(resDef.Suggestions) == 0 {
+		t.Fatal("expected suggestions from default Analyze")
+	}
+}
+
+
 

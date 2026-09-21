@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundlecheck/internal/artifact"
 	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
@@ -52,8 +53,36 @@ type Graph struct {
 
 // NewGraph builds an indexed module graph and computes shortest paths from roots in a single BFS pass.
 func NewGraph(s *snapshot.BundleSnapshot) *Graph {
+	g, _ := NewGraphWithEntry(s, "")
+	return g
+}
+
+// NewGraphWithEntry builds an indexed module graph scoped to an entry. When entry is empty,
+// all output entrypoints are used as roots. When entry is non-empty, matching outputs
+// determine the graph roots.
+func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error) {
 	if s == nil {
-		return nil
+		if entry != "" {
+			return nil, fmt.Errorf("cannot build graph from nil snapshot")
+		}
+		return nil, nil
+	}
+
+	entry = strings.TrimSpace(entry)
+	var roots []string
+	if entry != "" {
+		matched, err := artifact.MatchEntryOutputs(s.Outputs, entry)
+		if err != nil {
+			return nil, err
+		}
+		for _, o := range matched {
+			if strings.TrimSpace(o.EntryPoint) == "" {
+				return nil, fmt.Errorf("matched output %q has no source entryPoint; specify source entry path", o.Path)
+			}
+			roots = append(roots, snapshot.CleanPath(o.EntryPoint))
+		}
+		slices.Sort(roots)
+		roots = slices.Compact(roots)
 	}
 
 	g := &Graph{
@@ -104,14 +133,16 @@ func NewGraph(s *snapshot.BundleSnapshot) *Graph {
 	// Index output contributions and root entrypoints
 	for _, o := range s.Outputs {
 		oPath := snapshot.CleanPath(o.Path)
-		if o.EntryPoint != "" {
-			ep := snapshot.CleanPath(o.EntryPoint)
-			g.Roots = append(g.Roots, ep)
-		} else {
-			for _, c := range o.Inputs {
-				cPath := snapshot.CleanPath(c.Input)
-				if strings.Contains(cPath, "main.") || strings.Contains(cPath, "polyfills.") || strings.Contains(cPath, "index.") {
-					g.Roots = append(g.Roots, cPath)
+		if entry == "" {
+			if o.EntryPoint != "" {
+				ep := snapshot.CleanPath(o.EntryPoint)
+				roots = append(roots, ep)
+			} else {
+				for _, c := range o.Inputs {
+					cPath := snapshot.CleanPath(c.Input)
+					if strings.Contains(cPath, "main.") || strings.Contains(cPath, "polyfills.") || strings.Contains(cPath, "index.") {
+						roots = append(roots, cPath)
+					}
 				}
 			}
 		}
@@ -139,17 +170,21 @@ func NewGraph(s *snapshot.BundleSnapshot) *Graph {
 		}
 	}
 
-	if len(g.Roots) == 0 {
-		for _, m := range s.Inputs {
-			p := snapshot.CleanPath(m.Path)
-			if !strings.Contains(p, "node_modules") {
-				g.Roots = append(g.Roots, p)
+	if entry == "" {
+		if len(roots) == 0 {
+			for _, m := range s.Inputs {
+				p := snapshot.CleanPath(m.Path)
+				if !strings.Contains(p, "node_modules") {
+					roots = append(roots, p)
+				}
 			}
 		}
+
+		slices.Sort(roots)
+		roots = slices.Compact(roots)
 	}
 
-	slices.Sort(g.Roots)
-	g.Roots = slices.Compact(g.Roots)
+	g.Roots = roots
 
 	// Single BFS pass to compute shortest path parent tree from all roots
 	queue := make([]string, 0, len(g.Roots)+len(s.Inputs))
@@ -172,7 +207,7 @@ func NewGraph(s *snapshot.BundleSnapshot) *Graph {
 		}
 	}
 
-	return g
+	return g, nil
 }
 
 // ShortestPath reconstructs the shortest path from roots to the target input module in O(depth) time.
@@ -307,11 +342,21 @@ func (g *Graph) TracePackage(target string, initialOnly bool, maxChains int) (*W
 				continue
 			}
 
+			if len(g.Roots) > 0 && info.entryPoint != "" && !slices.Contains(g.Roots, snapshot.CleanPath(info.entryPoint)) {
+				continue
+			}
+
 			var chainPath []string
 			if len(modPath) > 0 {
 				chainPath = modPath
+			} else if len(g.Roots) > 0 {
+				if info.entryPoint != "" && info.entryPoint != targetInput && slices.Contains(g.Roots, snapshot.CleanPath(info.entryPoint)) {
+					chainPath = []string{snapshot.CleanPath(info.entryPoint), targetInput}
+				} else {
+					continue
+				}
 			} else if info.entryPoint != "" && info.entryPoint != targetInput {
-				chainPath = []string{info.entryPoint, targetInput}
+				chainPath = []string{snapshot.CleanPath(info.entryPoint), targetInput}
 			} else {
 				chainPath = []string{targetInput}
 			}
@@ -335,11 +380,19 @@ func (g *Graph) TracePackage(target string, initialOnly bool, maxChains int) (*W
 	return result, nil
 }
 
-// TracePackage finds the import chains leading to a given package or module.
-func TracePackage(s *snapshot.BundleSnapshot, target string, initialOnly bool, maxChains int) (*WhyResult, error) {
+// TracePackageWithEntry finds import chains leading to a given package or module scoped to an entry.
+func TracePackageWithEntry(s *snapshot.BundleSnapshot, target, entry string, initialOnly bool, maxChains int) (*WhyResult, error) {
 	if s == nil {
 		return nil, fmt.Errorf("cannot trace in nil snapshot")
 	}
-	g := NewGraph(s)
+	g, err := NewGraphWithEntry(s, entry)
+	if err != nil {
+		return nil, err
+	}
 	return g.TracePackage(target, initialOnly, maxChains)
+}
+
+// TracePackage finds the import chains leading to a given package or module.
+func TracePackage(s *snapshot.BundleSnapshot, target string, initialOnly bool, maxChains int) (*WhyResult, error) {
+	return TracePackageWithEntry(s, target, "", initialOnly, maxChains)
 }
