@@ -17,6 +17,7 @@ func checkCommand() *cobra.Command {
 		stats           string
 		dist            string
 		project         string
+		entry           string
 		baselinePath    string
 		configFile      string
 		format          string
@@ -113,7 +114,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 			if err != nil {
 				return err
 			}
-			currentResult, currentSnap, err := runAnalysisWithOptions(sFile, dDir, false)
+			currentResult, currentSnap, err := runAnalysisWithEntry(sFile, dDir, entry, false)
 			if err != nil {
 				return err
 			}
@@ -178,6 +179,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
 	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundlecheck.yml configuration file")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, markdown, or github-pr")

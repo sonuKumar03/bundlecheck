@@ -1,7 +1,9 @@
 package baseline_test
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,5 +141,98 @@ func TestBaselineLoadNotFound(t *testing.T) {
 	_, err := baseline.Load(targetPath)
 	if err == nil {
 		t.Fatal("expected error on missing baseline file")
+	}
+}
+
+func TestBaselineMetadataEntry(t *testing.T) {
+	tmp := t.TempDir()
+
+	// 1. Existing / legacy baseline JSON without "entry" in metadata loads cleanly
+	legacyJSON := `{
+  "schemaVersion": "1",
+  "toolVersion": "0.4.2",
+  "command": "summary",
+  "summary": {
+    "initialJs": 1000,
+    "lazyJs": 2000,
+    "totalJs": 3000
+  },
+  "packages": [],
+  "metadata": {
+    "name": "legacy",
+    "gitRef": "main"
+  }
+}`
+	legacyPath := filepath.Join(tmp, "legacy.json")
+	if err := os.WriteFile(legacyPath, []byte(legacyJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	loadedLegacy, err := baseline.LoadSnapshot(legacyPath)
+	if err != nil {
+		t.Fatalf("load legacy baseline snapshot: %v", err)
+	}
+	if loadedLegacy.Metadata == nil {
+		t.Fatal("expected metadata not nil")
+	}
+	if loadedLegacy.Metadata.Entry != "" {
+		t.Errorf("expected empty Entry for legacy baseline, got %q", loadedLegacy.Metadata.Entry)
+	}
+
+	// 2. Saving with non-empty Entry round-trips and appears in JSON
+	res := &analysis.AnalysisResult{
+		SchemaVersion: "1",
+		ToolVersion:   "0.4.2",
+		Command:       "summary",
+		Summary: snapshot.Totals{
+			InitialJS: 1000,
+			LazyJS:    2000,
+			TotalJS:   3000,
+		},
+		Packages: []snapshot.Package{},
+	}
+	metaWithEntry := &baseline.Metadata{
+		Name:   "worker-entry",
+		GitRef: "main",
+		Entry:  "src/worker.ts",
+	}
+	withEntryPath := filepath.Join(tmp, "worker.json")
+	if err := baseline.SaveWithMetadata(withEntryPath, res, metaWithEntry); err != nil {
+		t.Fatalf("save with entry: %v", err)
+	}
+
+	dataWithEntry, err := os.ReadFile(withEntryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(dataWithEntry), `"entry": "src/worker.ts"`) {
+		t.Errorf("expected JSON to contain '\"entry\": \"src/worker.ts\"', got:\n%s", string(dataWithEntry))
+	}
+
+	loadedWorker, err := baseline.LoadSnapshot(withEntryPath)
+	if err != nil {
+		t.Fatalf("load worker baseline: %v", err)
+	}
+	if loadedWorker.Metadata == nil || loadedWorker.Metadata.Entry != "src/worker.ts" {
+		t.Errorf("expected Entry 'src/worker.ts', got %+v", loadedWorker.Metadata)
+	}
+
+	// 3. Saving with empty Entry omits "entry" from JSON
+	metaEmptyEntry := &baseline.Metadata{
+		Name:   "no-entry",
+		GitRef: "main",
+		Entry:  "",
+	}
+	emptyEntryPath := filepath.Join(tmp, "no-entry.json")
+	if err := baseline.SaveWithMetadata(emptyEntryPath, res, metaEmptyEntry); err != nil {
+		t.Fatalf("save with empty entry: %v", err)
+	}
+
+	dataEmptyEntry, err := os.ReadFile(emptyEntryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(dataEmptyEntry), `"entry"`) {
+		t.Errorf("expected JSON to omit 'entry', but found it in:\n%s", string(dataEmptyEntry))
 	}
 }

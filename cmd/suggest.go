@@ -11,6 +11,7 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/build"
 	"github.com/sonuKumar03/bundlecheck/internal/compression"
 	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func suggestCommand() *cobra.Command {
@@ -18,6 +19,7 @@ func suggestCommand() *cobra.Command {
 		stats      string
 		dist       string
 		project    string
+		entry      string
 		format     string
 		output     string
 		minSavings string
@@ -58,7 +60,12 @@ and duplicated package contributions.`,
 				return err
 			}
 
-			s, err := build.Load(sFile, dDir)
+			var s *snapshot.BundleSnapshot
+			if entry != "" {
+				s, err = build.LoadWithEntry(sFile, dDir, entry)
+			} else {
+				s, err = build.Load(sFile, dDir)
+			}
 			if err != nil {
 				return err
 			}
@@ -76,7 +83,15 @@ and duplicated package contributions.`,
 				MinSavings:     minSavingsBytes,
 				SeverityFilter: severity,
 			}
-			advisorRes := advisor.Analyze(s, advisorOpts)
+			var advisorRes *advisor.AdvisorResult
+			if entry != "" {
+				advisorRes, err = advisor.AnalyzeWithEntry(s, advisorOpts, entry)
+				if err != nil {
+					return err
+				}
+			} else {
+				advisorRes = advisor.Analyze(s, advisorOpts)
+			}
 
 			w, cleanup, err := getOutputWriter(c, output)
 			if err != nil {
@@ -99,6 +114,7 @@ and duplicated package contributions.`,
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().StringVarP(&minSavings, "min-savings", "m", "1KB", "Minimum estimated initial savings threshold (e.g. 5KB, 1024B)")

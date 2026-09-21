@@ -29,6 +29,7 @@ type Metadata struct {
 	CommitSHA string    `json:"commitSha,omitempty"`
 	BuildCmd  string    `json:"buildCmd,omitempty"`
 	Project   string    `json:"project,omitempty"`
+	Entry     string    `json:"entry,omitempty"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 

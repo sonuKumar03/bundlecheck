@@ -16,6 +16,7 @@ func measureCommand() *cobra.Command {
 		stats           string
 		dist            string
 		project         string
+		entry           string
 		baselinePath    string
 		format          string
 		output          string
@@ -49,7 +50,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 			if err != nil {
 				return err
 			}
-			currentResult, currentSnap, err := runAnalysisWithOptions(sFile, dDir, true)
+			currentResult, currentSnap, err := runAnalysisWithEntry(sFile, dDir, entry, true)
 			if err != nil {
 				return err
 			}
@@ -124,6 +125,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", baseline.DefaultBaselineFilename, "Path to baseline summary JSON")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, markdown, or github-pr")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")

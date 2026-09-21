@@ -8,6 +8,7 @@ import (
 	"github.com/sonuKumar03/bundlecheck/internal/build"
 	"github.com/sonuKumar03/bundlecheck/internal/graph"
 	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
 )
 
 func whyCommand() *cobra.Command {
@@ -15,6 +16,7 @@ func whyCommand() *cobra.Command {
 		stats       string
 		dist        string
 		project     string
+		entry       string
 		pkgName     string
 		format      string
 		output      string
@@ -50,12 +52,22 @@ Explains whether the package is pulled into initial or lazy JavaScript and shows
 				return err
 			}
 
-			s, err := build.Load(sFile, dDir)
+			var s *snapshot.BundleSnapshot
+			if entry != "" {
+				s, err = build.LoadWithEntry(sFile, dDir, entry)
+			} else {
+				s, err = build.Load(sFile, dDir)
+			}
 			if err != nil {
 				return err
 			}
 
-			whyResult, err := graph.TracePackage(s, target, initialOnly, maxChains)
+			var whyResult *graph.WhyResult
+			if entry != "" {
+				whyResult, err = graph.TracePackageWithEntry(s, target, entry, initialOnly, maxChains)
+			} else {
+				whyResult, err = graph.TracePackage(s, target, initialOnly, maxChains)
+			}
 			if err != nil {
 				return err
 			}
@@ -79,6 +91,7 @@ Explains whether the package is pulled into initial or lazy JavaScript and shows
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVar(&pkgName, "package", "", "Target package or module name to trace (alternative to positional argument)")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")

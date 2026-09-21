@@ -20,6 +20,7 @@ func baselineCommand() *cobra.Command {
 		stats    string
 		dist     string
 		project  string
+		entry    string
 		format   string
 		output   string
 		ref      string
@@ -46,6 +47,7 @@ func baselineCommand() *cobra.Command {
 			GitRef:    ref,
 			BuildCmd:  buildCmd,
 			Project:   project,
+			Entry:     entry,
 			CreatedAt: time.Now().UTC(),
 		}
 
@@ -92,7 +94,7 @@ func baselineCommand() *cobra.Command {
 				return fmt.Errorf("locate build artifacts in worktree: %w", err)
 			}
 
-			result, err = runAnalysis(sFile, dDir)
+			result, _, err = runAnalysisWithEntry(sFile, dDir, entry, true)
 			if err != nil {
 				return fmt.Errorf("analyze worktree build: %w", err)
 			}
@@ -103,7 +105,7 @@ func baselineCommand() *cobra.Command {
 				return err
 			}
 
-			result, err = runAnalysis(sFile, dDir)
+			result, _, err = runAnalysisWithEntry(sFile, dDir, entry, true)
 			if err != nil {
 				return err
 			}
@@ -158,6 +160,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
 	c.Flags().StringVarP(&output, "output", "o", "", "Custom path to save baseline JSON file")
 	c.Flags().StringVarP(&ref, "ref", "r", "", "Git branch, tag, or commit ref to build in an isolated worktree")
@@ -238,10 +241,12 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 			}
 
 			targetRef := ""
+			targetEntry := ""
 			customBuild := buildCmd
 			targetProject := project
 			if snapshotFile.Metadata != nil {
 				targetRef = snapshotFile.Metadata.GitRef
+				targetEntry = snapshotFile.Metadata.Entry
 				if customBuild == "" {
 					customBuild = snapshotFile.Metadata.BuildCmd
 				}
@@ -268,8 +273,10 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 			}
 			defer cleanup()
 
-			if err := worktree.RunBuild(wtDir, customBuild); err != nil {
-				return err
+			if !noBuild {
+				if err := worktree.RunBuild(wtDir, customBuild); err != nil {
+					return err
+				}
 			}
 
 			sFile, dDir, err := resolveBuildArtifactsInDir(wtDir, stats, dist, targetProject)
@@ -277,7 +284,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 				return fmt.Errorf("locate build artifacts in worktree: %w", err)
 			}
 
-			result, err := runAnalysis(sFile, dDir)
+			result, _, err := runAnalysisWithEntry(sFile, dDir, targetEntry, true)
 			if err != nil {
 				return fmt.Errorf("analyze worktree build: %w", err)
 			}
@@ -288,6 +295,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 				CommitSHA: commitSHA,
 				BuildCmd:  customBuild,
 				Project:   targetProject,
+				Entry:     targetEntry,
 				CreatedAt: time.Now().UTC(),
 			}
 
@@ -301,6 +309,10 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 		},
 	}
 	rebuildCmd.Flags().StringVar(&buildCmd, "build-cmd", "", "Custom build command override")
+	rebuildCmd.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
+	rebuildCmd.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
+	rebuildCmd.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	rebuildCmd.Flags().BoolVar(&noBuild, "no-build", false, "Skip executing build command in worktree (use pre-existing artifacts)")
 
 	// Subcommand: show
 	showCmd := &cobra.Command{

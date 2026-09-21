@@ -21,6 +21,7 @@ func summaryCommand() *cobra.Command {
 		stats       string
 		dist        string
 		project     string
+		entry       string
 		format      string
 		output      string
 		filter      string
@@ -52,9 +53,16 @@ func summaryCommand() *cobra.Command {
 			}
 
 			needCompression := format == "json" || showGzip
-			result, snap, err := runAnalysisWithOptions(sFile, dDir, needCompression)
+			result, snap, err := runAnalysisWithEntry(sFile, dDir, entry, needCompression)
 			if err != nil {
 				return err
+			}
+
+			getAdvisorResult := func() (*advisor.AdvisorResult, error) {
+				if entry != "" {
+					return advisor.AnalyzeWithEntry(snap, advisor.AdvisorOptions{}, entry)
+				}
+				return advisor.Analyze(snap, advisor.AdvisorOptions{}), nil
 			}
 
 			w, cleanup, err := getOutputWriter(c, output)
@@ -67,7 +75,10 @@ func summaryCommand() *cobra.Command {
 
 			if format == "json" {
 				if showSuggest {
-					advisorRes := advisor.Analyze(snap, advisor.AdvisorOptions{})
+					advisorRes, err := getAdvisorResult()
+					if err != nil {
+						return err
+					}
 					combined := struct {
 						*analysis.AnalysisResult
 						Suggestions []advisor.Suggestion `json:"suggestions"`
@@ -93,7 +104,10 @@ func summaryCommand() *cobra.Command {
 				}
 				if showSuggest {
 					fmt.Fprintln(w)
-					advisorRes := advisor.Analyze(snap, advisor.AdvisorOptions{})
+					advisorRes, err := getAdvisorResult()
+					if err != nil {
+						return err
+					}
 					return report.SuggestMarkdown(w, advisorRes, showGzip)
 				}
 				return nil
@@ -105,7 +119,10 @@ func summaryCommand() *cobra.Command {
 
 			if showSuggest {
 				fmt.Fprintln(w)
-				advisorRes := advisor.Analyze(snap, advisor.AdvisorOptions{})
+				advisorRes, err := getAdvisorResult()
+				if err != nil {
+					return err
+				}
 				return report.SuggestText(w, advisorRes, showGzip)
 			}
 
@@ -116,6 +133,7 @@ func summaryCommand() *cobra.Command {
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of top packages to display in text mode")
@@ -141,7 +159,19 @@ func runAnalysis(stats, dist string) (*analysis.AnalysisResult, error) {
 }
 
 func runAnalysisWithOptions(stats, dist string, withCompression bool) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
-	s, err := build.Load(stats, dist)
+	return runAnalysisWithEntry(stats, dist, "", withCompression)
+}
+
+func runAnalysisWithEntry(stats, dist, entry string, withCompression bool) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
+	var (
+		s   *snapshot.BundleSnapshot
+		err error
+	)
+	if entry != "" {
+		s, err = build.LoadWithEntry(stats, dist, entry)
+	} else {
+		s, err = build.Load(stats, dist)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

@@ -555,6 +555,3 @@ func TestAnalyzeWithEntry_DistinctImporters(t *testing.T) {
 		t.Fatal("expected suggestions from default Analyze")
 	}
 }
-
-
-
