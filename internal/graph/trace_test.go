@@ -146,8 +146,16 @@ func TestIndexedTraceHandlesCyclesAndMultipleEntries(t *testing.T) {
 			t.Fatalf("unexpected trace totals or chains: %+v", result)
 		}
 		for _, chain := range result.Chains {
-			if len(chain.Path) != 2 || chain.Path[0] != "src/z.ts" || chain.Path[1] != "node_modules/pkg/index.js" {
-				t.Fatalf("expected shortest path from src/z.ts: %+v", chain)
+			if chain.Initial {
+				wantPath := []string{"src/a.ts", "src/cycle.ts", "node_modules/pkg/index.js"}
+				if !reflect.DeepEqual(chain.Path, wantPath) {
+					t.Fatalf("expected initial chain from src/a.ts: got %+v, want %+v", chain.Path, wantPath)
+				}
+			} else {
+				wantPath := []string{"src/z.ts", "node_modules/pkg/index.js"}
+				if !reflect.DeepEqual(chain.Path, wantPath) {
+					t.Fatalf("expected lazy chain from src/z.ts: got %+v, want %+v", chain.Path, wantPath)
+				}
 			}
 		}
 	}
@@ -391,3 +399,79 @@ func TestNewGraphWithEntry_Cases(t *testing.T) {
 		}
 	})
 }
+
+func TestGraph_NoNodeModulesRoots_AndApplicationIngress(t *testing.T) {
+	snap := &snapshot.BundleSnapshot{
+		SchemaVersion: "1",
+		Inputs: []snapshot.Module{
+			{Path: "apps/portal/src/main.ts", Bytes: 100, Imports: []snapshot.Import{
+				{Path: "apps/portal/src/app/app.module.ts"},
+			}},
+			{Path: "apps/portal/src/app/app.module.ts", Bytes: 200, Imports: []snapshot.Import{
+				{Path: "libs/timezone-scheduler/src/index.ts"},
+			}},
+			{Path: "libs/timezone-scheduler/src/index.ts", Bytes: 150, Imports: []snapshot.Import{
+				{Path: "node_modules/moment-timezone/index.js"},
+			}},
+			{Path: "node_modules/moment-timezone/index.js", Bytes: 500, Imports: []snapshot.Import{
+				{Path: "node_modules/moment-timezone/data/packed/latest.json"},
+			}},
+			{Path: "node_modules/moment-timezone/data/packed/latest.json", Bytes: 10000},
+		},
+		Outputs: []snapshot.BundleOutput{
+			{
+				Path:       "main.js",
+				Initial:    true,
+				EntryPoint: "apps/portal/src/main.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "apps/portal/src/main.ts", Bytes: 100},
+				},
+			},
+			{
+				Path:    "chunk-initial-vendor.js",
+				Initial: true,
+				Inputs: []snapshot.Contribution{
+					{Input: "node_modules/moment-timezone/index.js", Bytes: 500},
+					{Input: "node_modules/moment-timezone/data/packed/latest.json", Bytes: 10000},
+					{Input: "apps/portal/src/app/app.module.ts", Bytes: 200},
+					{Input: "libs/timezone-scheduler/src/index.ts", Bytes: 150},
+				},
+			},
+			{
+				Path:       "chunk-lazy.js",
+				Initial:    false,
+				EntryPoint: "libs/timezone-scheduler/src/index.ts",
+				Inputs: []snapshot.Contribution{
+					{Input: "libs/timezone-scheduler/src/index.ts", Bytes: 50},
+				},
+			},
+		},
+	}
+
+	g := graph.NewGraph(snap)
+	if g == nil {
+		t.Fatalf("expected non-nil graph")
+	}
+
+	// Verify roots do not contain any node_modules
+	for _, r := range g.Roots {
+		if strings.Contains(r, "node_modules") {
+			t.Errorf("expected no node_modules in roots, got: %s", r)
+		}
+	}
+
+	// Trace moment-timezone
+	res, err := g.TracePackage("moment-timezone", true, 1)
+	if err != nil {
+		t.Fatalf("TracePackage failed: %v", err)
+	}
+	if len(res.Chains) == 0 {
+		t.Fatalf("expected at least 1 chain, got 0")
+	}
+
+	chain := res.Chains[0].Path
+	if len(chain) == 0 || chain[0] != "apps/portal/src/main.ts" {
+		t.Errorf("expected chain to start with apps/portal/src/main.ts, got: %v", chain)
+	}
+}
+

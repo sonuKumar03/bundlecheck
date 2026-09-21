@@ -40,15 +40,18 @@ type targetOutputInfo struct {
 
 // Graph holds the pre-indexed module dependency graph and traversal state for fast tracing.
 type Graph struct {
-	Snapshot       *snapshot.BundleSnapshot
-	ModuleMap      map[string]snapshot.Module
-	ModuleEdges    map[string][]string
-	Roots          []string
-	ParentMap      map[string]string // node -> predecessor in shortest path from roots
-	Visited        map[string]bool
-	PackageInputs  map[string][]string // lowercase pkgName -> slice of input paths
-	PackageCanon   map[string]string   // lowercase pkgName -> canonical pkgName
-	InputToOutputs map[string][]targetOutputInfo
+	Snapshot         *snapshot.BundleSnapshot
+	ModuleMap        map[string]snapshot.Module
+	ModuleEdges      map[string][]string
+	Roots            []string
+	InitialRoots     []string
+	ParentMap        map[string]string // node -> predecessor in shortest path from roots
+	Visited          map[string]bool
+	InitialParentMap map[string]string // node -> predecessor in shortest path from initial roots
+	InitialVisited   map[string]bool
+	PackageInputs    map[string][]string // lowercase pkgName -> slice of input paths
+	PackageCanon     map[string]string   // lowercase pkgName -> canonical pkgName
+	InputToOutputs   map[string][]targetOutputInfo
 }
 
 // NewGraph builds an indexed module graph and computes shortest paths from roots in a single BFS pass.
@@ -70,6 +73,7 @@ func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error)
 
 	entry = strings.TrimSpace(entry)
 	var roots []string
+	var initialRoots []string
 	if entry != "" {
 		matched, err := artifact.MatchEntryOutputs(s.Outputs, entry)
 		if err != nil {
@@ -79,21 +83,31 @@ func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error)
 			if strings.TrimSpace(o.EntryPoint) == "" {
 				return nil, fmt.Errorf("matched output %q has no source entryPoint; specify source entry path", o.Path)
 			}
-			roots = append(roots, snapshot.CleanPath(o.EntryPoint))
+			ep := snapshot.CleanPath(o.EntryPoint)
+			if !strings.Contains(ep, "node_modules") {
+				roots = append(roots, ep)
+				if o.Initial {
+					initialRoots = append(initialRoots, ep)
+				}
+			}
 		}
 		slices.Sort(roots)
 		roots = slices.Compact(roots)
+		slices.Sort(initialRoots)
+		initialRoots = slices.Compact(initialRoots)
 	}
 
 	g := &Graph{
-		Snapshot:       s,
-		ModuleMap:      make(map[string]snapshot.Module, len(s.Inputs)),
-		ModuleEdges:    make(map[string][]string, len(s.Inputs)),
-		ParentMap:      make(map[string]string, len(s.Inputs)),
-		Visited:        make(map[string]bool, len(s.Inputs)),
-		PackageInputs:  make(map[string][]string),
-		PackageCanon:   make(map[string]string),
-		InputToOutputs: make(map[string][]targetOutputInfo, len(s.Inputs)),
+		Snapshot:         s,
+		ModuleMap:        make(map[string]snapshot.Module, len(s.Inputs)),
+		ModuleEdges:      make(map[string][]string, len(s.Inputs)),
+		ParentMap:        make(map[string]string, len(s.Inputs)),
+		Visited:          make(map[string]bool, len(s.Inputs)),
+		InitialParentMap: make(map[string]string, len(s.Inputs)),
+		InitialVisited:   make(map[string]bool, len(s.Inputs)),
+		PackageInputs:    make(map[string][]string),
+		PackageCanon:     make(map[string]string),
+		InputToOutputs:   make(map[string][]targetOutputInfo, len(s.Inputs)),
 	}
 
 	seenPkgInput := make(map[string]bool)
@@ -136,12 +150,23 @@ func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error)
 		if entry == "" {
 			if o.EntryPoint != "" {
 				ep := snapshot.CleanPath(o.EntryPoint)
-				roots = append(roots, ep)
+				if !strings.Contains(ep, "node_modules") {
+					roots = append(roots, ep)
+					if o.Initial {
+						initialRoots = append(initialRoots, ep)
+					}
+				}
 			} else {
 				for _, c := range o.Inputs {
 					cPath := snapshot.CleanPath(c.Input)
-					if strings.Contains(cPath, "main.") || strings.Contains(cPath, "polyfills.") || strings.Contains(cPath, "index.") {
+					if strings.Contains(cPath, "node_modules") {
+						continue
+					}
+					if strings.Contains(cPath, "main.") || strings.Contains(cPath, "polyfills.") || strings.HasPrefix(cPath, "src/index.") || (strings.HasPrefix(cPath, "apps/") && strings.Contains(cPath, "index.")) {
 						roots = append(roots, cPath)
+						if o.Initial {
+							initialRoots = append(initialRoots, cPath)
+						}
 					}
 				}
 			}
@@ -182,9 +207,16 @@ func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error)
 
 		slices.Sort(roots)
 		roots = slices.Compact(roots)
+
+		if len(initialRoots) == 0 {
+			initialRoots = append(initialRoots, roots...)
+		}
+		slices.Sort(initialRoots)
+		initialRoots = slices.Compact(initialRoots)
 	}
 
 	g.Roots = roots
+	g.InitialRoots = initialRoots
 
 	// Single BFS pass to compute shortest path parent tree from all roots
 	queue := make([]string, 0, len(g.Roots)+len(s.Inputs))
@@ -207,6 +239,29 @@ func NewGraphWithEntry(s *snapshot.BundleSnapshot, entry string) (*Graph, error)
 		}
 	}
 
+	// BFS pass to compute shortest path parent tree from initial roots
+	if len(g.InitialRoots) > 0 {
+		initQueue := make([]string, 0, len(g.InitialRoots)+len(s.Inputs))
+		for _, r := range g.InitialRoots {
+			g.InitialVisited[r] = true
+			g.InitialParentMap[r] = ""
+			initQueue = append(initQueue, r)
+		}
+
+		for len(initQueue) > 0 {
+			curr := initQueue[0]
+			initQueue = initQueue[1:]
+
+			for _, neighbor := range g.ModuleEdges[curr] {
+				if !g.InitialVisited[neighbor] {
+					g.InitialVisited[neighbor] = true
+					g.InitialParentMap[neighbor] = curr
+					initQueue = append(initQueue, neighbor)
+				}
+			}
+		}
+	}
+
 	return g, nil
 }
 
@@ -220,6 +275,26 @@ func (g *Graph) ShortestPath(targetInput string) []string {
 	curr := targetInput
 	for {
 		parent, exists := g.ParentMap[curr]
+		if !exists || parent == "" {
+			break
+		}
+		path = append(path, parent)
+		curr = parent
+	}
+	slices.Reverse(path)
+	return path
+}
+
+// ShortestInitialPath reconstructs the shortest path from initial roots to the target input module in O(depth) time.
+func (g *Graph) ShortestInitialPath(targetInput string) []string {
+	if !g.InitialVisited[targetInput] {
+		return nil
+	}
+
+	path := []string{targetInput}
+	curr := targetInput
+	for {
+		parent, exists := g.InitialParentMap[curr]
 		if !exists || parent == "" {
 			break
 		}
@@ -326,6 +401,10 @@ func (g *Graph) TracePackage(target string, initialOnly bool, maxChains int) (*W
 
 	for _, targetInput := range sortedTargetInputs {
 		modPath := g.ShortestPath(targetInput)
+		var initModPath []string
+		if len(g.InitialRoots) > 0 {
+			initModPath = g.ShortestInitialPath(targetInput)
+		}
 
 		outputInfos := g.InputToOutputs[targetInput]
 		if len(outputInfos) == 0 {
@@ -347,7 +426,9 @@ func (g *Graph) TracePackage(target string, initialOnly bool, maxChains int) (*W
 			}
 
 			var chainPath []string
-			if len(modPath) > 0 {
+			if info.initial && len(initModPath) > 0 {
+				chainPath = initModPath
+			} else if len(modPath) > 0 {
 				chainPath = modPath
 			} else if len(g.Roots) > 0 {
 				if info.entryPoint != "" && info.entryPoint != targetInput && slices.Contains(g.Roots, snapshot.CleanPath(info.entryPoint)) {
