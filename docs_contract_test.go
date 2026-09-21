@@ -178,12 +178,12 @@ func TestDocumentationContract_CLICommandsAndFlags(t *testing.T) {
 
 	// Common documented commands and their flags to assert against the CLI tree
 	expectedSpecs := map[string][]string{
-		"summary":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--gzip", "--suggest", "--format", "-f", "--output", "-o", "--top", "--filter"},
-		"check":     {"--stats", "-s", "--dist", "-d", "--project", "-p", "--max-initial", "--max-lazy", "--max-total", "--baseline", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o", "--config", "-c"},
-		"measure":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--baseline", "-b", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o"},
+		"summary":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--gzip", "--suggest", "--format", "-f", "--output", "-o", "--top", "--filter"},
+		"check":     {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--max-initial", "--max-lazy", "--max-total", "--baseline", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o", "--config", "-c"},
+		"measure":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--baseline", "-b", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o"},
 		"baseline":  {},
-		"why":       {"--stats", "-s", "--dist", "-d", "--project", "-p", "--format", "-f", "--output", "-o"},
-		"suggest":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--gzip", "--format", "-f", "--output", "-o"},
+		"why":       {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--format", "-f", "--output", "-o"},
+		"suggest":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--gzip", "--format", "-f", "--output", "-o"},
 		"inspect":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--format", "-f", "--output", "-o"},
 		"compare":   {"--format", "-f", "--output", "-o"},
 		"init":      {"--project", "-p", "--headroom", "--from-angular-budgets", "--write"},
@@ -201,6 +201,86 @@ func TestDocumentationContract_CLICommandsAndFlags(t *testing.T) {
 			if !flagsMap[flag] {
 				t.Errorf("command %q missing expected documented flag %q", cmdName, flag)
 			}
+		}
+	}
+}
+
+// TestDocumentationContract_EntryDocumentation verifies that --entry / -e, the Action input 'entry',
+// source and glob examples, and the TotalJS whole-browser invariant are documented across
+// README.md, npm/bundlecheck/README.md, docs/index.html, and action.yml.
+func TestDocumentationContract_EntryDocumentation(t *testing.T) {
+	actionData, err := os.ReadFile("action.yml")
+	if err != nil {
+		t.Fatalf("failed to read action.yml: %v", err)
+	}
+	var actionDef struct {
+		Inputs map[string]struct {
+			Description string `yaml:"description"`
+			Required    bool   `yaml:"required"`
+			Default     string `yaml:"default"`
+		} `yaml:"inputs"`
+	}
+	if err := yaml.Unmarshal(actionData, &actionDef); err != nil {
+		t.Fatalf("failed to parse action.yml: %v", err)
+	}
+	entryInput, ok := actionDef.Inputs["entry"]
+	if !ok {
+		t.Errorf("action.yml missing input 'entry'")
+	} else {
+		if entryInput.Required {
+			t.Errorf("action.yml input 'entry' should not be required")
+		}
+		if entryInput.Default != "" {
+			t.Errorf("action.yml input 'entry' default should be empty string, got %q", entryInput.Default)
+		}
+		if !strings.Contains(strings.ToLower(entryInput.Description), "entrypoint") {
+			t.Errorf("action.yml input 'entry' description should mention 'entrypoint', got %q", entryInput.Description)
+		}
+	}
+
+	docFiles := []string{
+		"README.md",
+		filepath.Join("npm", "bundlecheck", "README.md"),
+		filepath.Join("docs", "index.html"),
+	}
+
+	for _, docFile := range docFiles {
+		contentBytes, err := os.ReadFile(docFile)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", docFile, err)
+		}
+		content := string(contentBytes)
+
+		// 1. Must document --entry and -e
+		if !strings.Contains(content, "--entry") {
+			t.Errorf("%s missing '--entry' documentation", docFile)
+		}
+		if !strings.Contains(content, "-e") {
+			t.Errorf("%s missing '-e' documentation", docFile)
+		}
+
+		// 2. Must document GitHub Action 'entry' input
+		if !strings.Contains(content, "entry") || (!strings.Contains(content, "entry:") && !strings.Contains(content, "`entry`")) {
+			t.Errorf("%s missing GitHub Action 'entry' input documentation", docFile)
+		}
+
+		// 3. Must document both source path and emitted chunk glob examples for entry
+		hasSource := strings.Contains(content, "src/main.ts")
+		hasGlob := strings.Contains(content, "main-*.js") || strings.Contains(content, "*.js") || strings.Contains(content, "*worker.js") || strings.Contains(content, "worker.js")
+		if !hasSource {
+			t.Errorf("%s missing source path entry example (e.g. src/main.ts)", docFile)
+		}
+		if !hasGlob {
+			t.Errorf("%s missing emitted chunk glob entry example (e.g. main-*.js)", docFile)
+		}
+
+		// 4. Invariant: --entry scopes initial/lazy reachability and root traces, while TotalJS reflects the whole browser build
+		lower := strings.ToLower(content)
+		hasTotalInvariant := (strings.Contains(lower, "totaljs") || strings.Contains(lower, "total js")) &&
+			(strings.Contains(lower, "whole") || strings.Contains(lower, "entire") || strings.Contains(lower, "all"))
+		hasReachability := strings.Contains(lower, "reachab") || strings.Contains(lower, "initial") || strings.Contains(lower, "trace")
+		if !hasTotalInvariant || !hasReachability {
+			t.Errorf("%s missing explanation of invariant: --entry scopes initial/lazy reachability while TotalJS reflects whole browser build", docFile)
 		}
 	}
 }

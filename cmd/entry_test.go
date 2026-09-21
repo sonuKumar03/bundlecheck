@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -460,6 +461,27 @@ func TestBaselineSaveAndCreate_PersistsEntry(t *testing.T) {
 
 func TestBaselineRebuild_ReusesEntry(t *testing.T) {
 	statsFile, distDir := setupTwoEntryFixture(t)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpWd := t.TempDir()
+	for _, cmdArgs := range [][]string{
+		{"git", "init"},
+		{"git", "config", "user.email", "test@test.com"},
+		{"git", "config", "user.name", "test"},
+		{"git", "commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+		cmd.Dir = tmpWd
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("git setup in %s failed: %v", tmpWd, err)
+		}
+	}
+	if err := os.Chdir(tmpWd); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origWd) }()
 	defer func() {
 		_ = baseline.Delete(baseline.DefaultDir, "rebuild-target")
 	}()
@@ -483,7 +505,7 @@ func TestBaselineRebuild_ReusesEntry(t *testing.T) {
 		Entry:     "src/worker.ts",
 		CreatedAt: time.Now().UTC(),
 	}
-	_, err := baseline.SaveNamed(baseline.DefaultDir, "rebuild-target", res, meta)
+	_, err = baseline.SaveNamed(baseline.DefaultDir, "rebuild-target", res, meta)
 	if err != nil {
 		t.Fatalf("save initial baseline: %v", err)
 	}

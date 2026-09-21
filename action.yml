@@ -22,6 +22,10 @@ inputs:
     description: 'Project name for multi-project workspaces when auto-detecting'
     required: false
     default: ''
+  entry:
+    description: 'Scope bundlecheck analysis and budget enforcement to a specific entrypoint (e.g. src/main.ts)'
+    required: false
+    default: ''
   format:
     description: 'Report format: markdown, json, or text'
     required: false
@@ -130,6 +134,7 @@ runs:
         INPUT_STATS: ${{ inputs.stats }}
         INPUT_DIST: ${{ inputs.dist }}
         INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_ENTRY: ${{ inputs.entry }}
         INPUT_BASELINE: ${{ inputs.baseline }}
         INPUT_BASE_REF: ${{ inputs.base-ref }}
         INPUT_BUILD_CMD: ${{ inputs.build-cmd }}
@@ -152,6 +157,7 @@ runs:
         if [ -n "$INPUT_STATS" ]; then ARGS+=("-s" "$INPUT_STATS"); fi
         if [ -n "$INPUT_DIST" ]; then ARGS+=("-d" "$INPUT_DIST"); fi
         if [ -n "$INPUT_PROJECT" ]; then ARGS+=("-p" "$INPUT_PROJECT"); fi
+        if [ -n "$INPUT_ENTRY" ]; then ARGS+=("--entry" "$INPUT_ENTRY"); fi
 
         BASELINE_FILE="$INPUT_BASELINE"
         COMPARISON_STATUS="unavailable"

@@ -123,6 +123,31 @@ jobs:
             exit 1
           fi
 
+      - name: Test Action - Success Case with Entry (Fixture Minimal)
+        id: test-entry
+        uses: ./
+        with:
+          working-directory: testdata/minimal
+          stats: stats.json
+          dist: browser
+          entry: 'src/main.ts'
+          output: entry-report.md
+          json-output: entry-audit.json
+          max-initial: 5MB
+
+      - name: Assert Action Outputs & Report Files with Entry
+        run: |
+          test -f testdata/minimal/entry-report.md || (echo "Missing entry report file" && exit 1)
+          test -f testdata/minimal/entry-audit.json || (echo "Missing entry json audit file" && exit 1)
+          if [ "${{ steps.test-entry.outputs.initial-bytes }}" -le 0 ]; then
+            echo "Expected positive initial-bytes output, got: ${{ steps.test-entry.outputs.initial-bytes }}"
+            exit 1
+          fi
+          if [ "${{ steps.test-entry.outputs.total-bytes }}" -le 0 ]; then
+            echo "Expected positive total-bytes output, got: ${{ steps.test-entry.outputs.total-bytes }}"
+            exit 1
+          fi
+
       - name: Test Action - Invalid Input Failure Case
         id: test-invalid-input
         continue-on-error: true

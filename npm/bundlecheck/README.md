@@ -129,6 +129,10 @@ ng build --configuration production --stats-json
 # View initial JS vs lazy breakdown & top npm contributors
 bundlecheck summary dist/my-app/stats.json
 
+# Scope analysis to a specific entrypoint by source file or chunk glob
+bundlecheck summary dist/my-app/stats.json --entry src/main.ts
+bundlecheck summary dist/my-app/stats.json -e "main-*.js"
+
 # Inspect the modules and packages inside one emitted chunk
 bundlecheck inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
 
@@ -153,6 +157,10 @@ Calculates accurate initial vs. lazy JavaScript byte totals and ranks all contri
 # Basic summary
 bundlecheck summary dist/my-app/stats.json
 
+# Scope summary to a specific entrypoint (source path or emitted chunk glob)
+bundlecheck summary dist/my-app/stats.json --entry src/main.ts
+bundlecheck summary dist/my-app/stats.json -e "main-*.js"
+
 # Include estimated Gzip wire transfer sizes
 bundlecheck summary dist/my-app/stats.json --gzip
 
@@ -162,6 +170,8 @@ bundlecheck summary dist/my-app/stats.json --top 15 --filter @angular
 # Export machine-readable JSON (ideal for scripts & agent loops)
 bundlecheck summary dist/my-app/stats.json --format json -o summary.json
 ```
+
+> **Entrypoint Scoping & TotalJS Invariant:** Using `--entry` / `-e` with either a source path (e.g. `src/main.ts`) or an emitted chunk glob (e.g. `main-*.js`, `worker.js`) scopes initial versus lazy reachability, package attribution, and root traces strictly to the selected entrypoint. The overall `TotalJS` metric consistently reflects the whole browser build across all chunks.
 
 ---
 
@@ -181,6 +191,10 @@ Traces the exact import graph path from entrypoints (`src/main.ts`) down to any 
 ```bash
 # Find why lodash-es is inside your bundle
 bundlecheck why dist/my-app/stats.json lodash-es
+
+# Trace import path starting from a specific entrypoint
+bundlecheck why dist/my-app/stats.json lodash-es --entry src/main.ts
+bundlecheck why dist/my-app/stats.json lodash-es -e "main-*.js"
 ```
 
 **Example ASCII Tree Output:**
@@ -202,6 +216,7 @@ Scans the bundle against optimization heuristics to suggest concrete refactoring
 
 ```bash
 bundlecheck suggest dist/my-app/stats.json
+bundlecheck suggest dist/my-app/stats.json --entry src/main.ts
 ```
 
 **Built-in Optimization Rules:**
@@ -217,6 +232,7 @@ Capture, manage, switch, and compare baseline bundle metrics across git branches
 ```bash
 # ─── 1. CAPTURE BASELINE FROM CURRENT BUILD OR GIT BRANCH ───
 bundlecheck baseline save                                     # Save current build as active baseline
+bundlecheck baseline save --entry src/main.ts                 # Save baseline scoped to an entrypoint
 bundlecheck baseline save --ref release/v2.0 --name rel-v2   # Build branch in isolated worktree
 
 # ─── 2. LIST & SWITCH SAVED BASELINES ───
@@ -228,6 +244,7 @@ bundlecheck baseline rebuild rel-v2                           # Re-runs worktree
 
 # ─── 4. CONTINUOUS LIVE DELTA MEASUREMENT ───
 bundlecheck measure                                           # Measure current build against active baseline
+bundlecheck measure --entry src/main.ts                       # Measure scoped to entrypoint
 bundlecheck measure -b rel-v2 --max-initial-delta 0B          # Fail in CI if initial bundle grows
 ```
 
@@ -257,6 +274,11 @@ Strict CI budget gate with custom pass/fail exit codes.
 ```bash
 # Enforce initial and total JS size limits
 bundlecheck check dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
+
+# Scope size budgets to a specific entrypoint by source file or chunk glob
+bundlecheck check dist/my-app/stats.json --entry src/main.ts --max-initial 250kb
+bundlecheck check dist/my-app/stats.json -e "main-*.js" --max-initial 250kb
+bundlecheck check dist/my-app/stats.json -e "worker.js" --max-initial 100kb
 
 # Enforce regression limits against a baseline snapshot
 bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-delta 0kb
@@ -354,6 +376,7 @@ jobs:
         uses: sonuKumar03/bundlecheck@v0.4.2
         with:
           stats: dist/my-app/stats.json
+          entry: src/main.ts
           max-initial: '250kb'
           max-total: '1.2mb'
           max-initial-delta: '0B'
@@ -367,6 +390,7 @@ jobs:
 | `stats` | *(auto)* | Path to `stats.json` (auto-detected if omitted). |
 | `dist` | *(auto)* | Path to emitted `browser` dist with `index.html` (auto-detected if omitted). |
 | `project` | `""` | Project name for multi-project or Nx workspaces. |
+| `entry` | `""` | Scope bundlecheck analysis and budget enforcement to a specific entrypoint (e.g. `src/main.ts` or `main-*.js`). |
 | `base-ref` | `github.base_ref` | Git ref for baseline comparison in PRs. Automatically fetched in shallow checkouts (`fetch-depth: 1` or `0`). |
 | `build-cmd` | `"npm run build"` | Command used to build `base-ref` inside an isolated temporary git worktree. |
 | `max-initial-delta` | `""` | Maximum allowed increase in initial JS vs baseline (e.g. `0B`, `10KB`). |

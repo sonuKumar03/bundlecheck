@@ -460,13 +460,16 @@
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-6 h-6 rounded-md bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs">1</span>
-                <h3 class="text-base font-mono font-bold text-indigo-300">bundlecheck summary &lt;stats.json&gt;</h3>
+                <h3 class="text-base font-mono font-bold text-indigo-300">bundlecheck summary &lt;stats.json&gt; [--entry &lt;source-or-glob&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">Breakdown</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Parses initial entry points, lazy route chunks, and calculates total NPM package contributions sorted by byte weight.
+              Parses initial entry points, lazy route chunks, and calculates total NPM package contributions sorted by byte weight. Use <code>--entry</code> / <code>-e</code> (e.g. source path <code>src/main.ts</code> or emitted chunk glob <code>main-*.js</code> / <code>worker.js</code>) to scope analysis to a specific entrypoint.
+            </p>
+            <p class="text-xs text-indigo-300/90 font-mono bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-900/50">
+              💡 <strong>Entrypoint Scoping &amp; TotalJS Invariant:</strong> <code>--entry</code> / <code>-e</code> scopes initial versus lazy reachability, package attribution, and root traces strictly to the selected entrypoint. The overall <code>TotalJS</code> metric consistently reflects the whole browser build across all chunks.
             </p>
 
             <!-- Inline Terminal Output -->
@@ -484,6 +487,9 @@
               <div>3. @angular/common     <span class="text-amber-300">31.50 KB</span>  (12.6% of initial)</div>
               <div>4. lodash-es            <span class="text-amber-300">18.40 KB</span>  (7.4% of initial)</div>
               <div>5. tslib                <span class="text-amber-300">6.20 KB</span>   (2.5% of initial)</div>
+              <div class="text-slate-400 pt-2 select-none"># Scoped to entrypoint:</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck summary</span> dist/my-app/stats.json --entry src/main.ts</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck summary</span> dist/my-app/stats.json -e "main-*.js"</div>
             </div>
           </div>
 
@@ -518,18 +524,18 @@
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-6 h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono font-bold text-xs">3</span>
-                <h3 class="text-base font-mono font-bold text-sky-300">bundlecheck why &lt;stats.json&gt; &lt;package-name&gt;</h3>
+                <h3 class="text-base font-mono font-bold text-sky-300">bundlecheck why &lt;stats.json&gt; &lt;package-name&gt; [--entry &lt;entry&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/30">Trace Chain</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Traces the exact import graph path showing why a particular npm package was bundled, which application file pulled it in, and which chunk it landed inside.
+              Traces the exact import graph path showing why a particular npm package was bundled, which application file pulled it in, and which chunk it landed inside. Use <code>--entry</code> / <code>-e</code> (e.g. <code>src/main.ts</code> or <code>main-*.js</code>) to scope traces to a specific root entrypoint.
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck why</span> dist/my-app/stats.json lodash-es</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck why</span> dist/my-app/stats.json lodash-es --entry src/main.ts</div>
               <div class="text-white font-bold pt-1">IMPORT CHAIN TRACE: 'lodash-es' (18.40 KB)</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
               <div class="text-slate-300">src/main.ts</div>
@@ -652,18 +658,18 @@ Saved Baselines (.bundlecheck/baselines/):<br>
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">8</span>
-                <h3 class="text-base font-mono font-bold text-rose-300">bundlecheck check &lt;stats.json&gt; [flags]</h3>
+                <h3 class="text-base font-mono font-bold text-rose-300">bundlecheck check &lt;stats.json&gt; [--entry &lt;entry&gt;] [flags]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30">CI Gate</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Enforces strict size budgets. Returns exit code 0 on pass, or exit code 1 with budget violation details to block oversized pull requests.
+              Enforces strict size budgets. Returns exit code 0 on pass, or exit code 1 with budget violation details to block oversized pull requests. Budgets can be scoped to specific entrypoints via <code>--entry</code> / <code>-e</code> (e.g. <code>src/main.ts</code> or <code>worker.js</code>).
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --max-initial=300KB</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --entry src/main.ts --max-initial=300KB</div>
               <div class="text-emerald-300 font-bold">✓ BUDGET CHECK PASSED: Initial JS is 248.50 KB (budget: 300.00 KB)</div>
               <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundlecheck check</span> dist/my-app/stats.json --max-initial=200KB</div>
               <div class="text-rose-400 font-bold">✗ BUDGET CHECK FAILED: Initial JS is 248.50 KB (budget: 200.00 KB, exceeded by +48.50 KB)</div>
@@ -782,7 +788,7 @@ rules:
           <span>GitHub Actions Integration</span>
         </h2>
         <p class="text-sm text-slate-300">
-          Drop bundlecheck directly into your GitHub Actions workflow to post automated PR comments with delta summaries and fail oversized changes:
+          Drop bundlecheck directly into your GitHub Actions workflow to post automated PR comments with delta summaries and fail oversized changes. Use the <code>entry</code> input to scope analysis and budget enforcement to a specific entrypoint (e.g. <code>src/main.ts</code> or <code>main-*.js</code>):
         </p>
 
         <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs leading-relaxed overflow-x-auto text-slate-200">
@@ -805,6 +811,7 @@ jobs:
         uses: sonuKumar03/bundlecheck@v0.4.2
         with:
           stats: dist/my-app/stats.json
+          entry: src/main.ts
           max-initial: '250kb'
           post-comment: true</code></pre>
         </div>
