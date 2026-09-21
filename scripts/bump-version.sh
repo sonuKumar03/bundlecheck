@@ -78,7 +78,11 @@ python3 -c "
 with open('docs/agents.md', 'r') as f:
     doc = f.read()
 import re
-doc = re.sub(r'\| \x60toolVersion\x60 \| Tool release version; currently \"[^\"]+\"\. \|', f'| \x60toolVersion\x60 \| Tool release version; currently \"$NEW_VER\". |', doc)
+doc = re.sub(
+    r'(\| \x60toolVersion\x60 \| Tool release version; currently )\x60\"[^\"]+\"\x60(\. \|)',
+    lambda match: match.group(1) + '\x60\"$NEW_VER\"\x60' + match.group(2),
+    doc,
+)
 with open('docs/agents.md', 'w') as f:
     f.write(doc)
 "
