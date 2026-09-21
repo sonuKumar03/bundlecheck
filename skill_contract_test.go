@@ -19,6 +19,32 @@ type skillMetadata struct {
 	Compatibility string `yaml:"compatibility"`
 }
 
+type triggerEval struct {
+	ID            string `yaml:"id"`
+	Prompt        string `yaml:"prompt"`
+	ShouldTrigger bool   `yaml:"should_trigger"`
+}
+
+type workflowEval struct {
+	ID              string   `yaml:"id"`
+	Prompt          string   `yaml:"prompt"`
+	RequiredStages  []string `yaml:"required_stages"`
+	ForbiddenClaims []string `yaml:"forbidden_claims"`
+}
+
+func readEval[T any](t *testing.T, name string) []T {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", "skill-evals", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases []T
+	if err := yaml.Unmarshal(data, &cases); err != nil {
+		t.Fatalf("parse %s: %v", name, err)
+	}
+	return cases
+}
+
 func readSkill(t *testing.T) (skillMetadata, string) {
 	t.Helper()
 
@@ -81,6 +107,59 @@ func TestAgentSkillProgressiveDisclosure(t *testing.T) {
 	for _, target := range got {
 		if _, err := os.Stat(filepath.Join(skillDir, target)); err != nil {
 			t.Errorf("reference %s: %v", target, err)
+		}
+	}
+}
+
+func TestSkillEvalTriggers(t *testing.T) {
+	cases := readEval[triggerEval](t, "triggers.yaml")
+	seen := make(map[string]bool, len(cases))
+	positive := 0
+	for _, tc := range cases {
+		if tc.ID == "" || tc.Prompt == "" {
+			t.Error("trigger IDs and prompts must be non-empty")
+		}
+		if seen[tc.ID] {
+			t.Errorf("duplicate trigger ID %q", tc.ID)
+		}
+		seen[tc.ID] = true
+		if tc.ShouldTrigger {
+			positive++
+		}
+	}
+	if positive != 10 || len(cases)-positive != 10 {
+		t.Errorf("trigger counts = %d positive, %d negative; want 10 each", positive, len(cases)-positive)
+	}
+}
+
+func TestSkillEvalWorkflows(t *testing.T) {
+	cases := readEval[workflowEval](t, "workflows.yaml")
+	seen := make(map[string]workflowEval, len(cases))
+	for _, tc := range cases {
+		if tc.ID == "" || tc.Prompt == "" {
+			t.Error("workflow IDs and prompts must be non-empty")
+		}
+		if _, ok := seen[tc.ID]; ok {
+			t.Errorf("duplicate workflow ID %q", tc.ID)
+		}
+		if len(tc.ForbiddenClaims) == 0 {
+			t.Errorf("workflow %q has no forbidden claims", tc.ID)
+		}
+		seen[tc.ID] = tc
+	}
+	for _, id := range []string{"diagnose", "optimize", "pr-regression", "ci-gate", "nx-comparison"} {
+		if _, ok := seen[id]; !ok {
+			t.Errorf("missing workflow %q", id)
+		}
+	}
+	optimize := seen["optimize"]
+	stages := make(map[string]bool, len(optimize.RequiredStages))
+	for _, stage := range optimize.RequiredStages {
+		stages[stage] = true
+	}
+	for _, stage := range []string{"baseline", "summary-or-suggest", "why", "source-inspection", "authorized-edit", "production-rebuild", "project-tests", "measure", "report-signed-delta"} {
+		if !stages[stage] {
+			t.Errorf("optimize workflow missing stage %q", stage)
 		}
 	}
 }

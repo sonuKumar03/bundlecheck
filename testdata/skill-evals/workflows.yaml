@@ -1,0 +1,50 @@
+- id: diagnose
+  prompt: Diagnose what makes the initial Angular bundle large and explain the responsible imports.
+  required_stages:
+    - summary-or-suggest
+    - why
+    - report-affected-packages-or-sources
+  forbidden_claims:
+    - runtime performance improved
+- id: optimize
+  prompt: Optimize this Angular application's initial JavaScript bundle and verify the result.
+  required_stages:
+    - baseline
+    - summary-or-suggest
+    - why
+    - source-inspection
+    - authorized-edit
+    - production-rebuild
+    - project-tests
+    - measure
+    - report-signed-delta
+  forbidden_claims:
+    - runtime performance improved
+    - LCP improved
+    - INP improved
+- id: pr-regression
+  prompt: Determine whether this PR regressed the Angular bundle against the saved baseline.
+  required_stages:
+    - baseline-or-before-snapshot
+    - measure-or-compare
+    - report-signed-delta
+  forbidden_claims:
+    - user experience regressed
+- id: ci-gate
+  prompt: Add a zero-growth initial bundle gate to CI and produce a PR-readable report.
+  required_stages:
+    - baseline
+    - check
+    - policy-exit-status
+    - markdown-report
+  forbidden_claims:
+    - runtime performance guaranteed
+- id: nx-comparison
+  prompt: Compare bundle and shared-library costs across the Angular apps in this Nx workspace.
+  required_stages:
+    - production-stats
+    - workspace-summary
+    - freshness-review
+    - partial-result-handling
+  forbidden_claims:
+    - cross-app bytes are deduplication savings

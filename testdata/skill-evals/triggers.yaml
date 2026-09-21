@@ -1,0 +1,60 @@
+- id: angular-pr-growth
+  prompt: Our Angular initial bundle grew after this PR. Diagnose the new bytes.
+  should_trigger: true
+- id: reduce-initial-js
+  prompt: Pls cut this Angular app's intial JS by about 100 KB.
+  should_trigger: true
+- id: nx-exceljs-owner
+  prompt: Which Nx app is pulling exceljs into its bundle?
+  should_trigger: true
+- id: pdfjs-main-trace
+  prompt: hey why is pdfjs-dist in main for this Angular build?
+  should_trigger: true
+- id: compare-refactor-baseline
+  prompt: Compare the current Angular refactor with our saved bundle baseline.
+  should_trigger: true
+- id: regression-gate
+  prompt: Add a CI gate that rejects Angular bundle regressions.
+  should_trigger: true
+- id: largest-lazy-chunks
+  prompt: Identify the largest lazy JavaScript chunks in these Angular esbuild stats.
+  should_trigger: true
+- id: trace-angular-source
+  prompt: Trace src/app/report.ts into the emitted Angular chunk that contains it.
+  should_trigger: true
+- id: rank-safe-optimizations
+  prompt: Rank safe bundle-size optimizations for this Angular application.
+  should_trigger: true
+- id: nx-shared-library-cost
+  prompt: Compare our shared-library bundle cost across the Angular apps in this Nx workspace.
+  should_trigger: true
+- id: angular-inp
+  prompt: Diagnose why this Angular page has poor INP.
+  should_trigger: false
+- id: browser-memory-leak
+  prompt: Find the browser memory leak after navigating between routes.
+  should_trigger: false
+- id: lighthouse
+  prompt: Run Lighthouse and improve its performance score.
+  should_trigger: false
+- id: cpu-profile
+  prompt: Profile CPU usage while the dashboard renders.
+  should_trigger: false
+- id: react-vite
+  prompt: Optimize my React Vite bundle; I do not have Angular stats.
+  should_trigger: false
+- id: node-server
+  prompt: Analyze the production bundle for this Node server.
+  should_trigger: false
+- id: network-waterfall
+  prompt: Debug the browser network waterfall and slow requests.
+  should_trigger: false
+- id: image-loading
+  prompt: Improve responsive image loading and decode time.
+  should_trigger: false
+- id: api-latency
+  prompt: Reduce the p95 latency of this API endpoint.
+  should_trigger: false
+- id: webpack-config
+  prompt: Explain this webpack configuration; there are no compatible Angular esbuild stats.
+  should_trigger: false
