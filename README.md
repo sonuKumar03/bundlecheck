@@ -7,6 +7,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/sonuKumar03/bundlecheck?color=indigo&label=release&logo=github)](https://github.com/sonuKumar03/bundlecheck/releases)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-Ready-2088FF?logo=githubactions&logoColor=white)](#-ci--github-actions-integration)
 [![CI Status](https://img.shields.io/github/actions/workflow/status/sonuKumar03/bundlecheck/ci.yml?branch=master&label=CI&logo=githubactions)](https://github.com/sonuKumar03/bundlecheck/actions)
 [![Go Report](https://img.shields.io/badge/Go-1.27.1+-00ADD8?style=flat&logo=go)](https://go.dev)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/sonuKumar03/bundlecheck/releases)
@@ -336,7 +337,7 @@ All bundle MCP tools accept `entry`. If `index.html` contains an injected script
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.6.0`)
+### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.6.1`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -362,7 +363,7 @@ jobs:
       - run: npx ng build --configuration production --stats-json
 
       - name: Run bundlecheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.6.0
+        uses: sonuKumar03/bundlecheck@v0.6.1
         with:
           stats: dist/my-app/stats.json
           entry: src/main.ts
