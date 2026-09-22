@@ -358,8 +358,3 @@ func FormatTracePath(path []string) string {
 	return "`" + strings.Join(compacted, "` → `") + "`"
 }
 
-// formatTracePath is an unexported alias for FormatTracePath.
-func formatTracePath(path []string) string {
-	return FormatTracePath(path)
-}
-
