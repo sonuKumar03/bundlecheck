@@ -21,9 +21,11 @@ func compareCommand() *cobra.Command {
 		after  string
 		format string
 		output string
-		filter string
-		top    int
-		all    bool
+		filter         string
+		top            int
+		all            bool
+		project        string
+		driftThreshold string
 	)
 
 	c := &cobra.Command{
@@ -78,10 +80,21 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 				_ = cleanup()
 			}()
 
+			driftThresholdBytes := report.MinorDriftThreshold
+			if driftThreshold != "" {
+				val, err := budget.ParseBytes(driftThreshold)
+				if err != nil {
+					return fmt.Errorf("invalid --drift-threshold: %w", err)
+				}
+				driftThresholdBytes = val
+			}
+
 			opts := report.TextOptions{
-				Top:    top,
-				Filter: filter,
-				All:    all,
+				Top:            top,
+				Filter:         filter,
+				All:            all,
+				DriftThreshold: driftThresholdBytes,
+				Project:        project,
 			}
 
 			if format == "json" {
@@ -98,11 +111,13 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 
 	c.Flags().StringVarP(&before, "before", "b", "", "Path to saved summary JSON before the change (defaults to active baseline if omitted)")
 	c.Flags().StringVarP(&after, "after", "a", "", "Path to saved summary JSON or stats.json after the change")
+	c.Flags().StringVarP(&project, "project", "p", "", "Project name to display in comparison reports")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, or markdown")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to specified file path instead of stdout")
 	c.Flags().IntVar(&top, "top", 10, "Number of top package changes to display in text mode")
 	c.Flags().StringVar(&filter, "filter", "", "Filter package changes by name substring in text mode")
 	c.Flags().BoolVar(&all, "all", false, "Display all package changes in text mode")
+	c.Flags().StringVar(&driftThreshold, "drift-threshold", "1KB", "Byte threshold under which individual regression findings are collapsed as micro-drift (e.g. 1KB, 500B)")
 
 	return c
 }

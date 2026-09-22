@@ -65,7 +65,11 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 		badge = fmt.Sprintf("⚪ Neutral (%s)", formatDelta(initialDelta))
 	}
 
-	fmt.Fprintf(&sb, "## 📦 BundleCheck PR Report — %s\n\n", badge)
+	titlePrefix := "## 📦 BundleCheck PR Report"
+	if opts.Project != "" {
+		titlePrefix = fmt.Sprintf("## 📦 BundleCheck PR Report (`%s`)", opts.Project)
+	}
+	fmt.Fprintf(&sb, "%s — %s\n\n", titlePrefix, badge)
 
 	if !budgetCheck.Passed && len(budgetCheck.Violations) > 0 {
 		sb.WriteString("### ❌ Budget Violations\n\n")
@@ -86,37 +90,48 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 	sb.WriteString("\n")
 
 	if len(r.Findings) > 0 {
-		isMinor := initialDelta <= MinorDriftThreshold
+		threshold := opts.DriftThreshold
+		if threshold <= 0 {
+			threshold = MinorDriftThreshold
+		}
+
+		isMinor := initialDelta <= threshold
 		if isMinor {
 			fmt.Fprintf(&sb, "<details>\n<summary>🔎 Minor Source Changes (%s)</summary>\n\n", formatDelta(initialDelta))
-		} else {
-			sb.WriteString("### 🔎 Regression Explanation\n\n")
-		}
-		for _, f := range r.Findings {
-			chunkInfo := ""
-			if len(f.Chunks) > 0 {
-				chunkInfo = fmt.Sprintf(" → emitted in `%s`", strings.Join(f.Chunks, "`, `"))
+			for _, f := range r.Findings {
+				renderFindingItem(&sb, f)
 			}
-			reasonInfo := ""
-			if f.Reason != "" {
-				reasonInfo = fmt.Sprintf(" *(%s)*", f.Reason)
-			}
-			icon := "📦"
-			switch f.Kind {
-			case "source":
-				icon = "📁"
-			case "unattributed":
-				icon = "⚪"
-			case "package":
-				icon = "📦"
-			}
-			fmt.Fprintf(&sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
-			if len(f.TracePath) > 0 {
-				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
-			}
-		}
-		if isMinor {
 			sb.WriteString("\n</details>\n")
+		} else {
+			var majorFindings []comparison.Finding
+			var minorFindings []comparison.Finding
+			for _, f := range r.Findings {
+				absDelta := f.DeltaBytes
+				if absDelta < 0 {
+					absDelta = -absDelta
+				}
+				if absDelta >= threshold {
+					majorFindings = append(majorFindings, f)
+				} else {
+					minorFindings = append(minorFindings, f)
+				}
+			}
+
+			sb.WriteString("### 🔎 Regression Explanation\n\n")
+			for _, f := range majorFindings {
+				renderFindingItem(&sb, f)
+			}
+			if len(minorFindings) > 0 {
+				thresholdLabel := formatBytes(threshold)
+				if threshold == 1024 {
+					thresholdLabel = "1 KB"
+				}
+				fmt.Fprintf(&sb, "\n<details>\n<summary>⚪ %d Minor Variations (< %s)</summary>\n\n", len(minorFindings), thresholdLabel)
+				for _, f := range minorFindings {
+					renderFindingItem(&sb, f)
+				}
+				sb.WriteString("\n</details>\n")
+			}
 		}
 		sb.WriteString("\n")
 	}

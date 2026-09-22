@@ -92,10 +92,11 @@ func summaryCommand() *cobra.Command {
 			}
 
 			opts := report.TextOptions{
-				Top:    top,
-				Filter: filter,
-				All:    all,
-				Gzip:   showGzip,
+				Top:     top,
+				Filter:  filter,
+				All:     all,
+				Gzip:    showGzip,
+				Project: project,
 			}
 
 			if report.IsMarkdownFormat(format) {

@@ -22,7 +22,11 @@ func IsMarkdownFormat(format string) bool {
 func SummaryMarkdown(w io.Writer, r *analysis.AnalysisResult, opts TextOptions) error {
 	var sb strings.Builder
 
-	sb.WriteString("## 📦 Angular Bundle Summary\n\n")
+	if opts.Project != "" {
+		fmt.Fprintf(&sb, "## 📦 Angular Bundle Summary (`%s`)\n\n", opts.Project)
+	} else {
+		sb.WriteString("## 📦 Angular Bundle Summary\n\n")
+	}
 
 	if opts.Gzip && r.Summary.TotalGzipJS > 0 {
 		sb.WriteString("| Category | Size | Gzip |\n")
@@ -116,7 +120,11 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 		badge = fmt.Sprintf("⚪ Neutral (%s)", formatDelta(delta))
 	}
 
-	fmt.Fprintf(&sb, "## 📊 Angular Bundle Comparison — %s\n\n", badge)
+	titlePrefix := "## 📊 Angular Bundle Comparison"
+	if opts.Project != "" {
+		titlePrefix = fmt.Sprintf("## 📊 Angular Bundle Comparison (`%s`)", opts.Project)
+	}
+	fmt.Fprintf(&sb, "%s — %s\n\n", titlePrefix, badge)
 
 	sb.WriteString("| Category | Before | After | Delta | Status |\n")
 	sb.WriteString("| :--- | :---: | :---: | :---: | :---: |\n")
@@ -127,37 +135,48 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 	sb.WriteString("\n")
 
 	if len(r.Findings) > 0 {
-		isMinor := delta <= MinorDriftThreshold
+		threshold := opts.DriftThreshold
+		if threshold <= 0 {
+			threshold = MinorDriftThreshold
+		}
+
+		isMinor := delta <= threshold
 		if isMinor {
 			fmt.Fprintf(&sb, "<details>\n<summary>🔎 Minor Source Changes (%s)</summary>\n\n", formatDelta(delta))
-		} else {
-			sb.WriteString("### 🔎 Regression Explanation\n\n")
-		}
-		for _, f := range r.Findings {
-			chunkInfo := ""
-			if len(f.Chunks) > 0 {
-				chunkInfo = fmt.Sprintf(" → emitted in `%s`", strings.Join(f.Chunks, "`, `"))
+			for _, f := range r.Findings {
+				renderFindingItem(&sb, f)
 			}
-			reasonInfo := ""
-			if f.Reason != "" {
-				reasonInfo = fmt.Sprintf(" *(%s)*", f.Reason)
-			}
-			icon := "📦"
-			switch f.Kind {
-			case "source":
-				icon = "📁"
-			case "unattributed":
-				icon = "⚪"
-			case "package":
-				icon = "📦"
-			}
-			fmt.Fprintf(&sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
-			if len(f.TracePath) > 0 {
-				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
-			}
-		}
-		if isMinor {
 			sb.WriteString("\n</details>\n")
+		} else {
+			var majorFindings []comparison.Finding
+			var minorFindings []comparison.Finding
+			for _, f := range r.Findings {
+				absDelta := f.DeltaBytes
+				if absDelta < 0 {
+					absDelta = -absDelta
+				}
+				if absDelta >= threshold {
+					majorFindings = append(majorFindings, f)
+				} else {
+					minorFindings = append(minorFindings, f)
+				}
+			}
+
+			sb.WriteString("### 🔎 Regression Explanation\n\n")
+			for _, f := range majorFindings {
+				renderFindingItem(&sb, f)
+			}
+			if len(minorFindings) > 0 {
+				thresholdLabel := formatBytes(threshold)
+				if threshold == 1024 {
+					thresholdLabel = "1 KB"
+				}
+				fmt.Fprintf(&sb, "\n<details>\n<summary>⚪ %d Minor Variations (< %s)</summary>\n\n", len(minorFindings), thresholdLabel)
+				for _, f := range minorFindings {
+					renderFindingItem(&sb, f)
+				}
+				sb.WriteString("\n</details>\n")
+			}
 		}
 		sb.WriteString("\n")
 	}
@@ -305,3 +324,28 @@ func CheckMarkdown(w io.Writer, res budget.CheckResult) error {
 	_, err := io.WriteString(w, sb.String())
 	return err
 }
+
+func renderFindingItem(sb *strings.Builder, f comparison.Finding) {
+	chunkInfo := ""
+	if len(f.Chunks) > 0 {
+		chunkInfo = fmt.Sprintf(" → emitted in `%s`", strings.Join(f.Chunks, "`, `"))
+	}
+	reasonInfo := ""
+	if f.Reason != "" {
+		reasonInfo = fmt.Sprintf(" *(%s)*", f.Reason)
+	}
+	icon := "📦"
+	switch f.Kind {
+	case "source":
+		icon = "📁"
+	case "unattributed":
+		icon = "⚪"
+	case "package":
+		icon = "📦"
+	}
+	fmt.Fprintf(sb, "- %s **`%s`** (`%s`)%s%s\n", icon, f.Name, formatDelta(f.DeltaBytes), chunkInfo, reasonInfo)
+	if len(f.TracePath) > 0 {
+		sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
+	}
+}
+

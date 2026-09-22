@@ -78,6 +78,10 @@ inputs:
     description: 'Maximum allowed increase in total JS vs baseline'
     required: false
     default: ''
+  drift-threshold:
+    description: 'Byte threshold under which individual regression findings are collapsed as micro-drift (e.g. 1KB, 500B)'
+    required: false
+    default: '1KB'
   artifact-baseline:
     description: 'Attempt to restore baseline summary JSON from a GitHub Actions workflow artifact on base-ref'
     required: false
@@ -164,6 +168,7 @@ runs:
         INPUT_MAX_TOTAL: ${{ inputs.max-total }}
         INPUT_MAX_INITIAL_DELTA: ${{ inputs.max-initial-delta }}
         INPUT_MAX_TOTAL_DELTA: ${{ inputs.max-total-delta }}
+        INPUT_DRIFT_THRESHOLD: ${{ inputs.drift-threshold }}
         INPUT_ARTIFACT_BASELINE: ${{ inputs.artifact-baseline }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
         INPUT_UPLOAD_ARTIFACT_BASELINE: ${{ inputs.upload-artifact-baseline }}
@@ -294,6 +299,7 @@ runs:
           MEASURE_FLAGS=("${ARGS[@]}" "-b" "$BASELINE_FILE" "-f" "$INPUT_FORMAT")
           if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then MEASURE_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); fi
           if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then MEASURE_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); fi
+          if [ -n "$INPUT_DRIFT_THRESHOLD" ]; then MEASURE_FLAGS+=("--drift-threshold" "$INPUT_DRIFT_THRESHOLD"); fi
           if [ -n "$INPUT_OUTPUT" ]; then MEASURE_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
 
           set +e
@@ -409,6 +415,13 @@ runs:
             if (project) {
               body = body.replace(/<!-- bundlecheck-comment -->/g, headerTag)
                          .replace(/<!-- bundlecheck-report -->/g, fallbackHeaderTag);
+
+              if (!body.includes(`(\`${rawProject}\`)`)) {
+                body = body.replace(
+                  /^(## [^—\n]+)( — [^\n]+)/m,
+                  `$1 (\`${rawProject}\`)$2`
+                );
+              }
             }
             if (!body.includes(headerTag) && !body.includes(fallbackHeaderTag)) {
               body = `${headerTag}\n${body}`;

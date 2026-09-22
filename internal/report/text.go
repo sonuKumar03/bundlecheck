@@ -12,10 +12,12 @@ import (
 )
 
 type TextOptions struct {
-	Top    int
-	Filter string
-	All    bool
-	Gzip   bool
+	Top            int
+	Filter         string
+	All            bool
+	Gzip           bool
+	DriftThreshold int64
+	Project        string
 }
 
 func Text(w io.Writer, r *analysis.AnalysisResult) error {

@@ -25,6 +25,7 @@ func measureCommand() *cobra.Command {
 		all             bool
 		maxInitialDelta string
 		maxTotalDelta   string
+		driftThreshold  string
 	)
 
 	c := &cobra.Command{
@@ -58,7 +59,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 			// 3. Compare baseline vs current
 			compResult := comparison.CompareWithSnapshot(baseResult, currentResult, currentSnap)
 
-			// 4. Check regression budgets if configured
+			// 4. Enforce regression delta budgets
 			var limits budget.Limits
 			if maxInitialDelta != "" {
 				val, err := budget.ParseBytes(maxInitialDelta)
@@ -86,10 +87,21 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 				_ = cleanup()
 			}()
 
+			driftThresholdBytes := report.MinorDriftThreshold
+			if driftThreshold != "" {
+				val, err := budget.ParseBytes(driftThreshold)
+				if err != nil {
+					return fmt.Errorf("invalid --drift-threshold: %w", err)
+				}
+				driftThresholdBytes = val
+			}
+
 			opts := report.TextOptions{
-				Top:    top,
-				Filter: filter,
-				All:    all,
+				Top:            top,
+				Filter:         filter,
+				All:            all,
+				DriftThreshold: driftThresholdBytes,
+				Project:        project,
 			}
 
 			if format == "json" {
@@ -134,6 +146,7 @@ Optionally verifies that size regressions do not exceed specified limits.`,
 	c.Flags().BoolVar(&all, "all", false, "Display all package changes in text mode")
 	c.Flags().StringVar(&maxInitialDelta, "max-initial-delta", "", "Maximum allowed increase in initial JS (e.g. 0B, 10KB)")
 	c.Flags().StringVar(&maxTotalDelta, "max-total-delta", "", "Maximum allowed increase in total JS (e.g. 50KB)")
+	c.Flags().StringVar(&driftThreshold, "drift-threshold", "1KB", "Byte threshold under which individual regression findings are collapsed as micro-drift (e.g. 1KB, 500B)")
 
 	return c
 }

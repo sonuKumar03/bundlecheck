@@ -381,3 +381,54 @@ func TestFormatTracePath(t *testing.T) {
 	}
 }
 
+func TestComparisonGitHubPR_ProjectTitleAndMicroDrift(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 300 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "three",
+				DeltaBytes: 295 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"main.js"},
+			},
+			{
+				Name:       "lodash",
+				DeltaBytes: 11,
+				Kind:       "package",
+				Chunks:     []string{"main.js"},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := report.ComparisonGitHubPR(&buf, comp, budget.CheckResult{Passed: true}, report.TextOptions{
+		Project:        "portal",
+		DriftThreshold: 1024,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+
+	// Should have project in title
+	if !strings.Contains(out, "## 📦 BundleCheck PR Report (`portal`)") {
+		t.Errorf("expected project in PR title:\n%s", out)
+	}
+
+	// Major finding should be visible
+	if !strings.Contains(out, "- 📦 **`three`** (`+295 KB`)") {
+		t.Errorf("expected three in major findings:\n%s", out)
+	}
+
+	// Minor finding should be collapsed
+	if !strings.Contains(out, "<summary>⚪ 1 Minor Variations (< 1 KB)</summary>") {
+		t.Errorf("expected 1 Minor Variations collapsed:\n%s", out)
+	}
+	if !strings.Contains(out, "- 📦 **`lodash`** (`+11 B`)") {
+		t.Errorf("expected lodash in collapsed minor section:\n%s", out)
+	}
+}
+
+

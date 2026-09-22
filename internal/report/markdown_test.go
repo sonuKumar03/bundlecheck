@@ -235,3 +235,72 @@ func TestComparisonMarkdown_ImportPath(t *testing.T) {
 	}
 }
 
+func TestComparisonMarkdown_ProjectTitle(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 0},
+		},
+	}
+	var buf bytes.Buffer
+	if err := report.ComparisonMarkdown(&buf, comp, report.TextOptions{Project: "portal"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "## 📊 Angular Bundle Comparison (`portal`) — ⚪ Neutral") {
+		t.Errorf("expected project title in output:\n%s", out)
+	}
+}
+
+func TestComparisonMarkdown_MicroDriftCollapsing(t *testing.T) {
+	comp := &comparison.Result{
+		Summary: comparison.SummaryChange{
+			Delta: snapshot.Totals{InitialJS: 300 * 1024},
+		},
+		Findings: []comparison.Finding{
+			{
+				Name:       "three",
+				DeltaBytes: 295 * 1024,
+				Kind:       "package",
+				Chunks:     []string{"main.js"},
+			},
+			{
+				Name:       "lodash",
+				DeltaBytes: 11,
+				Kind:       "package",
+				Chunks:     []string{"main.js"},
+			},
+			{
+				Name:       "@angular/platform-browser",
+				DeltaBytes: 2,
+				Kind:       "package",
+				Chunks:     []string{"main.js"},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := report.ComparisonMarkdown(&buf, comp, report.TextOptions{DriftThreshold: 1024})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+
+	// Major finding should be under Regression Explanation
+	if !strings.Contains(out, "### 🔎 Regression Explanation") {
+		t.Fatalf("missing Regression Explanation:\n%s", out)
+	}
+	if !strings.Contains(out, "- 📦 **`three`** (`+295 KB`)") {
+		t.Errorf("expected three in major findings:\n%s", out)
+	}
+
+	// Minor findings should be collapsed
+	if !strings.Contains(out, "<summary>⚪ 2 Minor Variations (< 1 KB)</summary>") {
+		t.Errorf("expected 2 Minor Variations collapsed section:\n%s", out)
+	}
+	if !strings.Contains(out, "- 📦 **`lodash`** (`+11 B`)") {
+		t.Errorf("expected lodash in collapsed minor findings:\n%s", out)
+	}
+	if !strings.Contains(out, "- 📦 **`@angular/platform-browser`** (`+2 B`)") {
+		t.Errorf("expected @angular/platform-browser in collapsed minor findings:\n%s", out)
+	}
+}
