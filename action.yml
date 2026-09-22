@@ -382,6 +382,7 @@ runs:
       env:
         WORKING_DIR: ${{ inputs.working-directory }}
         OUTPUT_FILE: ${{ inputs.output }}
+        PROJECT_NAME: ${{ inputs.project }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
@@ -400,9 +401,15 @@ runs:
 
           if (fs.existsSync(reportPath)) {
             const reportContent = fs.readFileSync(reportPath, 'utf8');
-            const headerTag = '<!-- bundlecheck-comment -->';
-            const fallbackHeaderTag = '<!-- bundlecheck-report -->';
+            const rawProject = (process.env.PROJECT_NAME || '').trim();
+            const project = rawProject ? rawProject.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
+            const headerTag = project ? `<!-- bundlecheck-comment-${project} -->` : '<!-- bundlecheck-comment -->';
+            const fallbackHeaderTag = project ? `<!-- bundlecheck-report-${project} -->` : '<!-- bundlecheck-report -->';
             let body = reportContent;
+            if (project) {
+              body = body.replace(/<!-- bundlecheck-comment -->/g, headerTag)
+                         .replace(/<!-- bundlecheck-report -->/g, fallbackHeaderTag);
+            }
             if (!body.includes(headerTag) && !body.includes(fallbackHeaderTag)) {
               body = `${headerTag}\n${body}`;
             }
