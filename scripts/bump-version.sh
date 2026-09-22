@@ -114,11 +114,12 @@ if [ "$DO_RELEASE" = true ]; then
   echo "🚀 Committing, tagging, and pushing release v$NEW_VER..."
   git commit -am "chore(release): bump version to $NEW_VER"
   git tag -a "v$NEW_VER" -m "Release v$NEW_VER"
-  git push origin master --tags
+  git push origin master "v$NEW_VER"
   echo "  ✓ Release v$NEW_VER pushed to origin!"
 else
   echo "To commit and tag this release manually, run:"
   echo "  git commit -am \"chore(release): bump version to $NEW_VER\""
   echo "  git tag -a \"v$NEW_VER\" -m \"Release v$NEW_VER\""
-  echo "  git push origin master --tags"
+  echo "  git push origin master \"v$NEW_VER\""
 fi
+

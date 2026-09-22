@@ -114,6 +114,17 @@ jobs:
           sha256sum * > checksums.txt
           cd ..
 
+      - name: Check if Highest SemVer
+        id: check_latest
+        run: |
+          LATEST_TAG=$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n 1)
+          echo "Current tag: $GITHUB_REF_NAME, Highest tag: $LATEST_TAG"
+          if [ "$GITHUB_REF_NAME" = "$LATEST_TAG" ]; then
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -123,8 +134,10 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
+          make_latest: ${{ steps.check_latest.outputs.is_latest }}
 
       - name: Update Moving Major Action Tag
+        if: steps.check_latest.outputs.is_latest == 'true'
         run: |
           # Extract major version number (e.g. "0" from "v0.4.0", or "1" from "v1.0.0")
           TAG="${GITHUB_REF_NAME}"
@@ -134,3 +147,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -fa "$MAJOR" -m "Update $MAJOR to point to $TAG"
           git push origin "$MAJOR" --force
+
