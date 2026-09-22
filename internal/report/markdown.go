@@ -99,16 +99,21 @@ func SummaryMarkdown(w io.Writer, r *analysis.AnalysisResult, opts TextOptions) 
 	return err
 }
 
+// MinorDriftThreshold is the byte threshold under which size variations are treated as neutral minor drift.
+const MinorDriftThreshold int64 = 1024
+
 // ComparisonMarkdown renders before/after comparison as a formatted PR summary table.
 func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) error {
 	var sb strings.Builder
 
 	delta := r.Summary.Delta.InitialJS
-	badge := "🟢 Neutral"
-	if delta < 0 {
+	badge := "⚪ Neutral"
+	if delta < -MinorDriftThreshold {
 		badge = fmt.Sprintf("✅ Reduced (%s)", formatDelta(delta))
-	} else if delta > 0 {
+	} else if delta > MinorDriftThreshold {
 		badge = fmt.Sprintf("⚠️ Increased (%s)", formatDelta(delta))
+	} else if delta != 0 {
+		badge = fmt.Sprintf("⚪ Neutral (%s)", formatDelta(delta))
 	}
 
 	fmt.Fprintf(&sb, "## 📊 Angular Bundle Comparison — %s\n\n", badge)
@@ -122,7 +127,12 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 	sb.WriteString("\n")
 
 	if len(r.Findings) > 0 {
-		sb.WriteString("### 🔎 Regression Explanation\n\n")
+		isMinor := delta <= MinorDriftThreshold
+		if isMinor {
+			fmt.Fprintf(&sb, "<details>\n<summary>🔎 Minor Source Changes (%s)</summary>\n\n", formatDelta(delta))
+		} else {
+			sb.WriteString("### 🔎 Regression Explanation\n\n")
+		}
 		for _, f := range r.Findings {
 			chunkInfo := ""
 			if len(f.Chunks) > 0 {
@@ -145,6 +155,9 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 			if len(f.TracePath) > 0 {
 				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
 			}
+		}
+		if isMinor {
+			sb.WriteString("\n</details>\n")
 		}
 		sb.WriteString("\n")
 	}
@@ -219,9 +232,9 @@ func ComparisonMarkdown(w io.Writer, r *comparison.Result, opts TextOptions) err
 
 func renderMetricRow(sb *strings.Builder, name string, before, after, delta int64) {
 	status := "⚪ Neutral"
-	if delta < 0 {
+	if delta < -MinorDriftThreshold {
 		status = "✅ Reduced"
-	} else if delta > 0 {
+	} else if delta > MinorDriftThreshold {
 		status = "⚠️ Increased"
 	}
 	fmt.Fprintf(sb, "| **%s** | `%s` | `%s` | **%s** | %s |\n", name, formatBytes(before), formatBytes(after), formatDelta(delta), status)

@@ -25,10 +25,12 @@ func renderDiffBar(delta, before int64) string {
 	pct := (float64(delta) / float64(before)) * 100.0
 	fill := int(math.Min(10, math.Max(1, math.Abs(pct)/2.0)))
 	blocks := strings.Repeat("█", fill) + strings.Repeat("░", 10-fill)
-	if delta < 0 {
+	if delta < -MinorDriftThreshold {
 		return fmt.Sprintf("<code>[%s]</code> 🟢 %.2f%%", blocks, pct)
+	} else if delta > MinorDriftThreshold {
+		return fmt.Sprintf("<code>[%s]</code> ⚠️ +%.2f%%", blocks, pct)
 	}
-	return fmt.Sprintf("<code>[%s]</code> ⚠️ +%.2f%%", blocks, pct)
+	return fmt.Sprintf("<code>[──────────]</code> ⚪ +%.2f%%", pct)
 }
 
 func renderPRMetricRow(sb *strings.Builder, name string, before, after, delta int64) {
@@ -55,10 +57,12 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 	badge := "⚪ Size Unchanged"
 	if !budgetCheck.Passed {
 		badge = fmt.Sprintf("❌ Budget Exceeded (%d Violations)", len(budgetCheck.Violations))
-	} else if initialDelta < 0 {
+	} else if initialDelta < -MinorDriftThreshold {
 		badge = fmt.Sprintf("🟢 Size Reduced (%s)", formatDelta(initialDelta))
-	} else if initialDelta > 0 {
+	} else if initialDelta > MinorDriftThreshold {
 		badge = fmt.Sprintf("⚠️ Size Increased (%s)", formatDelta(initialDelta))
+	} else if initialDelta != 0 {
+		badge = fmt.Sprintf("⚪ Neutral (%s)", formatDelta(initialDelta))
 	}
 
 	fmt.Fprintf(&sb, "## 📦 BundleCheck PR Report — %s\n\n", badge)
@@ -82,7 +86,12 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 	sb.WriteString("\n")
 
 	if len(r.Findings) > 0 {
-		sb.WriteString("### 🔎 Regression Explanation\n\n")
+		isMinor := initialDelta <= MinorDriftThreshold
+		if isMinor {
+			fmt.Fprintf(&sb, "<details>\n<summary>🔎 Minor Source Changes (%s)</summary>\n\n", formatDelta(initialDelta))
+		} else {
+			sb.WriteString("### 🔎 Regression Explanation\n\n")
+		}
 		for _, f := range r.Findings {
 			chunkInfo := ""
 			if len(f.Chunks) > 0 {
@@ -105,6 +114,9 @@ func ComparisonGitHubPR(w io.Writer, r *comparison.Result, budgetCheck budget.Ch
 			if len(f.TracePath) > 0 {
 				sb.WriteString("  - **Import path:** " + FormatTracePath(f.TracePath) + "\n")
 			}
+		}
+		if isMinor {
+			sb.WriteString("\n</details>\n")
 		}
 		sb.WriteString("\n")
 	}
