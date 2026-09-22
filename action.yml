@@ -78,6 +78,22 @@ inputs:
     description: 'Maximum allowed increase in total JS vs baseline'
     required: false
     default: ''
+  artifact-baseline:
+    description: 'Attempt to restore baseline summary JSON from a GitHub Actions workflow artifact on base-ref'
+    required: false
+    default: 'false'
+  artifact-name:
+    description: 'Name of the baseline workflow artifact (defaults to bundlecheck-baseline or bundlecheck-baseline-<project>)'
+    required: false
+    default: ''
+  upload-artifact-baseline:
+    description: 'Save current bundle summary and upload as a baseline workflow artifact'
+    required: false
+    default: 'false'
+  github-token:
+    description: 'GitHub token for downloading baseline artifacts and posting PR comments'
+    required: false
+    default: ${{ github.token }}
   post-comment:
     description: 'Automatically post or update PR summary comment'
     required: false
@@ -148,6 +164,10 @@ runs:
         INPUT_MAX_TOTAL: ${{ inputs.max-total }}
         INPUT_MAX_INITIAL_DELTA: ${{ inputs.max-initial-delta }}
         INPUT_MAX_TOTAL_DELTA: ${{ inputs.max-total-delta }}
+        INPUT_ARTIFACT_BASELINE: ${{ inputs.artifact-baseline }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_UPLOAD_ARTIFACT_BASELINE: ${{ inputs.upload-artifact-baseline }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         EVENT_NAME: ${{ github.event_name }}
         EVENT_BASE_REF: ${{ github.base_ref }}
       run: |
@@ -172,6 +192,52 @@ runs:
         HAS_DELTA_BUDGET=false
         if [ -n "$INPUT_MAX_INITIAL_DELTA" ] || [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then
           HAS_DELTA_BUDGET=true
+        fi
+
+        # Determine effective artifact name (defaulting with app/project namespacing if project is set)
+        EFFECTIVE_ARTIFACT_NAME="$INPUT_ARTIFACT_NAME"
+        if [ -z "$EFFECTIVE_ARTIFACT_NAME" ]; then
+          if [ -n "$INPUT_PROJECT" ]; then
+            EFFECTIVE_ARTIFACT_NAME="bundlecheck-baseline-$INPUT_PROJECT"
+          else
+            EFFECTIVE_ARTIFACT_NAME="bundlecheck-baseline"
+          fi
+        fi
+
+        # Attempt to retrieve baseline artifact if requested
+        if [ "$INPUT_ARTIFACT_BASELINE" = "true" ] && [ -z "$BASELINE_FILE" ]; then
+          echo "Attempting to retrieve baseline artifact '$EFFECTIVE_ARTIFACT_NAME'..."
+          ARTIFACT_DIR=".bundlecheck/artifacts/$EFFECTIVE_ARTIFACT_NAME"
+          mkdir -p "$ARTIFACT_DIR"
+
+          GH_DOWNLOAD_ARGS=("--name" "$EFFECTIVE_ARTIFACT_NAME" "--dir" "$ARTIFACT_DIR")
+          if [ -n "$GITHUB_REPOSITORY" ]; then
+            GH_DOWNLOAD_ARGS+=("--repo" "$GITHUB_REPOSITORY")
+          fi
+
+          DOWNLOAD_SUCCESS=false
+          export GH_TOKEN="${INPUT_GITHUB_TOKEN:-$GITHUB_TOKEN}"
+
+          BRANCH_TARGET="${TARGET_BASE_REF#origin/}"
+          if [ -n "$BRANCH_TARGET" ] && gh run download --branch "$BRANCH_TARGET" "${GH_DOWNLOAD_ARGS[@]}" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+          elif gh run download "${GH_DOWNLOAD_ARGS[@]}" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+          fi
+
+          if [ "$DOWNLOAD_SUCCESS" = "true" ]; then
+            FOUND_BASELINE=$(find "$ARTIFACT_DIR" -type f -name "*.json" 2>/dev/null | head -n 1)
+            if [ -n "$FOUND_BASELINE" ] && [ -f "$FOUND_BASELINE" ]; then
+              BASELINE_FILE="$FOUND_BASELINE"
+              COMPARISON_STATUS="completed"
+              COMPARISON_MESSAGE="Successfully retrieved baseline from artifact '$EFFECTIVE_ARTIFACT_NAME'"
+              echo "  ✓ $COMPARISON_MESSAGE ($BASELINE_FILE)"
+            else
+              echo "  ::warning::Artifact '$EFFECTIVE_ARTIFACT_NAME' downloaded but contained no valid JSON baseline file."
+            fi
+          else
+            echo "  ::notice::No baseline artifact '$EFFECTIVE_ARTIFACT_NAME' found. Falling back to worktree build or summary."
+          fi
         fi
 
         if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ]; then
@@ -263,6 +329,14 @@ runs:
           echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
         fi
 
+        if [ "$INPUT_UPLOAD_ARTIFACT_BASELINE" = "true" ]; then
+          BASELINE_UPLOAD_DIR=".bundlecheck/upload/$EFFECTIVE_ARTIFACT_NAME"
+          mkdir -p "$BASELINE_UPLOAD_DIR"
+          echo "$JSON_OUT" > "$BASELINE_UPLOAD_DIR/baseline.json"
+          echo "UPLOAD_BASELINE_DIR=$BASELINE_UPLOAD_DIR" >> "$GITHUB_ENV"
+          echo "EFFECTIVE_ARTIFACT_NAME=$EFFECTIVE_ARTIFACT_NAME" >> "$GITHUB_ENV"
+        fi
+
         # Parse metrics strictly - fail if JSON is malformed or missing required summary fields
         PARSED_METRICS=$(node -e '
           const data = process.argv[1];
@@ -309,6 +383,7 @@ runs:
         WORKING_DIR: ${{ inputs.working-directory }}
         OUTPUT_FILE: ${{ inputs.output }}
       with:
+        github-token: ${{ inputs.github-token }}
         script: |
           const fs = require('fs');
           const path = require('path');
@@ -360,6 +435,15 @@ runs:
               });
             }
           }
+
+    - name: Upload Baseline Artifact
+      if: always() && inputs.upload-artifact-baseline == 'true' && env.UPLOAD_BASELINE_DIR != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.EFFECTIVE_ARTIFACT_NAME }}
+        path: ${{ env.UPLOAD_BASELINE_DIR }}/baseline.json
+        retention-days: 90
+        if-no-files-found: warn
 
     - name: Finalize Budget Status
       shell: bash

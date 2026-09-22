@@ -362,3 +362,67 @@ func TestDocumentationContract_AgentPositioning(t *testing.T) {
 		}
 	}
 }
+
+// TestDocumentationContract_ArtifactBaselineInputs ensures action.yml defines
+// the persistent artifact baseline inputs with secure and non-breaking defaults.
+func TestDocumentationContract_ArtifactBaselineInputs(t *testing.T) {
+	actionData, err := os.ReadFile("action.yml")
+	if err != nil {
+		t.Fatalf("failed to read action.yml: %v", err)
+	}
+
+	var actionDef struct {
+		Inputs map[string]struct {
+			Description string `yaml:"description"`
+			Required    bool   `yaml:"required"`
+			Default     string `yaml:"default"`
+		} `yaml:"inputs"`
+	}
+	if err := yaml.Unmarshal(actionData, &actionDef); err != nil {
+		t.Fatalf("failed to parse action.yml: %v", err)
+	}
+
+	expectedInputs := map[string]struct {
+		required    bool
+		defaultVal  string
+		descKeyword string
+	}{
+		"artifact-baseline": {
+			required:    false,
+			defaultVal:  "false",
+			descKeyword: "artifact",
+		},
+		"artifact-name": {
+			required:    false,
+			defaultVal:  "",
+			descKeyword: "artifact",
+		},
+		"upload-artifact-baseline": {
+			required:    false,
+			defaultVal:  "false",
+			descKeyword: "baseline",
+		},
+		"github-token": {
+			required:    false,
+			defaultVal:  "${{ github.token }}",
+			descKeyword: "token",
+		},
+	}
+
+	for inputName, expected := range expectedInputs {
+		input, ok := actionDef.Inputs[inputName]
+		if !ok {
+			t.Errorf("action.yml missing declared input %q", inputName)
+			continue
+		}
+		if input.Required != expected.required {
+			t.Errorf("action.yml input %q required=%v, expected %v", inputName, input.Required, expected.required)
+		}
+		if input.Default != expected.defaultVal {
+			t.Errorf("action.yml input %q default=%q, expected %q", inputName, input.Default, expected.defaultVal)
+		}
+		if !strings.Contains(strings.ToLower(input.Description), expected.descKeyword) {
+			t.Errorf("action.yml input %q description %q missing keyword %q", inputName, input.Description, expected.descKeyword)
+		}
+	}
+}

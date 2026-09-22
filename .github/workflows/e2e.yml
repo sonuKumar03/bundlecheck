@@ -148,6 +148,21 @@ jobs:
             exit 1
           fi
 
+      - name: Test Action - Upload Artifact Baseline (Fixture Minimal)
+        id: test-artifact-baseline
+        uses: ./
+        with:
+          working-directory: testdata/minimal
+          stats: stats.json
+          dist: browser
+          upload-artifact-baseline: 'true'
+          artifact-name: 'fixture-test-baseline'
+          max-initial: 5MB
+
+      - name: Assert Baseline Upload File Created
+        run: |
+          test -f testdata/minimal/.bundlecheck/upload/fixture-test-baseline/baseline.json || (echo "Missing baseline upload json" && exit 1)
+
       - name: Test Action - Invalid Input Failure Case
         id: test-invalid-input
         continue-on-error: true

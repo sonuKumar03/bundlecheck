@@ -380,14 +380,24 @@ jobs:
 | `dist` | *(auto)* | Path to emitted `browser` dist with `index.html` (auto-detected if omitted). |
 | `project` | `""` | Project name for multi-project or Nx workspaces. |
 | `entry` | `""` | Scope bundlecheck analysis and budget enforcement to a specific entrypoint (e.g. `src/main.ts` or `main-*.js`). |
+| `artifact-baseline` | `false` | Attempt to restore baseline summary JSON from a GitHub Actions workflow artifact on base-ref. |
+| `artifact-name` | `""` | Name of the baseline workflow artifact (defaults to `bundlecheck-baseline` or `bundlecheck-baseline-<project>`). |
+| `upload-artifact-baseline` | `false` | Save current bundle summary and upload as an immutable baseline workflow artifact. |
+| `github-token` | `github.token` | Token used for downloading baseline artifacts and posting PR comments. |
 | `base-ref` | `github.base_ref` | Git ref for baseline comparison in PRs. Automatically fetched in shallow checkouts (`fetch-depth: 1` or `0`). |
 | `build-cmd` | `"npm run build"` | Command used to build `base-ref` inside an isolated temporary git worktree. |
 | `max-initial-delta` | `""` | Maximum allowed increase in initial JS vs baseline (e.g. `0B`, `10KB`). |
 | `max-total-delta` | `""` | Maximum allowed increase in total JS vs baseline. |
 | `post-comment` | `false` | Automatically creates or updates a single sticky PR comment with visual diffs. Requires `pull-requests: write`. |
 
+#### Persistent Memory with Workflow Artifacts (Fast & Secure)
+Instead of rebuilding the base branch in an isolated Git worktree for every PR, you can enable persistent baseline memory:
+1. **On `push` to `main`:** Set `upload-artifact-baseline: true` to save and upload the baseline snapshot as a GitHub workflow artifact.
+2. **On `pull_request`:** Set `artifact-baseline: true` to automatically download the immutable baseline artifact using GitHub CLI. If the artifact is not found, it gracefully falls back to the Git worktree build.
+3. **Multi-App Monorepos:** In multi-app workspaces, specifying `project: my-app` automatically namespaces the artifact to `bundlecheck-baseline-my-app`, enabling safe parallel matrix builds across applications.
+
 **Fallback & Error Handling:**
-- If comparing against a base ref succeeds, full visual diffs and package deltas are posted to the PR.
+- If comparing against an artifact baseline or base ref succeeds, full visual diffs and package deltas are posted to the PR.
 - If base ref build fails and **no delta regression budgets** were requested, the Action warns and falls back to current build measurements without failing CI.
 - If **delta regression limits** or explicit `base-ref` were requested and base analysis fails, the Action terminates with an error to ensure regression gates are never silently bypassed.
 
