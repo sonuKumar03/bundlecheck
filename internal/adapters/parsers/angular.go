@@ -19,17 +19,21 @@ func (p *AngularParser) Name() string {
 }
 
 func (p *AngularParser) Detect(sample []byte, distDir string) bool {
-	if !bytes.Contains(sample, []byte(`"inputs"`)) || !bytes.Contains(sample, []byte(`"outputs"`)) {
+	if !bytes.Contains(sample, []byte(`"inputs"`)) {
 		return false
 	}
 	// Check for Angular indicators
 	if bytes.Contains(sample, []byte("@angular/")) ||
+		bytes.Contains(sample, []byte("zone.js")) ||
 		bytes.Contains(sample, []byte("polyfills")) ||
 		bytes.Contains(sample, []byte("main.js")) {
 		return true
 	}
 	if distDir != "" {
 		if fi, err := os.Stat(filepath.Join(distDir, "index.html")); err == nil && !fi.IsDir() {
+			return true
+		}
+		if fi, err := os.Stat(filepath.Join(distDir, "browser", "index.html")); err == nil && !fi.IsDir() {
 			return true
 		}
 	}

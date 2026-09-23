@@ -49,7 +49,7 @@ func (p *EsbuildParser) Name() string {
 }
 
 func (p *EsbuildParser) Detect(sample []byte, distDir string) bool {
-	return bytes.Contains(sample, []byte(`"inputs"`)) && bytes.Contains(sample, []byte(`"outputs"`))
+	return bytes.Contains(sample, []byte(`"inputs"`)) && (bytes.Contains(sample, []byte(`"outputs"`)) || bytes.Contains(sample, []byte(`"bytes":`)))
 }
 
 func (p *EsbuildParser) Parse(ctx context.Context, target core.Target) (*core.Bundle, error) {

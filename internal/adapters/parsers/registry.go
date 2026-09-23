@@ -53,9 +53,20 @@ func (r *Registry) Resolve(target core.Target) (core.Parser, error) {
 	}
 	defer f.Close()
 
-	sniff := make([]byte, 8192)
+	sniff := make([]byte, 65536)
 	n, _ := f.Read(sniff)
 	sample := sniff[:n]
+
+	// If large file and outputs might be placed towards the end, append tail
+	if fi, err := f.Stat(); err == nil && fi.Size() > int64(len(sample)) {
+		tailSize := int64(32768)
+		if fi.Size() > tailSize {
+			tail := make([]byte, tailSize)
+			if _, err := f.ReadAt(tail, fi.Size()-tailSize); err == nil {
+				sample = append(sample, tail...)
+			}
+		}
+	}
 
 	for _, p := range r.parsers {
 		if p.Detect(sample, target.DistPath) {

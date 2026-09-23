@@ -39,6 +39,7 @@ func (r *NxResolver) Resolve(ctx context.Context, root string) ([]core.Target, e
 		// Look for standard dist or mock stats
 		statsCandidates := []string{
 			filepath.Join(root, "dist", "apps", name, "stats.json"),
+			filepath.Join(root, "dist", "apps", name, "browser", "stats.json"),
 			filepath.Join(appPath, "dist", "stats.json"),
 			filepath.Join(appPath, "stats.json"),
 		}
@@ -49,6 +50,10 @@ func (r *NxResolver) Resolve(ctx context.Context, root string) ([]core.Target, e
 			if _, err := os.Stat(sc); err == nil {
 				foundStats = sc
 				foundDist = filepath.Dir(sc)
+				browserSub := filepath.Join(foundDist, "browser")
+				if fi, err := os.Stat(browserSub); err == nil && fi.IsDir() {
+					foundDist = browserSub
+				}
 				break
 			}
 		}
