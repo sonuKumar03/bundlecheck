@@ -22,6 +22,14 @@ inputs:
     description: 'Project name for multi-project workspaces when auto-detecting'
     required: false
     default: ''
+  projects:
+    description: 'Comma-separated project names to track in CI (e.g. portal,admin-dashboard)'
+    required: false
+    default: ''
+  apps:
+    description: 'Explicit app targets in format "name=stats[:dist]" separated by commas or spaces'
+    required: false
+    default: ''
   entry:
     description: 'Scope bundleradar analysis and budget enforcement to a specific entrypoint (e.g. src/main.ts)'
     required: false
@@ -154,6 +162,8 @@ runs:
         INPUT_STATS: ${{ inputs.stats }}
         INPUT_DIST: ${{ inputs.dist }}
         INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_PROJECTS: ${{ inputs.projects }}
+        INPUT_APPS: ${{ inputs.apps }}
         INPUT_ENTRY: ${{ inputs.entry }}
         INPUT_BASELINE: ${{ inputs.baseline }}
         INPUT_BASE_REF: ${{ inputs.base-ref }}
@@ -177,6 +187,89 @@ runs:
         EVENT_BASE_REF: ${{ github.base_ref }}
       run: |
         set -eo pipefail
+
+        # 0. Multi-application tracking mode
+        if [ -n "$INPUT_PROJECTS" ] || [ -n "$INPUT_APPS" ]; then
+          echo "Running bundleradar in explicit multi-application mode..."
+          CHECK_FLAGS=()
+          if [ -n "$INPUT_PROJECTS" ]; then CHECK_FLAGS+=("--projects" "$INPUT_PROJECTS"); fi
+          if [ -n "$INPUT_APPS" ]; then
+            for app in ${INPUT_APPS//,/ }; do
+              CHECK_FLAGS+=("--app" "$app")
+            done
+          fi
+          if [ -n "$INPUT_ENTRY" ]; then CHECK_FLAGS+=("--entry" "$INPUT_ENTRY"); fi
+          if [ -n "$INPUT_MAX_INITIAL" ]; then CHECK_FLAGS+=("--max-initial" "$INPUT_MAX_INITIAL"); fi
+          if [ -n "$INPUT_MAX_LAZY" ]; then CHECK_FLAGS+=("--max-lazy" "$INPUT_MAX_LAZY"); fi
+          if [ -n "$INPUT_MAX_TOTAL" ]; then CHECK_FLAGS+=("--max-total" "$INPUT_MAX_TOTAL"); fi
+          if [ -n "$INPUT_BASELINE" ]; then CHECK_FLAGS+=("--baseline" "$INPUT_BASELINE"); fi
+          if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then CHECK_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); fi
+          if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then CHECK_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); fi
+
+          REPORT_FLAGS=("${CHECK_FLAGS[@]}" "-f" "$INPUT_FORMAT")
+          if [ -n "$INPUT_OUTPUT" ]; then
+            REPORT_FLAGS+=("-o" "$INPUT_OUTPUT")
+          fi
+
+          echo "Enforcing multi-application size budgets..."
+          set +e
+          bundleradar check "${REPORT_FLAGS[@]}"
+          CHECK_EXIT=$?
+          set -e
+
+          if [ $CHECK_EXIT -ne 0 ]; then
+            if [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
+              echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
+            else
+              echo "::error::bundleradar check execution failed (exit code $CHECK_EXIT)"
+              exit $CHECK_EXIT
+            fi
+          fi
+
+          # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
+          if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
+            cat "$INPUT_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Extract structured metrics via JSON
+          JSON_OUT=$(bundleradar check "${CHECK_FLAGS[@]}" -f json)
+          if [ -n "$INPUT_JSON_OUTPUT" ]; then
+            echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
+          fi
+
+          # Parse multi-app metrics strictly
+          PARSED_METRICS=$(node -e '
+            const data = process.argv[1];
+            try {
+              const parsed = JSON.parse(data);
+              if (Array.isArray(parsed.summary)) {
+                let initial = 0, total = 0, lazy = 0;
+                for (const p of parsed.summary) {
+                  initial += p.initialJs || 0;
+                  total += p.totalJs || 0;
+                }
+                lazy = total > initial ? total - initial : 0;
+                console.log([initial, lazy, total].join(" "));
+              } else {
+                console.error("Missing summary array in multi-app JSON output");
+                process.exit(1);
+              }
+            } catch (e) {
+              console.error("Failed to parse bundleradar multi-app JSON check:", e.message);
+              process.exit(1);
+            }
+          ' "$JSON_OUT")
+
+          read -r INITIAL LAZY TOTAL <<< "$PARSED_METRICS"
+
+          echo "initial_bytes=$INITIAL" >> $GITHUB_OUTPUT
+          echo "lazy_bytes=$LAZY" >> $GITHUB_OUTPUT
+          echo "total_bytes=$TOTAL" >> $GITHUB_OUTPUT
+          echo "comparison_status=completed" >> $GITHUB_OUTPUT
+          echo "comparison_message=Evaluated multi-app budgets across tracked targets" >> $GITHUB_OUTPUT
+
+          exit 0
+        fi
 
         ARGS=()
         if [ -n "$INPUT_STATS" ]; then ARGS+=("-s" "$INPUT_STATS"); fi
@@ -389,6 +482,8 @@ runs:
         WORKING_DIR: ${{ inputs.working-directory }}
         OUTPUT_FILE: ${{ inputs.output }}
         PROJECT_NAME: ${{ inputs.project }}
+        PROJECTS: ${{ inputs.projects }}
+        APPS: ${{ inputs.apps }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
@@ -407,20 +502,29 @@ runs:
 
           if (fs.existsSync(reportPath)) {
             const reportContent = fs.readFileSync(reportPath, 'utf8');
-            const rawProject = (process.env.PROJECT_NAME || '').trim();
-            const project = rawProject ? rawProject.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
-            const headerTag = project ? `<!-- bundleradar-comment-${project} -->` : '<!-- bundleradar-comment -->';
-            const fallbackHeaderTag = project ? `<!-- bundleradar-report-${project} -->` : '<!-- bundleradar-report -->';
+            const isMultiApp = (process.env.PROJECTS || '').trim() !== '' || (process.env.APPS || '').trim() !== '' || reportContent.includes('<!-- bundleradar-multi-project-report -->');
+            let headerTag = '<!-- bundleradar-comment -->';
+            let fallbackHeaderTag = '<!-- bundleradar-report -->';
             let body = reportContent;
-            if (project) {
-              body = body.replace(/<!-- bundleradar-comment -->/g, headerTag)
-                         .replace(/<!-- bundleradar-report -->/g, fallbackHeaderTag);
 
-              if (!body.includes(`(\`${rawProject}\`)`)) {
-                body = body.replace(
-                  /^(## [^—\n]+)( — [^\n]+)/m,
-                  `$1 (\`${rawProject}\`)$2`
-                );
+            if (isMultiApp) {
+              headerTag = '<!-- bundleradar-multi-project-report -->';
+              fallbackHeaderTag = '<!-- bundleradar-multi-project-report -->';
+            } else {
+              const rawProject = (process.env.PROJECT_NAME || '').trim();
+              const project = rawProject ? rawProject.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
+              if (project) {
+                headerTag = `<!-- bundleradar-comment-${project} -->`;
+                fallbackHeaderTag = `<!-- bundleradar-report-${project} -->`;
+                body = body.replace(/<!-- bundleradar-comment -->/g, headerTag)
+                           .replace(/<!-- bundleradar-report -->/g, fallbackHeaderTag);
+
+                if (!body.includes(`(\`${rawProject}\`)`)) {
+                  body = body.replace(
+                    /^(## [^—\n]+)( — [^\n]+)/m,
+                    `$1 (\`${rawProject}\`)$2`
+                  );
+                }
               }
             }
             if (!body.includes(headerTag) && !body.includes(fallbackHeaderTag)) {
