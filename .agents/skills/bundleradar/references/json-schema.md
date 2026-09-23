@@ -1,38 +1,33 @@
 # JSON contracts
 
-Consumers must accept additive fields. `schemaVersion` changes for breaking contracts; `toolVersion` identifies the producer. Collections use deterministic ordering.
+BundleRadar v2 formats output as structured JSON for automation and AI agents.
 
-## Summary
+## Scan JSON (`bundleradar scan -f json`)
 
-- `summary.initialJs`, `lazyJs`, `totalJs`: exact emitted JavaScript bytes.
-- `summary.initialGzipJs`, `lazyGzipJs`, `totalGzipJs`: gzip estimates when requested.
-- `packages[]`: attributed package `initialBytes`, `lazyBytes`, and `totalBytes`.
+- `metadata`: `bundler`, `timestamp`, `commitSha`.
+- `entrypoints`: map of entrypoint name to `initialBytes`, `initialGzipBytes`, `asyncBytes`, `chunkIds`.
+- `chunks[]`: `id`, `name`, `path`, `sizeBytes`, `gzipBytes`, `type` (`initial` / `async`), `entry`, `moduleIds`.
+- `modules[]`: `id`, `package`, `version`, `sizeBytes`, `gzipBytes`, `isAppCode`, `chunkIds`.
+- `assets[]`: compiled auxiliary files (CSS, WASM, images).
 
-## Suggestions
+## Diff JSON (`bundleradar diff -f json`)
 
-- `suggestions[].rule`, `severity`, `target`, `file`, and `action` describe the candidate.
-- `suggestions[].savingsBytes` and `savingsGzipBytes` are estimates, not measured results.
-- `totalPotentialSavings` aggregates estimates and can overlap; do not present it as achieved savings.
+- `initialDelta`: signed delta in initial bytes (negative is reduction, positive is growth).
+- `asyncDelta`: signed delta in async/lazy bytes.
+- `totalDelta`: signed delta in total bundle bytes.
+- `entrypointDeltas`: per-entrypoint initial and async deltas.
+- `packageDeltas[]`: npm packages added, removed, or changed with byte differences.
 
-## Trace
+## Gate JSON (`bundleradar gate -f json`)
 
-- `target`, `packageName`, `found`, `initialBytes`, `lazyBytes`, `totalBytes` identify the subject.
-- `chains[].path` is the ordered import path; `output`, `initial`, and `bytesInChunk` describe its emitted location.
-
-## Comparison and measure
-
-- `summary.before`, `after`, and `delta` contain `initialJs`, `lazyJs`, and `totalJs`.
-- Deltas are signed integers: negative means fewer bytes, positive means growth.
-- `packages[].status` is `added`, `removed`, `changed`, or `unchanged`; each package has before/after/delta byte fields.
-- `findings[]` may explain deterministic regressions.
+- `passed`: boolean indicating whether all policy limits passed.
+- `violations[]`: list of specific policy breaches (`rule`, `metric`, `actual`, `limit`, `message`).
 
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
-| 0 | analysis succeeded and any policy passed |
+| 0 | analysis succeeded and policy passed |
 | 1 | budget, regression, or package policy violation |
-| 2 | invalid usage or configuration |
-| 3 | execution failure, missing artifacts, or incomplete workspace analysis |
-
-On code 0 parse stdout. On code 1 preserve the JSON report when present and report the violated policy. On codes 2 or 3 report stderr and correct the input or build state before retrying.
+| 2 | invalid usage or configuration flags |
+| 3 | execution failure, missing files, or build error |

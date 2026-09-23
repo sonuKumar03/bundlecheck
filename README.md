@@ -115,204 +115,98 @@ ng build --configuration production --stats-json
 
 ```bash
 # View initial JS vs lazy breakdown & top npm contributors
-bundleradar summary dist/my-app/stats.json
+bundleradar scan dist/my-app/stats.json
 
 # Scope analysis to a specific entrypoint by source file or chunk glob
-bundleradar summary dist/my-app/stats.json --entry src/main.ts
-bundleradar summary dist/my-app/stats.json -e "main-*.js"
-
-# Inspect the modules and packages inside one emitted chunk
-bundleradar inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
+bundleradar scan dist/my-app/stats.json --entry src/main.ts
+bundleradar scan dist/my-app/stats.json -e "main-*.js"
 
 # Trace why a package was pulled into initial JS
-bundleradar why dist/my-app/stats.json lodash-es
+bundleradar scan dist/my-app/stats.json --why lodash-es
 
-# Get automated optimization recommendations
-bundleradar suggest dist/my-app/stats.json
+# Compare against a baseline file or git ref with regression attribution
+bundleradar diff dist/my-app/stats.json --against main
 
 # Enforce CI size budget (fails with exit code 1 on violation)
-bundleradar check dist/my-app/stats.json --max-initial 250kb --max-total 1.2mb
+bundleradar gate dist/my-app/stats.json --max-initial 250kb --max-total 1.2mb
 ```
 
 ---
 
 ## 📖 Command Reference
 
-### 1. `bundleradar summary`
-Calculates accurate initial vs. lazy JavaScript byte totals and ranks all contributing npm packages.
+### 1. `bundleradar scan`
+Inspect bundle sizes, breakdown, and package dependencies across entrypoints. Supports esbuild, Angular, Vite, and Webpack stats.
 
 ```bash
-# Basic summary
-bundleradar summary dist/my-app/stats.json
+# Basic scan
+bundleradar scan dist/my-app/stats.json
 
-# Scope summary to a specific entrypoint (source path or emitted chunk glob)
-bundleradar summary dist/my-app/stats.json --entry src/main.ts
-bundleradar summary dist/my-app/stats.json -e "main-*.js"
+# Scope scan to a specific entrypoint (source path or emitted chunk glob)
+bundleradar scan dist/my-app/stats.json --entry src/main.ts
+bundleradar scan dist/my-app/stats.json -e "main-*.js"
 
-# Include estimated Gzip wire transfer sizes
-bundleradar summary dist/my-app/stats.json --gzip
-
-# Show top 15 packages and filter by name
-bundleradar summary dist/my-app/stats.json --top 15 --filter @angular
+# Show top 15 packages and trace package dependency root
+bundleradar scan dist/my-app/stats.json --top 15 --why lodash-es
 
 # Export machine-readable JSON (ideal for scripts & agent loops)
-bundleradar summary dist/my-app/stats.json --format json -o summary.json
+bundleradar scan dist/my-app/stats.json --format json -o scan.json
 ```
 
 > **Entrypoint Scoping & TotalJS Invariant:** Using `--entry` / `-e` with either a source path (e.g. `src/main.ts`) or an emitted chunk glob (e.g. `main-*.js`, `worker.js`) scopes initial versus lazy reachability, package attribution, and root traces strictly to the selected entrypoint. The overall `TotalJS` metric consistently reflects the whole browser build across all chunks.
 
 ---
 
-### 2. `bundleradar inspect <chunk>`
-Shows the exact module and npm package contributions inside one emitted JavaScript chunk. The target can be its full output path or a unique filename.
+### 2. `bundleradar diff`
+Compare current build against a baseline file or git ref with regression attribution. Automatically creates an isolated temporary git worktree and runs `--build-cmd` when given a git ref.
 
 ```bash
-bundleradar inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
-bundleradar inspect browser/chunk-ABC123.js --format json
+# Compare against baseline file
+bundleradar diff dist/my-app/stats.json --against baseline.json
+
+# Compare against git branch with worktree build and drift threshold
+bundleradar diff dist/my-app/stats.json --against main --drift-threshold 1KB
+
+# Generate PR markdown report for CI
+bundleradar diff dist/my-app/stats.json --against main -f github-pr -o report.md
 ```
 
 ---
 
-### 3. `bundleradar why <package>`
-Traces the exact import graph path from entrypoints (`src/main.ts`) down to any bundled file or package.
-
-```bash
-# Find why lodash-es is inside your bundle
-bundleradar why dist/my-app/stats.json lodash-es
-
-# Trace import path starting from a specific entrypoint
-bundleradar why dist/my-app/stats.json lodash-es --entry src/main.ts
-bundleradar why dist/my-app/stats.json lodash-es -e "main-*.js"
-```
-
-**Example ASCII Tree Output:**
-```text
-IMPORT CHAIN TRACE: 'lodash-es' (18.40 KB)
--------------------------------------------------------------
-src/main.ts
- └── src/app/app.config.ts
-      └── src/app/services/analytics.service.ts
-           └── node_modules/lodash-es/debounce.js [in chunk: main-C82D.js]
-
-✓ Direct dependency. Package enters through the initial entry point.
-```
-
----
-
-### 4. `bundleradar suggest`
-Scans the bundle against optimization heuristics to suggest concrete refactoring opportunities.
-
-```bash
-bundleradar suggest dist/my-app/stats.json
-bundleradar suggest dist/my-app/stats.json --entry src/main.ts
-```
-
-**Built-in Optimization Rules:**
-- 🚫 **Initial Third-Party Packages**: Identifies packages in initial JS and suggests dynamic imports when they are not critical for first paint.
-- 🧩 **Duplicate Package Copies**: Identifies distinct installed copies contributing to initial JS and suggests deduplication. Stats do not identify package version numbers.
-- ⚡ **Eager Feature Routes**: Identifies routed components bundled directly into `main.js` that should use `loadComponent: () => import(...)`.
-
----
-
-### 5. `bundleradar baseline` & `measure` (Git Worktrees & Snapshots)
-Capture, manage, switch, and compare baseline bundle metrics across git branches without manual branch switching or rebuilding.
-
-```bash
-# ─── 1. CAPTURE BASELINE FROM CURRENT BUILD OR GIT BRANCH ───
-bundleradar baseline save                                     # Save current build as active baseline
-bundleradar baseline save --entry src/main.ts                 # Save baseline scoped to an entrypoint
-bundleradar baseline save --ref release/v2.0 --name rel-v2   # Build branch in isolated worktree
-
-# ─── 2. LIST & SWITCH SAVED BASELINES ───
-bundleradar baseline list                                     # List all saved baselines and active status
-bundleradar baseline use rel-v2                               # Switch active baseline for 'measure'
-
-# ─── 3. REBUILD & UPDATE BASELINES ───
-bundleradar baseline rebuild rel-v2                           # Re-runs worktree build for latest branch commits
-
-# ─── 4. CONTINUOUS LIVE DELTA MEASUREMENT ───
-bundleradar measure                                           # Measure current build against active baseline
-bundleradar measure --entry src/main.ts                       # Measure scoped to entrypoint
-bundleradar measure -b rel-v2 --max-initial-delta 0B          # Fail in CI if initial bundle grows
-```
-
-**Example Output (`bundleradar measure`):**
-```text
-MEASURING AGAINST ACTIVE BASELINE (rel-v2)
--------------------------------------------------------------
-Initial JavaScript:  1.42 MB  -> 1.18 MB  (-240.00 KB / -16.9%) 📉
-Lazy Chunks:         3.10 MB  -> 2.95 MB  (-150.00 KB / -4.8%)  📉
-Total Bundle Size:   4.52 MB  -> 4.13 MB  (-390.00 KB / -8.6%)  🎉
-```
-
----
-
-### 6. `bundleradar compare`
-Compares saved JSON summary snapshots, or a baseline snapshot against Angular build stats:
-
-```bash
-bundleradar compare .bundleradar/baseline.json dist/my-app/stats.json
-```
-
----
-
-### 7. `bundleradar check`
-Strict CI budget gate with custom pass/fail exit codes.
+### 3. `bundleradar gate`
+Validate bundle sizes, regressions, and architecture rules against policy budgets in CI.
 
 ```bash
 # Enforce initial and total JS size limits
-bundleradar check dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
+bundleradar gate dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
 
-# Scope size budgets to a specific entrypoint by source file or chunk glob
-bundleradar check dist/my-app/stats.json --entry src/main.ts --max-initial 250kb
-bundleradar check dist/my-app/stats.json -e "main-*.js" --max-initial 250kb
-bundleradar check dist/my-app/stats.json -e "worker.js" --max-initial 100kb
+# Enforce regression limits against a baseline file or git ref
+bundleradar gate dist/my-app/stats.json --against main --max-initial-delta 0kb
 
-# Enforce regression limits against a baseline snapshot
-bundleradar check dist/my-app/stats.json --baseline baseline.json --max-initial-delta 0kb
+# Disallow unwanted packages and detect duplicate package copies
+bundleradar gate dist/my-app/stats.json --forbid moment,lodash --detect-duplicate-pkgs
 ```
-*Exits with status `0` on success, or status `1` when any budget is exceeded.*
+*Exits with status `0` on success, or status `1` when any budget or rule is violated.*
 
 ---
 
-### 8. `bundleradar init`
-Assisted setup to generate or propose a reviewable `.bundleradar.yml` configuration:
+### 4. `bundleradar workspace`
+Discover and analyze applications across monorepos and multi-app workspaces (Nx, pnpm, npm, yarn).
 
 ```bash
-# Preview proposed budgets with 5% headroom over measured size
-bundleradar init
+# List all discovered application targets
+bundleradar workspace list --root .
 
-# Import budgets directly from angular.json
-bundleradar init --from-angular-budgets
+# Scan and summarize all application targets
+bundleradar workspace scan --root .
 
-# Save proposed configuration to .bundleradar.yml
-bundleradar init --write --headroom 10
+# Scan specific application targets
+bundleradar workspace scan --app "portal=apps/portal/dist/stats.json" --app "admin=apps/admin/dist/stats.json" -f json
 ```
-*Creates `.bundleradar.yml` only if it does not already exist.*
 
 ---
 
-### 9. `bundleradar workspace summary` (Nx & Monorepo Intelligence)
-
-Compare app sizes, shared library costs, and duplicate npm dependencies across an Nx or Angular multi-app workspace:
-
-```bash
-# Analyze all applications in workspace
-bundleradar workspace summary
-
-# Select specific projects
-bundleradar workspace summary --projects admin-dashboard,portal
-
-# Export machine-readable JSON or markdown
-bundleradar workspace summary --format json -o workspace-report.json
-bundleradar workspace summary --format markdown --all
-```
-
-Supported builders include `@nx/angular:application`, `@nx/angular:browser-esbuild`, `@angular-devkit/build-angular:application`, `@angular-devkit/build-angular:browser-esbuild`, and `@angular/build:application`. Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, freshness indicators, and drill-down commands.
-
----
-
-### 10. `bundleradar mcp` (Model Context Protocol Server for AI Agents)
+### 5. `bundleradar mcp` (Model Context Protocol Server for AI Agents)
 
 Launch a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server over standard I/O for AI coding assistants (**Claude Code**, **Antigravity**, **Cursor**, **Claude Desktop**).
 
@@ -321,23 +215,19 @@ bundleradar mcp
 ```
 
 **Exposed MCP Tools:**
-- `bundle_summary`: Inspects bundle sizes, initial vs. lazy JS breakdown, and ranked npm contributors (with `path`, `project`, `entry`, `top`, `filter`).
-- `bundle_why`: Traces dependency import paths from entrypoints to any target module.
-- `bundle_suggest`: Proposes prioritized optimization recommendations with estimated byte savings.
-- `bundle_check`: Evaluates absolute budgets and disallowed package rules.
-- `bundle_measure`: Measures size deltas against baseline snapshots with regression thresholds.
-- `workspace_summary`: Analyzes multi-app Nx workspaces, shared libraries, and cross-application duplicate dependencies.
-
-All bundle MCP tools accept `entry`. If `index.html` contains an injected script such as `ENV_polyfills.js` that is absent from `stats.json`, the server retries with the configured Angular `browser`/`main` entry when it matches the stats; otherwise it returns valid entry selectors for an agent retry.
+- `bundle_scan`: Analyze bundle sizes, entrypoints, and top contributing npm packages.
+- `bundle_diff`: Compare current build against a baseline file or git ref with regression attribution.
+- `bundle_gate`: Validate bundle sizes, regressions, and architecture rules against policy budgets.
+- `workspace_summary`: Discover and summarize application targets across a workspace.
 
 **Exposed MCP Resource:**
-- `bundleradar://rules`: Standard bundle optimization heuristics and modern replacement guidelines for common heavy packages.
+- `bundleradar://rules`: Bundle optimization rules and guidelines.
 
 ---
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundleradar@v0.6.2`)
+### Official GitHub Action (`uses: sonuKumar03/bundleradar@v2.0.0`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -363,7 +253,7 @@ jobs:
       - run: npx ng build --configuration production --stats-json
 
       - name: Run bundleradar & Post PR Report
-        uses: sonuKumar03/bundleradar@v0.6.2
+        uses: sonuKumar03/bundleradar@v2.0.0
         with:
           stats: dist/my-app/stats.json
           entry: src/main.ts

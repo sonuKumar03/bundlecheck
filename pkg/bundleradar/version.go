@@ -1,4 +1,4 @@
 package bundleradar
 
 // ToolVersion is the current version of bundleradar.
-var ToolVersion = "0.6.2"
+var ToolVersion = "2.0.0"

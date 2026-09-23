@@ -1,31 +1,34 @@
 # Baselines, gates, and CI
 
-## Local baseline loop
+## Local baseline & diff loop
 
 ```sh
-bundleradar baseline save --name pre-change --format json
-# edit, rebuild production stats, and run project tests
-bundleradar measure --baseline pre-change --format json
-bundleradar check --baseline pre-change --max-initial-delta 0B --format json
+# Diff current build against baseline file or git branch
+bundleradar diff dist/my-app/stats.json --against baseline.json -f json
+bundleradar diff dist/my-app/stats.json --against main -f json
+
+# Enforce budget limits and regression delta gates
+bundleradar gate dist/my-app/stats.json --max-initial 250KB -f json
+bundleradar gate dist/my-app/stats.json --against main --max-initial-delta 0B -f json
 ```
 
-Use `baseline save --ref <git-ref> --name <name>` only when Git is available and the build can run in an isolated worktree. `baseline list`, `use`, `show`, `rebuild`, and `delete` manage named snapshots. Use `compare` for two arbitrary saved snapshots.
+`bundleradar diff` and `bundleradar gate` automatically detect whether `--against` is a local file or a git ref (e.g. `main`, `HEAD~1`). When given a git ref, they create an isolated worktree, build it with `--build-cmd` (default `npm run build`), and compare the emitted bundle.
 
-Measure and check the same project and entry scope captured by the baseline. A negative signed delta is a reduction; a positive delta is growth.
+A negative signed delta is a reduction; a positive delta is growth.
 
 ## Reports
 
-`summary`, `compare`, `measure`, and `check` support Markdown output for CI summaries or PR comments:
+`scan`, `diff`, and `gate` support multiple reporter formats:
+- `terminal` (default): ANSI-colored human inspection
+- `markdown`: Clean tables for GitHub Step Summary and PR bodies
+- `github-pr`: Structured PR sticky comment tables with regression attribution
+- `json`: Machine-readable output for scripts and agent loops
 
 ```sh
-bundleradar measure --baseline pre-change --format markdown -o bundle-report.md
-bundleradar check --max-initial 250KB --format markdown
+bundleradar diff dist/my-app/stats.json --against main -f github-pr -o bundle-report.md
+bundleradar gate dist/my-app/stats.json --max-initial 250KB -f markdown
 ```
-
-Do not claim runtime-performance improvement from these reports. Include the measured byte delta and build/test evidence.
 
 ## GitHub Action
 
-The repository action can analyze current stats, build a base-ref baseline, enforce absolute or delta budgets, and maintain a PR comment. Build current production stats before invoking it. Delta gates must fail closed when base analysis is unavailable; report-only runs may fall back to current-build measurements with a warning.
-
-Prefer an immutable released action tag. Configure only inputs declared by `action.yml`, especially `stats`, `dist`, `project`, `entry`, `base-ref`, `build-cmd`, size/delta limits, and `post-comment`.
+The repository action (`sonuKumar03/bundleradar@v2.0.0`) runs in GitHub Actions to analyze stats, compare against PR base refs, enforce size and delta budgets, and post PR comments.

@@ -206,7 +206,7 @@ bundleradar measure -b pre-refactor --max-initial-delta 0B
 | Field | Meaning |
 | :--- | :--- |
 | `schemaVersion` | JSON contract version; currently `"1"`. |
-| `toolVersion` | Tool release version; currently `"0.6.2"`. |
+| `toolVersion` | Tool release version; currently `"2.0.0"`. |
 | `command` | The string `"summary"`. |
 | `summary.initialJs`, `summary.initialGzipJs` | Raw & Gzip bytes of browser JS in static bootstrap closure. |
 | `summary.lazyJs`, `summary.lazyGzipJs` | Raw & Gzip bytes of lazy JS outputs. |
