@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sonuKumar03/bundleradar/internal/budget"
 	"github.com/sonuKumar03/bundleradar/internal/core/diff"
 	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 	"github.com/spf13/cobra"
@@ -17,6 +16,8 @@ func newGateCommand() *cobra.Command {
 		format              string
 		output              string
 		against             string
+		buildCmd            string
+		noBuild             bool
 		maxInitial          string
 		maxTotal            string
 		maxInitialDelta     string
@@ -51,33 +52,31 @@ func newGateCommand() *cobra.Command {
 
 			var diffResult *bundleradar.BundleDiff
 			if against != "" {
-				baseBundle, err := client.Scan(ctx, bundleradar.ScanOptions{
-					StatsPath: against,
-					Bundler:   bundler,
-				})
+				baseBundle, cleanupBase, err := resolveBaselineBundle(ctx, client, against, statsPath, bundler, buildCmd, noBuild, c.OutOrStdout(), format)
 				if err != nil {
-					return fmt.Errorf("scan baseline bundle %q: %w", against, err)
+					return err
 				}
+				defer cleanupBase()
 				diffResult = client.Diff(baseBundle, bundle, diff.Options{})
 			}
 
 			var pol bundleradar.Policy
 			if maxInitial != "" {
-				val, err := budget.ParseBytes(maxInitial)
+				val, err := bundleradar.ParseBytes(maxInitial)
 				if err != nil {
 					return fmt.Errorf("invalid --max-initial: %w", err)
 				}
 				pol.MaxInitial = &val
 			}
 			if maxTotal != "" {
-				val, err := budget.ParseBytes(maxTotal)
+				val, err := bundleradar.ParseBytes(maxTotal)
 				if err != nil {
 					return fmt.Errorf("invalid --max-total: %w", err)
 				}
 				pol.MaxTotal = &val
 			}
 			if maxInitialDelta != "" {
-				val, err := budget.ParseBytes(maxInitialDelta)
+				val, err := bundleradar.ParseBytes(maxInitialDelta)
 				if err != nil {
 					return fmt.Errorf("invalid --max-initial-delta: %w", err)
 				}
@@ -115,7 +114,9 @@ func newGateCommand() *cobra.Command {
 	c.Flags().StringVar(&bundler, "bundler", "", "Override bundler auto-detection")
 	c.Flags().StringVarP(&format, "format", "f", "terminal", "Output format: terminal, markdown, github-pr, json")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to file path")
-	c.Flags().StringVar(&against, "against", "", "Baseline stats/metafile to enforce delta limits")
+	c.Flags().StringVar(&against, "against", "", "Baseline stats/metafile or git ref to enforce delta limits")
+	c.Flags().StringVar(&buildCmd, "build-cmd", "npm run build", "Build command to execute inside temporary worktree")
+	c.Flags().BoolVar(&noBuild, "no-build", false, "Skip building inside temporary worktree")
 	c.Flags().StringVar(&maxInitial, "max-initial", "", "Maximum allowed initial bundle size (e.g. 250KB, 1MB)")
 	c.Flags().StringVar(&maxTotal, "max-total", "", "Maximum allowed total bundle size (e.g. 1.5MB)")
 	c.Flags().StringVar(&maxInitialDelta, "max-initial-delta", "", "Maximum allowed increase vs baseline")

@@ -191,40 +191,19 @@ runs:
         # 0. Multi-application tracking mode
         if [ -n "$INPUT_PROJECTS" ] || [ -n "$INPUT_APPS" ]; then
           echo "Running bundleradar in explicit multi-application mode..."
-          CHECK_FLAGS=()
-          if [ -n "$INPUT_PROJECTS" ]; then CHECK_FLAGS+=("--projects" "$INPUT_PROJECTS"); fi
+          WS_FLAGS=()
           if [ -n "$INPUT_APPS" ]; then
             for app in ${INPUT_APPS//,/ }; do
-              CHECK_FLAGS+=("--app" "$app")
+              WS_FLAGS+=("--app" "$app")
             done
           fi
-          if [ -n "$INPUT_ENTRY" ]; then CHECK_FLAGS+=("--entry" "$INPUT_ENTRY"); fi
-          if [ -n "$INPUT_MAX_INITIAL" ]; then CHECK_FLAGS+=("--max-initial" "$INPUT_MAX_INITIAL"); fi
-          if [ -n "$INPUT_MAX_LAZY" ]; then CHECK_FLAGS+=("--max-lazy" "$INPUT_MAX_LAZY"); fi
-          if [ -n "$INPUT_MAX_TOTAL" ]; then CHECK_FLAGS+=("--max-total" "$INPUT_MAX_TOTAL"); fi
-          if [ -n "$INPUT_BASELINE" ]; then CHECK_FLAGS+=("--baseline" "$INPUT_BASELINE"); fi
-          if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then CHECK_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); fi
-          if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then CHECK_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); fi
 
-          REPORT_FLAGS=("${CHECK_FLAGS[@]}" "-f" "$INPUT_FORMAT")
+          REPORT_FLAGS=("${WS_FLAGS[@]}" "-f" "$INPUT_FORMAT")
           if [ -n "$INPUT_OUTPUT" ]; then
             REPORT_FLAGS+=("-o" "$INPUT_OUTPUT")
           fi
 
-          echo "Enforcing multi-application size budgets..."
-          set +e
-          bundleradar check "${REPORT_FLAGS[@]}"
-          CHECK_EXIT=$?
-          set -e
-
-          if [ $CHECK_EXIT -ne 0 ]; then
-            if [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
-              echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
-            else
-              echo "::error::bundleradar check execution failed (exit code $CHECK_EXIT)"
-              exit $CHECK_EXIT
-            fi
-          fi
+          bundleradar workspace scan "${REPORT_FLAGS[@]}"
 
           # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
           if [ -n "$GITHUB_STEP_SUMMARY" ] && [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
@@ -232,7 +211,7 @@ runs:
           fi
 
           # Extract structured metrics via JSON
-          JSON_OUT=$(bundleradar check "${CHECK_FLAGS[@]}" -f json)
+          JSON_OUT=$(bundleradar workspace scan "${WS_FLAGS[@]}" -f json)
           if [ -n "$INPUT_JSON_OUTPUT" ]; then
             echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
           fi
@@ -242,20 +221,12 @@ runs:
             const data = process.argv[1];
             try {
               const parsed = JSON.parse(data);
-              if (Array.isArray(parsed.summary)) {
-                let initial = 0, total = 0, lazy = 0;
-                for (const p of parsed.summary) {
-                  initial += p.initialJs || 0;
-                  total += p.totalJs || 0;
-                }
-                lazy = total > initial ? total - initial : 0;
-                console.log([initial, lazy, total].join(" "));
-              } else {
-                console.error("Missing summary array in multi-app JSON output");
-                process.exit(1);
-              }
+              const initial = parsed.totalInitialBytes || 0;
+              const lazy = parsed.totalAsyncBytes || 0;
+              const total = parsed.totalBytes || (initial + lazy);
+              console.log([initial, lazy, total].join(" "));
             } catch (e) {
-              console.error("Failed to parse bundleradar multi-app JSON check:", e.message);
+              console.error("Failed to parse bundleradar workspace JSON output:", e.message);
               process.exit(1);
             }
           ' "$JSON_OUT")
@@ -266,24 +237,22 @@ runs:
           echo "lazy_bytes=$LAZY" >> $GITHUB_OUTPUT
           echo "total_bytes=$TOTAL" >> $GITHUB_OUTPUT
           echo "comparison_status=completed" >> $GITHUB_OUTPUT
-          echo "comparison_message=Evaluated multi-app budgets across tracked targets" >> $GITHUB_OUTPUT
+          echo "comparison_message=Evaluated multi-app workspace scan across tracked targets" >> $GITHUB_OUTPUT
 
           exit 0
         fi
 
         ARGS=()
-        if [ -n "$INPUT_STATS" ]; then ARGS+=("-s" "$INPUT_STATS"); fi
         if [ -n "$INPUT_DIST" ]; then ARGS+=("-d" "$INPUT_DIST"); fi
-        if [ -n "$INPUT_PROJECT" ]; then ARGS+=("-p" "$INPUT_PROJECT"); fi
         if [ -n "$INPUT_ENTRY" ]; then ARGS+=("--entry" "$INPUT_ENTRY"); fi
 
-        BASELINE_FILE="$INPUT_BASELINE"
+        BASELINE_TARGET="$INPUT_BASELINE"
         COMPARISON_STATUS="unavailable"
         COMPARISON_MESSAGE="No baseline file or pull request base ref available"
 
         # Determine target base ref
         TARGET_BASE_REF="$INPUT_BASE_REF"
-        if [ -z "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ] && [ "$EVENT_NAME" = "pull_request" ]; then
+        if [ -z "$TARGET_BASE_REF" ] && [ -z "$BASELINE_TARGET" ] && [ "$EVENT_NAME" = "pull_request" ]; then
           TARGET_BASE_REF="$EVENT_BASE_REF"
         fi
 
@@ -303,7 +272,7 @@ runs:
         fi
 
         # Attempt to retrieve baseline artifact if requested
-        if [ "$INPUT_ARTIFACT_BASELINE" = "true" ] && [ -z "$BASELINE_FILE" ]; then
+        if [ "$INPUT_ARTIFACT_BASELINE" = "true" ] && [ -z "$BASELINE_TARGET" ]; then
           echo "Attempting to retrieve baseline artifact '$EFFECTIVE_ARTIFACT_NAME'..."
           ARTIFACT_DIR=".bundleradar/artifacts/$EFFECTIVE_ARTIFACT_NAME"
           mkdir -p "$ARTIFACT_DIR"
@@ -326,19 +295,19 @@ runs:
           if [ "$DOWNLOAD_SUCCESS" = "true" ]; then
             FOUND_BASELINE=$(find "$ARTIFACT_DIR" -type f -name "*.json" 2>/dev/null | head -n 1)
             if [ -n "$FOUND_BASELINE" ] && [ -f "$FOUND_BASELINE" ]; then
-              BASELINE_FILE="$FOUND_BASELINE"
+              BASELINE_TARGET="$FOUND_BASELINE"
               COMPARISON_STATUS="completed"
               COMPARISON_MESSAGE="Successfully retrieved baseline from artifact '$EFFECTIVE_ARTIFACT_NAME'"
-              echo "  ✓ $COMPARISON_MESSAGE ($BASELINE_FILE)"
+              echo "  ✓ $COMPARISON_MESSAGE ($BASELINE_TARGET)"
             else
               echo "  ::warning::Artifact '$EFFECTIVE_ARTIFACT_NAME' downloaded but contained no valid JSON baseline file."
             fi
           else
-            echo "  ::notice::No baseline artifact '$EFFECTIVE_ARTIFACT_NAME' found. Falling back to worktree build or summary."
+            echo "  ::notice::No baseline artifact '$EFFECTIVE_ARTIFACT_NAME' found. Falling back to git ref or scan."
           fi
         fi
 
-        if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_FILE" ]; then
+        if [ -n "$TARGET_BASE_REF" ] && [ -z "$BASELINE_TARGET" ]; then
           echo "Preparing base git ref: $TARGET_BASE_REF..."
           # Ensure base ref is fetched even in shallow checkouts
           if ! git rev-parse --verify "$TARGET_BASE_REF" >/dev/null 2>&1 && ! git rev-parse --verify "origin/$TARGET_BASE_REF" >/dev/null 2>&1; then
@@ -350,71 +319,41 @@ runs:
             TARGET_BASE_REF="origin/$TARGET_BASE_REF"
           fi
 
-          RESOLVED_BASE_SHA=$(git rev-parse --short "$TARGET_BASE_REF" 2>/dev/null || true)
-          if [ -n "$RESOLVED_BASE_SHA" ]; then
-            echo "Comparing against base git ref: $TARGET_BASE_REF ($RESOLVED_BASE_SHA)..."
-          else
-            echo "Comparing against base git ref: $TARGET_BASE_REF..."
-          fi
-
-          WT_BASE_FILE=".bundleradar/baseline-${TARGET_BASE_REF//\//-}.json"
-          SAVE_CMD=("bundleradar" "baseline" "save" "--ref" "$TARGET_BASE_REF" "-o" "$WT_BASE_FILE")
-          if [ -n "$INPUT_BUILD_CMD" ]; then
-            SAVE_CMD+=("--build-cmd" "$INPUT_BUILD_CMD")
-          fi
-          SAVE_CMD+=("${ARGS[@]}")
-
-          if "${SAVE_CMD[@]}"; then
-            BASELINE_FILE="$WT_BASE_FILE"
-            COMPARISON_STATUS="completed"
-            COMPARISON_MESSAGE="Successfully captured and compared against base git ref '$TARGET_BASE_REF'"
-            echo "  ✓ Successfully captured base snapshot for $TARGET_BASE_REF"
-          else
-            COMPARISON_STATUS="unavailable"
-            COMPARISON_MESSAGE="Failed to build or analyze base git ref '$TARGET_BASE_REF'"
-            if [ "$HAS_DELTA_BUDGET" = "true" ]; then
-              echo "::error::$COMPARISON_MESSAGE, and delta budget was requested."
-              exit 1
-            else
-              echo "::warning::$COMPARISON_MESSAGE. Proceeding with current build summary."
-            fi
-          fi
-        elif [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
+          BASELINE_TARGET="$TARGET_BASE_REF"
           COMPARISON_STATUS="completed"
-          COMPARISON_MESSAGE="Successfully compared against baseline file '$BASELINE_FILE'"
+          COMPARISON_MESSAGE="Comparing against base git ref '$TARGET_BASE_REF'"
+        elif [ -n "$BASELINE_TARGET" ] && [ -f "$BASELINE_TARGET" ]; then
+          COMPARISON_STATUS="completed"
+          COMPARISON_MESSAGE="Successfully compared against baseline file '$BASELINE_TARGET'"
         fi
 
         echo "comparison_status=$COMPARISON_STATUS" >> $GITHUB_OUTPUT
         echo "comparison_message=$COMPARISON_MESSAGE" >> $GITHUB_OUTPUT
 
         # Generate report output
-        if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then
-          MEASURE_FLAGS=("${ARGS[@]}" "-b" "$BASELINE_FILE" "-f" "$INPUT_FORMAT")
-          if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then MEASURE_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); fi
-          if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then MEASURE_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); fi
-          if [ -n "$INPUT_DRIFT_THRESHOLD" ]; then MEASURE_FLAGS+=("--drift-threshold" "$INPUT_DRIFT_THRESHOLD"); fi
-          if [ -n "$INPUT_OUTPUT" ]; then MEASURE_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
+        if [ -n "$BASELINE_TARGET" ]; then
+          DIFF_FLAGS=("$INPUT_STATS" "--against" "$BASELINE_TARGET" "-f" "$INPUT_FORMAT")
+          if [ -n "$INPUT_DRIFT_THRESHOLD" ]; then DIFF_FLAGS+=("--drift-threshold" "$INPUT_DRIFT_THRESHOLD"); fi
+          if [ -n "$INPUT_BUILD_CMD" ]; then DIFF_FLAGS+=("--build-cmd" "$INPUT_BUILD_CMD"); fi
+          if [ -n "$INPUT_OUTPUT" ]; then DIFF_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
 
           set +e
-          bundleradar measure "${MEASURE_FLAGS[@]}"
-          MEASURE_EXIT=$?
+          bundleradar diff "${DIFF_FLAGS[@]}"
+          DIFF_EXIT=$?
           set -e
 
-          if [ $MEASURE_EXIT -ne 0 ]; then
-            # Verify if report was produced (indicating a budget failure rather than tool crash)
+          if [ $DIFF_EXIT -ne 0 ]; then
             if [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
               echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
             else
-              echo "::error::bundleradar measure execution or report generation failed (exit code $MEASURE_EXIT)"
-              exit $MEASURE_EXIT
+              echo "::error::bundleradar diff execution failed (exit code $DIFF_EXIT)"
+              exit $DIFF_EXIT
             fi
           fi
         else
-          SUMMARY_FLAGS=("${ARGS[@]}" "-f" "$INPUT_FORMAT")
-          if [ "$INPUT_GZIP" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
-          if [ "$INPUT_SUGGEST" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
-          if [ -n "$INPUT_OUTPUT" ]; then SUMMARY_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
-          bundleradar summary "${SUMMARY_FLAGS[@]}"
+          SCAN_FLAGS=("$INPUT_STATS" "${ARGS[@]}" "-f" "$INPUT_FORMAT")
+          if [ -n "$INPUT_OUTPUT" ]; then SCAN_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
+          bundleradar scan "${SCAN_FLAGS[@]}"
         fi
 
         # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
@@ -423,7 +362,7 @@ runs:
         fi
 
         # Extract structured metrics via JSON
-        JSON_OUT=$(bundleradar summary "${ARGS[@]}" -f json)
+        JSON_OUT=$(bundleradar scan "$INPUT_STATS" "${ARGS[@]}" -f json)
         if [ -n "$INPUT_JSON_OUTPUT" ]; then
           echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
         fi
@@ -441,13 +380,25 @@ runs:
           const data = process.argv[1];
           try {
             const parsed = JSON.parse(data);
-            if (!parsed.summary || typeof parsed.summary.initialJs !== "number" || typeof parsed.summary.totalJs !== "number") {
-              console.error("Missing required summary numbers in JSON output");
-              process.exit(1);
+            let initial = 0;
+            let lazy = 0;
+            if (parsed.entrypoints) {
+              for (const ep of Object.values(parsed.entrypoints)) {
+                initial += ep.initialBytes || 0;
+                lazy += ep.asyncBytes || 0;
+              }
             }
-            console.log([parsed.summary.initialJs, parsed.summary.lazyJs ?? 0, parsed.summary.totalJs].join(" "));
+            let total = 0;
+            if (parsed.chunks && parsed.chunks.length > 0) {
+              for (const c of parsed.chunks) {
+                total += c.sizeBytes || 0;
+              }
+            } else {
+              total = initial + lazy;
+            }
+            console.log([initial, lazy, total].join(" "));
           } catch (e) {
-            console.error("Failed to parse bundleradar JSON summary:", e.message);
+            console.error("Failed to parse bundleradar JSON scan output:", e.message);
             process.exit(1);
           }
         ' "$JSON_OUT")
@@ -459,18 +410,18 @@ runs:
         echo "total_bytes=$TOTAL" >> $GITHUB_OUTPUT
 
         # Enforce budget checks if any threshold is specified
-        CHECK_FLAGS=("${ARGS[@]}")
+        GATE_FLAGS=("$INPUT_STATS")
+        if [ -n "$INPUT_DIST" ]; then GATE_FLAGS+=("-d" "$INPUT_DIST"); fi
         HAS_BUDGET=false
-        if [ -n "$INPUT_MAX_INITIAL" ]; then CHECK_FLAGS+=("--max-initial" "$INPUT_MAX_INITIAL"); HAS_BUDGET=true; fi
-        if [ -n "$INPUT_MAX_LAZY" ]; then CHECK_FLAGS+=("--max-lazy" "$INPUT_MAX_LAZY"); HAS_BUDGET=true; fi
-        if [ -n "$INPUT_MAX_TOTAL" ]; then CHECK_FLAGS+=("--max-total" "$INPUT_MAX_TOTAL"); HAS_BUDGET=true; fi
-        if [ -n "$BASELINE_FILE" ] && [ -f "$BASELINE_FILE" ]; then CHECK_FLAGS+=("--baseline" "$BASELINE_FILE"); HAS_BUDGET=true; fi
-        if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then CHECK_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); HAS_BUDGET=true; fi
-        if [ -n "$INPUT_MAX_TOTAL_DELTA" ]; then CHECK_FLAGS+=("--max-total-delta" "$INPUT_MAX_TOTAL_DELTA"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_INITIAL" ]; then GATE_FLAGS+=("--max-initial" "$INPUT_MAX_INITIAL"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_TOTAL" ]; then GATE_FLAGS+=("--max-total" "$INPUT_MAX_TOTAL"); HAS_BUDGET=true; fi
+        if [ -n "$BASELINE_TARGET" ]; then GATE_FLAGS+=("--against" "$BASELINE_TARGET"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_MAX_INITIAL_DELTA" ]; then GATE_FLAGS+=("--max-initial-delta" "$INPUT_MAX_INITIAL_DELTA"); HAS_BUDGET=true; fi
+        if [ -n "$INPUT_BUILD_CMD" ]; then GATE_FLAGS+=("--build-cmd" "$INPUT_BUILD_CMD"); fi
 
         if [ "$HAS_BUDGET" = "true" ]; then
-          echo "Enforcing bundle size budgets..."
-          if ! bundleradar check "${CHECK_FLAGS[@]}"; then
+          echo "Enforcing bundle size budgets with bundleradar gate..."
+          if ! bundleradar gate "${GATE_FLAGS[@]}"; then
             echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
           fi
         fi

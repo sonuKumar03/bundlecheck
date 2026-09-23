@@ -12,8 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/sonuKumar03/bundleradar/cmd"
-	"github.com/sonuKumar03/bundleradar/internal/analysis"
-	"github.com/sonuKumar03/bundleradar/internal/config"
+	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 )
 
 // TestDocumentationContract_ActionInputs parses action.yml and verifies that all
@@ -102,7 +101,7 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 		}
 
 		for _, snippet := range snippets {
-			var cfg config.Config
+			var cfg bundleradar.Config
 			decoder := yaml.NewDecoder(bytes.NewReader([]byte(snippet)))
 			decoder.KnownFields(true)
 			if err := decoder.Decode(&cfg); err != nil {
@@ -123,8 +122,8 @@ func TestDocumentationContract_VersionSync(t *testing.T) {
 		t.Fatal("VERSION file is empty")
 	}
 
-	if analysis.ToolVersion != version {
-		t.Errorf("analysis.ToolVersion (%s) != VERSION (%s)", analysis.ToolVersion, version)
+	if bundleradar.ToolVersion != version {
+		t.Errorf("bundleradar.ToolVersion (%s) != VERSION (%s)", bundleradar.ToolVersion, version)
 	}
 
 	// go.mod module path
@@ -205,21 +204,21 @@ func TestDocumentationContract_CLICommandsAndFlags(t *testing.T) {
 				flags["-"+f.Shorthand] = true
 			}
 		})
+		c.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+			flags["--"+f.Name] = true
+			if f.Shorthand != "" {
+				flags["-"+f.Shorthand] = true
+			}
+		})
 		subcommands[c.Name()] = flags
 	}
 
 	// Common documented commands and their flags to assert against the CLI tree
 	expectedSpecs := map[string][]string{
-		"summary":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--gzip", "--suggest", "--format", "-f", "--output", "-o", "--top", "--filter"},
-		"check":     {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--max-initial", "--max-lazy", "--max-total", "--baseline", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o", "--config", "-c"},
-		"measure":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--baseline", "-b", "--max-initial-delta", "--max-total-delta", "--format", "-f", "--output", "-o"},
-		"baseline":  {},
-		"why":       {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--format", "-f", "--output", "-o"},
-		"suggest":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--entry", "-e", "--gzip", "--format", "-f", "--output", "-o"},
-		"inspect":   {"--stats", "-s", "--dist", "-d", "--project", "-p", "--format", "-f", "--output", "-o"},
-		"compare":   {"--format", "-f", "--output", "-o"},
-		"init":      {"--project", "-p", "--headroom", "--from-angular-budgets", "--write"},
-		"workspace": {},
+		"scan":      {"--dist", "-d", "--format", "-f", "--output", "-o", "--top", "--entry", "-e", "--why", "--bundler"},
+		"diff":      {"--against", "--format", "-f", "--output", "-o", "--drift-threshold", "--bundler", "--build-cmd", "--no-build"},
+		"gate":      {"--dist", "-d", "--format", "-f", "--output", "-o", "--against", "--max-initial", "--max-total", "--max-initial-delta", "--forbid", "--detect-duplicate-pkgs"},
+		"workspace": {"--root", "--format", "-f", "--output", "-o"},
 		"mcp":       {},
 	}
 

@@ -7,7 +7,7 @@ import (
 )
 
 func TestExitCodeMatrix(t *testing.T) {
-	minimalDir := filepath.Join("..", "testdata", "minimal")
+	minimalStats := filepath.Join("..", "testdata", "minimal", "stats.json")
 
 	tests := []struct {
 		name     string
@@ -15,43 +15,43 @@ func TestExitCodeMatrix(t *testing.T) {
 		wantCode int
 	}{
 		{
-			name:     "success - valid summary",
-			args:     []string{"summary", minimalDir, "--format", "json"},
+			name:     "success - valid scan",
+			args:     []string{"scan", minimalStats, "--format", "json"},
 			wantCode: ExitCodeSuccess, // 0
 		},
 		{
-			name:     "success - check with generous budget",
-			args:     []string{"check", minimalDir, "--max-initial", "10MB"},
+			name:     "success - gate with generous budget",
+			args:     []string{"gate", minimalStats, "--max-initial", "10MB"},
 			wantCode: ExitCodeSuccess, // 0
 		},
 		{
-			name:     "policy violation - check budget breached",
-			args:     []string{"check", minimalDir, "--max-initial", "100B"},
+			name:     "policy violation - gate budget breached",
+			args:     []string{"gate", minimalStats, "--max-initial", "100B"},
 			wantCode: ExitCodePolicyViolation, // 1
 		},
 		{
 			name:     "usage error - unknown flag",
-			args:     []string{"summary", minimalDir, "--nonexistent-flag"},
+			args:     []string{"scan", minimalStats, "--nonexistent-flag"},
 			wantCode: ExitCodeUsage, // 2
 		},
 		{
 			name:     "usage error - unsupported format",
-			args:     []string{"summary", minimalDir, "--format", "xml"},
+			args:     []string{"scan", minimalStats, "--format", "xml"},
 			wantCode: ExitCodeUsage, // 2
 		},
 		{
-			name:     "usage error - missing why target",
-			args:     []string{"why"},
+			name:     "usage error - missing scan target",
+			args:     []string{"scan"},
 			wantCode: ExitCodeUsage, // 2
 		},
 		{
 			name:     "usage error - invalid bytes flag",
-			args:     []string{"check", minimalDir, "--max-initial", "invalid-bytes"},
+			args:     []string{"gate", minimalStats, "--max-initial", "invalid-bytes"},
 			wantCode: ExitCodeUsage, // 2
 		},
 		{
-			name:     "execution error - nonexistent directory",
-			args:     []string{"summary", filepath.Join("..", "testdata", "does-not-exist")},
+			name:     "execution error - nonexistent file",
+			args:     []string{"scan", filepath.Join("..", "testdata", "does-not-exist.json")},
 			wantCode: ExitCodeExecution, // 3
 		},
 	}

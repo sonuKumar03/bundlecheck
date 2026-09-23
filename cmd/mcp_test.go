@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,8 +12,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/sonuKumar03/bundleradar/internal/budget"
 	"github.com/sonuKumar03/bundleradar/internal/mcp"
+	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 )
 
 func TestMCPCommand_Help(t *testing.T) {
@@ -30,8 +29,8 @@ func TestMCPCommand_Help(t *testing.T) {
 	if !strings.Contains(out, "Model Context Protocol") {
 		t.Errorf("expected help output to mention Model Context Protocol, got:\n%s", out)
 	}
-	if !strings.Contains(out, "bundle_summary") {
-		t.Errorf("expected help output to mention bundle_summary, got:\n%s", out)
+	if !strings.Contains(out, "bundle_scan") {
+		t.Errorf("expected help output to mention bundle_scan, got:\n%s", out)
 	}
 }
 
@@ -51,7 +50,7 @@ func TestMCPStdioServer_LegacyProtocol(t *testing.T) {
 	}()
 
 	decoder := json.NewDecoder(stdoutReader)
-	minimalPath, _ := filepath.Abs("../testdata/minimal")
+	minimalStats, _ := filepath.Abs("../testdata/minimal/stats.json")
 
 	// 1. Send JSON-RPC initialize
 	initReq := map[string]any{
@@ -111,19 +110,19 @@ func TestMCPStdioServer_LegacyProtocol(t *testing.T) {
 	}
 	listResult := listResp["result"].(map[string]any)
 	tools := listResult["tools"].([]any)
-	if len(tools) != 6 {
-		t.Errorf("expected 6 tools in tools/list, got %d", len(tools))
+	if len(tools) != 4 {
+		t.Errorf("expected 4 tools in tools/list, got %d", len(tools))
 	}
 
-	// 3. Send tools/call (bundle_summary)
+	// 3. Send tools/call (bundle_scan)
 	callReq := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      3,
 		"method":  "tools/call",
 		"params": map[string]any{
-			"name": "bundle_summary",
+			"name": "bundle_scan",
 			"arguments": map[string]any{
-				"path": minimalPath,
+				"path": minimalStats,
 			},
 		},
 	}
@@ -196,7 +195,7 @@ func TestMCPStdioServer_ModernProtocol_2026_07_28(t *testing.T) {
 	}()
 
 	decoder := json.NewDecoder(stdoutReader)
-	minimalPath, _ := filepath.Abs("../testdata/minimal")
+	minimalStats, _ := filepath.Abs("../testdata/minimal/stats.json")
 
 	// 1. Send server/discover with 2026-07-28 protocol metadata
 	discoverReq := map[string]any{
@@ -261,9 +260,9 @@ func TestMCPStdioServer_ModernProtocol_2026_07_28(t *testing.T) {
 				},
 				"io.modelcontextprotocol/clientCapabilities": map[string]any{},
 			},
-			"name": "bundle_summary",
+			"name": "bundle_scan",
 			"arguments": map[string]any{
-				"path": minimalPath,
+				"path": minimalStats,
 			},
 		},
 	}
@@ -295,100 +294,29 @@ func TestMCPStdioServer_ModernProtocol_2026_07_28(t *testing.T) {
 func TestMCPAndCLIEquivalence(t *testing.T) {
 	ctx := context.Background()
 	s := mcp.NewServer()
-	minimalPath, _ := filepath.Abs("../testdata/minimal")
-	baselinePath, _ := filepath.Abs("../testdata/comparison/before.json")
+	minimalStats, _ := filepath.Abs("../testdata/minimal/stats.json")
 
-	t.Run("config file budget and disallowed package equivalence", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		// Copy minimal fixture
-		statsData, _ := os.ReadFile(filepath.Join(minimalPath, "stats.json"))
-		_ = os.WriteFile(filepath.Join(tmpDir, "stats.json"), statsData, 0644)
-		browserDir := filepath.Join(tmpDir, "browser")
-		_ = os.MkdirAll(browserDir, 0755)
-		htmlData, _ := os.ReadFile(filepath.Join(minimalPath, "browser", "index.html"))
-		_ = os.WriteFile(filepath.Join(browserDir, "index.html"), htmlData, 0644)
-		jsData, _ := os.ReadFile(filepath.Join(minimalPath, "browser", "main.js"))
-		_ = os.WriteFile(filepath.Join(browserDir, "main.js"), jsData, 0644)
-
-		cfgContent := []byte("budgets:\n  initial_js_max: 50B\nrules:\n  disallow_packages:\n    - lodash\n")
-		cfgPath := filepath.Join(tmpDir, ".bundleradar.yml")
-		_ = os.WriteFile(cfgPath, cfgContent, 0644)
-
-		// 1. Run CLI check
+	t.Run("explicit threshold equivalence with gate", func(t *testing.T) {
+		// CLI gate with max_initial
 		var cliOut, cliErr bytes.Buffer
-		cliCode := Execute([]string{"check", tmpDir, "--config", cfgPath, "--format", "json"}, &cliOut, &cliErr)
+		cliCode := Execute([]string{"gate", minimalStats, "--max-initial", "10B", "--format", "json"}, &cliOut, &cliErr)
 		if cliCode != 1 {
-			t.Fatalf("expected CLI exit 1, got %d: %s", cliCode, cliErr.String())
+			t.Fatalf("expected CLI exit 1, got %d. stderr: %s", cliCode, cliErr.String())
 		}
-		var cliResult budget.CheckResult
+		var cliResult bundleradar.EvaluationResult
 		if err := json.Unmarshal(cliOut.Bytes(), &cliResult); err != nil {
-			t.Fatalf("failed to unmarshal CLI json: %v; stderr: %s", err, cliErr.String())
+			t.Fatalf("failed to parse CLI gate JSON: %v", err)
 		}
 
-		// 2. Run MCP bundle_check
-		mcpReq := map[string]any{
-			"jsonrpc": "2.0",
-			"id":      1,
-			"method":  "tools/call",
-			"params": map[string]any{
-				"name": "bundle_check",
-				"arguments": map[string]any{
-					"path": tmpDir,
-				},
-			},
-		}
-		reqJSON, _ := json.Marshal(mcpReq)
-		mcpResp := s.HandleMessage(ctx, reqJSON)
-		respData, _ := json.Marshal(mcpResp)
-		var mcpParsed map[string]any
-		_ = json.Unmarshal(respData, &mcpParsed)
-		toolRes := mcpParsed["result"].(map[string]any)
-		if toolRes["isError"] != true {
-			t.Errorf("expected MCP isError: true on failing budget")
-		}
-		content := toolRes["content"].([]any)
-		text := content[0].(map[string]any)["text"].(string)
-		var mcpResult budget.CheckResult
-		if err := json.Unmarshal([]byte(text), &mcpResult); err != nil {
-			t.Fatalf("failed to unmarshal MCP json: %v", err)
-		}
-
-		// Verify complete equivalence
-		if cliResult.Passed != mcpResult.Passed {
-			t.Errorf("expected Passed match: CLI=%v, MCP=%v", cliResult.Passed, mcpResult.Passed)
-		}
-		if len(cliResult.Violations) != len(mcpResult.Violations) {
-			t.Fatalf("expected violation count match: CLI=%d, MCP=%d", len(cliResult.Violations), len(mcpResult.Violations))
-		}
-		for i := range cliResult.Violations {
-			if cliResult.Violations[i].Metric != mcpResult.Violations[i].Metric {
-				t.Errorf("violation %d metric mismatch: CLI=%q, MCP=%q", i, cliResult.Violations[i].Metric, mcpResult.Violations[i].Metric)
-			}
-			if cliResult.Violations[i].Actual != mcpResult.Violations[i].Actual {
-				t.Errorf("violation %d actual mismatch: CLI=%d, MCP=%d", i, cliResult.Violations[i].Actual, mcpResult.Violations[i].Actual)
-			}
-		}
-	})
-
-	t.Run("explicit threshold equivalence", func(t *testing.T) {
-		// CLI check with max_initial
-		var cliOut, cliErr bytes.Buffer
-		cliCode := Execute([]string{"check", minimalPath, "--max-initial", "10B", "--format", "json"}, &cliOut, &cliErr)
-		if cliCode != 1 {
-			t.Fatalf("expected CLI exit 1, got %d", cliCode)
-		}
-		var cliResult budget.CheckResult
-		_ = json.Unmarshal(cliOut.Bytes(), &cliResult)
-
-		// MCP bundle_check with max_initial
+		// MCP bundle_gate with max_initial
 		mcpReq := map[string]any{
 			"jsonrpc": "2.0",
 			"id":      2,
 			"method":  "tools/call",
 			"params": map[string]any{
-				"name": "bundle_check",
+				"name": "bundle_gate",
 				"arguments": map[string]any{
-					"path":        minimalPath,
+					"path":        minimalStats,
 					"max_initial": "10B",
 				},
 			},
@@ -401,54 +329,16 @@ func TestMCPAndCLIEquivalence(t *testing.T) {
 		toolRes := mcpParsed["result"].(map[string]any)
 		content := toolRes["content"].([]any)
 		text := content[0].(map[string]any)["text"].(string)
-		var mcpResult budget.CheckResult
-		_ = json.Unmarshal([]byte(text), &mcpResult)
-
-		if cliResult.Violations[0].Actual != mcpResult.Violations[0].Actual {
-			t.Errorf("actual mismatch: CLI=%d, MCP=%d", cliResult.Violations[0].Actual, mcpResult.Violations[0].Actual)
+		var mcpResult bundleradar.EvaluationResult
+		if err := json.Unmarshal([]byte(text), &mcpResult); err != nil {
+			t.Fatalf("failed to parse MCP gate JSON: %v", err)
 		}
-	})
 
-	t.Run("baseline delta equivalence", func(t *testing.T) {
-		// CLI check with baseline and max_initial_delta
-		var cliOut, cliErr bytes.Buffer
-		cliCode := Execute([]string{"check", minimalPath, "--baseline", baselinePath, "--max-initial-delta", "-1MB", "--format", "json"}, &cliOut, &cliErr)
-		if cliCode != 1 {
-			t.Fatalf("expected CLI exit 1, got %d", cliCode)
+		if cliResult.Passed != mcpResult.Passed {
+			t.Errorf("passed mismatch: CLI=%v, MCP=%v", cliResult.Passed, mcpResult.Passed)
 		}
-		var cliResult budget.CheckResult
-		_ = json.Unmarshal(cliOut.Bytes(), &cliResult)
-
-		// MCP bundle_check with baseline and max_initial_delta
-		mcpReq := map[string]any{
-			"jsonrpc": "2.0",
-			"id":      3,
-			"method":  "tools/call",
-			"params": map[string]any{
-				"name": "bundle_check",
-				"arguments": map[string]any{
-					"path":              minimalPath,
-					"baseline":          baselinePath,
-					"max_initial_delta": "-1MB",
-				},
-			},
-		}
-		reqJSON, _ := json.Marshal(mcpReq)
-		mcpResp := s.HandleMessage(ctx, reqJSON)
-		respData, _ := json.Marshal(mcpResp)
-		var mcpParsed map[string]any
-		_ = json.Unmarshal(respData, &mcpParsed)
-		toolRes := mcpParsed["result"].(map[string]any)
-		content := toolRes["content"].([]any)
-		text := content[0].(map[string]any)["text"].(string)
-		var mcpResult budget.CheckResult
-		_ = json.Unmarshal([]byte(text), &mcpResult)
-
-		if cliResult.Violations[0].Metric != mcpResult.Violations[0].Metric {
-			t.Errorf("metric mismatch: CLI=%q, MCP=%q", cliResult.Violations[0].Metric, mcpResult.Violations[0].Metric)
-		}
-		if cliResult.Violations[0].Actual != mcpResult.Violations[0].Actual {
-			t.Errorf("actual delta mismatch: CLI=%d, MCP=%d", cliResult.Violations[0].Actual, mcpResult.Violations[0].Actual)
+		if len(cliResult.Violations) != len(mcpResult.Violations) {
+			t.Fatalf("violation count mismatch: CLI=%d, MCP=%d", len(cliResult.Violations), len(mcpResult.Violations))
 		}
 	})
 }

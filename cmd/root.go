@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 )
 
 // Numeric exit codes conforming to automation contract
@@ -73,7 +75,7 @@ func MapErrorToExitCode(err error) int {
 		strings.Contains(msg, "accepts ") ||
 		strings.Contains(msg, "requires ") ||
 		strings.Contains(msg, "required") ||
-		strings.Contains(msg, "unsupported format") ||
+		strings.Contains(msg, "unsupported") ||
 		strings.Contains(msg, "cannot be empty") ||
 		strings.Contains(msg, "invalid --") ||
 		strings.Contains(msg, "must be positive") ||
@@ -96,31 +98,20 @@ func MapErrorToExitCode(err error) int {
 func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "bundleradar",
-		Short:   "Summarize, inspect, measure, compare, trace, advise, and check Angular browser JavaScript bundles",
-		Version: analysis.ToolVersion,
-		Long: `bundleradar is a fast CLI and AI agent skill for Angular esbuild bundle analysis.
-It calculates accurate initial vs. lazy JavaScript byte totals, attributes npm package sizes,
-estimates Gzip wire transfer sizes, traces dependency import paths, generates optimization
-recommendations, tracks baselines across changes, and enforces bundle size budgets in CI.`,
+		Short:   "Universal bundle analyzer, diff engine, and size budget gate",
+		Version: bundleradar.ToolVersion,
+		Long: `bundleradar is a fast, universal CLI and AI agent skill for JavaScript and web bundle analysis.
+It calculates accurate initial vs. async byte totals, attributes npm package sizes,
+estimates Gzip wire transfer sizes, tracks regressions, and enforces bundle size budgets in CI.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
 	root.AddCommand(
-		summaryCommand(),
-		workspaceCommand(),
-		compareCommand(),
-		baselineCommand(),
-		measureCommand(),
-		checkCommand(),
-		inspectCommand(),
-		whyCommand(),
-		suggestCommand(),
-		benchmarkCommand(),
-		mcpCommand(),
-		initCommand(),
 		newScanCommand(),
 		newDiffCommand(),
 		newGateCommand(),
+		newWorkspaceCommand(),
+		mcpCommand(),
 	)
 	return root
 }
@@ -135,4 +126,21 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 		return MapErrorToExitCode(err)
 	}
 	return ExitCodeSuccess
+}
+
+func getOutputWriter(c *cobra.Command, output string) (io.Writer, func() error, error) {
+	if output == "" {
+		return c.OutOrStdout(), func() error { return nil }, nil
+	}
+	dir := filepath.Dir(output)
+	if dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, nil, fmt.Errorf("create directory %q: %w", dir, err)
+		}
+	}
+	f, err := os.Create(output)
+	if err != nil {
+		return nil, nil, fmt.Errorf("create output file %q: %w", output, err)
+	}
+	return f, f.Close, nil
 }
