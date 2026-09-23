@@ -59,3 +59,18 @@ func TestV2CLI_Gate_PassAndFail(t *testing.T) {
 		t.Fatalf("expected gate violation code %d, got %d. Output: %s", cmd.ExitCodePolicyViolation, code, stdout.String())
 	}
 }
+
+func TestV2CLI_Diff_GitWorktree(t *testing.T) {
+	statsPath := filepath.Join("..", "testdata", "minimal", "stats.json")
+
+	var stdout, stderr bytes.Buffer
+	code := cmd.Execute([]string{"diff", statsPath, "--against", "HEAD", "--no-build", "--format", "json"}, &stdout, &stderr)
+	if code != cmd.ExitCodeSuccess {
+		t.Fatalf("diff with git ref failed with code %d: %s", code, stderr.String())
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, `"entrypoints"`) {
+		t.Fatalf("diff json missing entrypoints: %s", out)
+	}
+}
