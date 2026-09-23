@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/config"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/config"
+	"github.com/sonuKumar03/bundleradar/internal/report"
 )
 
 func checkCommand() *cobra.Command {
@@ -33,7 +33,7 @@ func checkCommand() *cobra.Command {
 		Use:   "check [stats.json] [dist]",
 		Short: "Validate bundle sizes, regressions, and repository rules against budget thresholds",
 		Long: `Validate bundle sizes or regressions against specified budget thresholds for CI and local verification.
-Automatically loads project budgets and package rules from .bundlecheck.yml if present.
+Automatically loads project budgets and package rules from .bundleradar.yml if present.
 Returns exit code 0 if all budgets and rules pass, or exit code 1 if any threshold is breached.`,
 		Args: cobra.MaximumNArgs(2),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -181,7 +181,7 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
 	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
-	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundlecheck.yml configuration file")
+	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundleradar.yml configuration file")
 	c.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json, markdown, or github-pr")
 	c.Flags().StringVarP(&output, "output", "o", "", "Write output to file instead of stdout")
 	c.Flags().StringVar(&maxInitial, "max-initial", "", "Maximum allowed initial JS size (e.g. 250KB, 1MB)")

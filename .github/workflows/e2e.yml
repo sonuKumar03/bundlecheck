@@ -67,26 +67,26 @@ jobs:
           BUNDLECHECK_REQUIRE_E2E: "1"
         run: go test -v -count=1 ./cmd/... ./internal/discovery/... ./internal/workspace/... ./internal/mcp/...
 
-      - name: Build bundlecheck CLI
-        run: go build -o bundlecheck .
+      - name: Build bundleradar CLI
+        run: go build -o bundleradar .
 
-      - name: Verify bundlecheck CLI on real Nx workspace
+      - name: Verify bundleradar CLI on real Nx workspace
         run: |
-          ./bundlecheck summary testdata/nx-workspace portal
-          ./bundlecheck summary testdata/nx-workspace admin-dashboard
-          ./bundlecheck workspace summary --root testdata/nx-workspace
-          ./bundlecheck why testdata/nx-workspace lodash -p portal
-          ./bundlecheck suggest testdata/nx-workspace -p portal
-          ./bundlecheck check testdata/nx-workspace -p portal --max-initial 10MB
+          ./bundleradar summary testdata/nx-workspace portal
+          ./bundleradar summary testdata/nx-workspace admin-dashboard
+          ./bundleradar workspace summary --root testdata/nx-workspace
+          ./bundleradar why testdata/nx-workspace lodash -p portal
+          ./bundleradar suggest testdata/nx-workspace -p portal
+          ./bundleradar check testdata/nx-workspace -p portal --max-initial 10MB
 
       - name: Publish Bundlecheck Report to GitHub Step Summary
         run: |
           echo "# 📊 Bundlecheck Real Nx Workspace Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          ./bundlecheck workspace summary --root testdata/nx-workspace -f markdown >> $GITHUB_STEP_SUMMARY
+          ./bundleradar workspace summary --root testdata/nx-workspace -f markdown >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          ./bundlecheck suggest testdata/nx-workspace -p portal -f markdown >> $GITHUB_STEP_SUMMARY
+          ./bundleradar suggest testdata/nx-workspace -p portal -f markdown >> $GITHUB_STEP_SUMMARY
 
   action-consumer:
     name: Action Consumer & Regression Smoke
@@ -161,7 +161,7 @@ jobs:
 
       - name: Assert Baseline Upload File Created
         run: |
-          test -f testdata/minimal/.bundlecheck/upload/fixture-test-baseline/baseline.json || (echo "Missing baseline upload json" && exit 1)
+          test -f testdata/minimal/.bundleradar/upload/fixture-test-baseline/baseline.json || (echo "Missing baseline upload json" && exit 1)
 
       - name: Test Action - Invalid Input Failure Case
         id: test-invalid-input

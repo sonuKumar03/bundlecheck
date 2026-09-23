@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/build"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/build"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func whyCommand() *cobra.Command {
@@ -41,7 +41,7 @@ Explains whether the package is pulled into initial or lazy JavaScript and shows
 				target = args[1]
 			}
 			if target == "" {
-				return fmt.Errorf("target package or file path required (e.g. 'bundlecheck why lodash' or 'bundlecheck why dist/stats.json lodash')")
+				return fmt.Errorf("target package or file path required (e.g. 'bundleradar why lodash' or 'bundleradar why dist/stats.json lodash')")
 			}
 			if format != "text" && format != "json" {
 				return fmt.Errorf("unsupported format %q: use text or json", format)

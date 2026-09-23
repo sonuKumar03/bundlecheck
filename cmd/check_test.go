@@ -47,7 +47,7 @@ func TestCheckPositionalAndConfigFile(t *testing.T) {
 	distDir := filepath.Join(absBase, "browser")
 
 	// 1. Write config file that disallows lodash
-	cfgPath := filepath.Join(tmpWd, ".bundlecheck.yml")
+	cfgPath := filepath.Join(tmpWd, ".bundleradar.yml")
 	cfgContent := `
 budgets:
   initial_js_max: 5MB
@@ -63,7 +63,7 @@ rules:
 	var out, errOut bytes.Buffer
 	code := Execute([]string{"check", statsFile, distDir}, &out, &errOut)
 	if code == 0 {
-		t.Fatal("expected check failure due to disallowed package lodash in .bundlecheck.yml")
+		t.Fatal("expected check failure due to disallowed package lodash in .bundleradar.yml")
 	}
 	combined := out.String() + "\n" + errOut.String()
 	if !strings.Contains(combined, "lodash") {
@@ -100,7 +100,7 @@ func TestCheckRejectsMalformedAutoLoadedConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, ".bundlecheck.yml"), []byte("budgets: [invalid yaml"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".bundleradar.yml"), []byte("budgets: [invalid yaml"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Chdir(root); err != nil {
@@ -151,7 +151,7 @@ func TestCheckExplicitFlagOverridesConfig(t *testing.T) {
 	root := t.TempDir()
 	// Config has strict 10B limit that would fail
 	cfgContent := "budgets:\n  initial_js_max: 10B\n"
-	if err := os.WriteFile(filepath.Join(root, ".bundlecheck.yml"), []byte(cfgContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".bundleradar.yml"), []byte(cfgContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Chdir(root); err != nil {
@@ -182,7 +182,7 @@ func TestCheckExplicitConfigFileOverridesAutoLoaded(t *testing.T) {
 	}
 	root := t.TempDir()
 	// Auto-loaded config in current directory has failing 10B limit
-	if err := os.WriteFile(filepath.Join(root, ".bundlecheck.yml"), []byte("budgets:\n  initial_js_max: 10B\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, ".bundleradar.yml"), []byte("budgets:\n  initial_js_max: 10B\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	// Explicit custom config has permissive 10MB limit

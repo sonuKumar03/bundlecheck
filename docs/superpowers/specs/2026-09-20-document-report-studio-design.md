@@ -5,7 +5,7 @@
 **Status**: Implemented & Verified
 
 ## Overview
-Transform `apps/portal` in `testdata/nx-workspace` into an **Enterprise Document & Report Studio** served at `http://localhost:3000`. The application serves as an interactive, production-grade corporate reporting suite and an ideal testbed for dependency inspection with `bundlecheck`.
+Transform `apps/portal` in `testdata/nx-workspace` into an **Enterprise Document & Report Studio** served at `http://localhost:3000`. The application serves as an interactive, production-grade corporate reporting suite and an ideal testbed for dependency inspection with `bundleradar`.
 
 The architecture intentionally leverages heavy, realistic npm dependencies (`pdfjs-dist`, `exceljs`, `chart.js`, `d3`, `moment`, `lodash-es`) split across dedicated Nx feature libraries and Angular lazy-loaded routes.
 
@@ -19,7 +19,7 @@ The architecture intentionally leverages heavy, realistic npm dependencies (`pdf
   - Eager initial bundle containing `chart.js`, `moment`, `lodash-es`, and core routing/navigation.
   - Lazy-loaded feature routes splitting `exceljs`, `pdfjs-dist`, and specialized report modules.
 - **Modular Nx Workspace Structure**: Clean library boundaries using existing and new Nx libs (`libs/charting`, `libs/reports`, `libs/spreadsheet-studio`, `libs/pdf-studio`, `libs/document-editor`).
-- **Bundlecheck & Nx Tooling Compatibility**: Preserve 100% test compatibility with `bundlecheck` fixtures, `stats.json` emissions, and Go unit tests.
+- **Bundlecheck & Nx Tooling Compatibility**: Preserve 100% test compatibility with `bundleradar` fixtures, `stats.json` emissions, and Go unit tests.
 
 ### Non-Goals
 - Full multi-tenant authentication or backend database synchronization (all studio operations run in-browser with local state).
@@ -122,6 +122,6 @@ The architecture intentionally leverages heavy, realistic npm dependencies (`pdf
      - Chart.js visualizer rendering.
 3. **Bundlecheck Tooling Verification**:
    - Run `go test ./...` from repo root:
-     - Ensures `bundlecheck summary --project portal` continues to pass.
-     - Ensures `bundlecheck suggest --project portal` continues to advise on heavy dependencies (`moment`, `lodash`).
-     - Ensures `bundlecheck why moment --project portal` successfully traces import paths.
+     - Ensures `bundleradar summary --project portal` continues to pass.
+     - Ensures `bundleradar suggest --project portal` continues to advise on heavy dependencies (`moment`, `lodash`).
+     - Ensures `bundleradar why moment --project portal` successfully traces import paths.

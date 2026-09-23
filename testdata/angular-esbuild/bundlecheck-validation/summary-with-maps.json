@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.1.0",
+  "command": "summary",
+  "summary": {
+    "initialJs": 206279,
+    "lazyJs": 20072,
+    "totalJs": 226351
+  },
+  "packages": [
+    {
+      "name": "@angular/core",
+      "initialBytes": 94305,
+      "lazyBytes": 0,
+      "totalBytes": 94305
+    },
+    {
+      "name": "@angular/router",
+      "initialBytes": 73537,
+      "lazyBytes": 0,
+      "totalBytes": 73537
+    },
+    {
+      "name": "rxjs",
+      "initialBytes": 15738,
+      "lazyBytes": 0,
+      "totalBytes": 15738
+    },
+    {
+      "name": "@angular/platform-browser",
+      "initialBytes": 12146,
+      "lazyBytes": 0,
+      "totalBytes": 12146
+    },
+    {
+      "name": "@angular/common",
+      "initialBytes": 5688,
+      "lazyBytes": 0,
+      "totalBytes": 5688
+    },
+    {
+      "name": "tslib",
+      "initialBytes": 1905,
+      "lazyBytes": 0,
+      "totalBytes": 1905
+    },
+    {
+      "name": "date-fns",
+      "initialBytes": 0,
+      "lazyBytes": 19625,
+      "totalBytes": 19625
+    }
+  ]
+}

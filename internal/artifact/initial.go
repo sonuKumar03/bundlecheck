@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/net/html"
 
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 // IndexScriptMismatchError reports an index script that is absent from stats

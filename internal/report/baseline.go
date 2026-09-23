@@ -7,21 +7,21 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
 )
 
 // BaselineListText renders a tabular overview of saved baselines.
 func BaselineListText(w io.Writer, baselines []baseline.BaselineInfo, activeName string) error {
 	if len(baselines) == 0 {
 		fmt.Fprintln(w, "No saved baselines found.")
-		fmt.Fprintln(w, "Hint: create one with 'bundlecheck baseline save' or 'bundlecheck baseline save --ref <git-branch>'")
+		fmt.Fprintln(w, "Hint: create one with 'bundleradar baseline save' or 'bundleradar baseline save --ref <git-branch>'")
 		return nil
 	}
 
 	var text strings.Builder
 	table := tabwriter.NewWriter(&text, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(table, "Saved Baselines (.bundlecheck/baselines/):")
+	fmt.Fprintln(table, "Saved Baselines (.bundleradar/baselines/):")
 	fmt.Fprintln(table, "")
 	fmt.Fprintln(table, "  NAME\tREF / SOURCE\tINITIAL JS\tTOTAL JS\tCREATED\tSTATUS")
 	fmt.Fprintln(table, "  ────\t────────────\t──────────\t────────\t───────\t──────")
@@ -59,7 +59,7 @@ func BaselineListText(w io.Writer, baselines []baseline.BaselineInfo, activeName
 	}
 
 	fmt.Fprintln(w, text.String())
-	fmt.Fprintln(w, "Run 'bundlecheck baseline use <name>' to switch the active baseline.")
+	fmt.Fprintln(w, "Run 'bundleradar baseline use <name>' to switch the active baseline.")
 	return nil
 }
 

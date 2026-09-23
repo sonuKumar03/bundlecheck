@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const skillDir = ".agents/skills/bundlecheck"
+const skillDir = ".agents/skills/bundleradar"
 
 type skillMetadata struct {
 	Name          string `yaml:"name"`
@@ -66,15 +66,15 @@ func readSkill(t *testing.T) (skillMetadata, string) {
 
 func TestAgentSkillMetadata(t *testing.T) {
 	meta, _ := readSkill(t)
-	if meta.Name != "bundlecheck" {
-		t.Fatalf("name = %q, want bundlecheck", meta.Name)
+	if meta.Name != "bundleradar" {
+		t.Fatalf("name = %q, want bundleradar", meta.Name)
 	}
 	for _, term := range []string{"Angular", "esbuild", "bundle size", "Do not use"} {
 		if !strings.Contains(meta.Description, term) {
 			t.Errorf("description must contain %q", term)
 		}
 	}
-	for _, term := range []string{"bundlecheck CLI", "stats.json"} {
+	for _, term := range []string{"bundleradar CLI", "stats.json"} {
 		if !strings.Contains(meta.Compatibility, term) {
 			t.Errorf("compatibility must contain %q", term)
 		}
@@ -87,7 +87,7 @@ func TestAgentSkillProgressiveDisclosure(t *testing.T) {
 		t.Errorf("SKILL.md body has %d lines, want at most 120", lines)
 	}
 	if strings.Contains(body, "./install.sh --with-skill") {
-		t.Fatal("skill must not assume the bundlecheck source checkout")
+		t.Fatal("skill must not assume the bundleradar source checkout")
 	}
 
 	targets := regexp.MustCompile(`references/[a-z0-9-]+\.md`).FindAllString(body, -1)

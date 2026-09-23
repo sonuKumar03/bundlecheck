@@ -10,12 +10,12 @@ import (
 
 	mcpspec "github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/sonuKumar03/bundlecheck/internal/advisor"
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
-	"github.com/sonuKumar03/bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundleradar/internal/advisor"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/workspace"
 )
 
 func TestNewServer_Metadata(t *testing.T) {
@@ -41,8 +41,8 @@ func TestNewServer_Metadata(t *testing.T) {
 	}
 
 	resources := s.ListResources()
-	if _, ok := resources["bundlecheck://rules"]; !ok {
-		t.Errorf("missing expected resource bundlecheck://rules")
+	if _, ok := resources["bundleradar://rules"]; !ok {
+		t.Errorf("missing expected resource bundleradar://rules")
 	}
 }
 
@@ -893,14 +893,14 @@ func TestHandleWorkspaceSummary(t *testing.T) {
 func TestResource_Rules(t *testing.T) {
 	s := NewServer()
 	resMap := s.ListResources()
-	ruleResource, ok := resMap["bundlecheck://rules"]
+	ruleResource, ok := resMap["bundleradar://rules"]
 	if !ok {
-		t.Fatalf("expected resource bundlecheck://rules")
+		t.Fatalf("expected resource bundleradar://rules")
 	}
 
 	contents, err := ruleResource.Handler(context.Background(), mcpspec.ReadResourceRequest{
 		Params: mcpspec.ReadResourceParams{
-			URI: "bundlecheck://rules",
+			URI: "bundleradar://rules",
 		},
 	})
 	if err != nil {
@@ -964,8 +964,8 @@ func TestJSONRPC_Protocol(t *testing.T) {
 			t.Fatalf("expected result object")
 		}
 		serverInfo := result["serverInfo"].(map[string]any)
-		if serverInfo["name"] != "bundlecheck" {
-			t.Errorf("expected server name bundlecheck, got %v", serverInfo["name"])
+		if serverInfo["name"] != "bundleradar" {
+			t.Errorf("expected server name bundleradar, got %v", serverInfo["name"])
 		}
 	})
 
@@ -1040,7 +1040,7 @@ func TestJSONRPC_Protocol(t *testing.T) {
 			"id":      4,
 			"method":  "resources/read",
 			"params": map[string]any{
-				"uri": "bundlecheck://rules",
+				"uri": "bundleradar://rules",
 			},
 		}
 		reqJSON, _ := json.Marshal(reqPayload)
@@ -1644,9 +1644,9 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Create .bundlecheck.yml with budget that fails
+		// Create .bundleradar.yml with budget that fails
 		cfgContent := []byte("budgets:\n  initial_js_max: 10B\nrules:\n  disallow_packages:\n    - lodash\n")
-		if err := os.WriteFile(filepath.Join(tmpDir, ".bundlecheck.yml"), cfgContent, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, ".bundleradar.yml"), cfgContent, 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1664,7 +1664,7 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 			t.Fatalf("unexpected handler error: %v", err)
 		}
 		if !res.IsError {
-			t.Errorf("expected error tool result from .bundlecheck.yml budget violation")
+			t.Errorf("expected error tool result from .bundleradar.yml budget violation")
 		}
 
 		textContent, _ := mcpspec.AsTextContent(res.Content[0])
@@ -1676,7 +1676,7 @@ func TestHandleCheck_FullParityAndConfigFile(t *testing.T) {
 		}
 		// Expect both initial JS budget violation and disallowed package lodash violation
 		if len(checkRes.Violations) < 2 {
-			t.Errorf("expected at least 2 violations from .bundlecheck.yml, got %d: %v", len(checkRes.Violations), checkRes.Violations)
+			t.Errorf("expected at least 2 violations from .bundleradar.yml, got %d: %v", len(checkRes.Violations), checkRes.Violations)
 		}
 	})
 

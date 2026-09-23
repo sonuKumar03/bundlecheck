@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "1",
+  "toolVersion": "0.1.0",
+  "command": "compare",
+  "summary": {
+    "before": {
+      "initialJs": 206194,
+      "lazyJs": 20029,
+      "totalJs": 226223
+    },
+    "after": {
+      "initialJs": 226073,
+      "lazyJs": 395,
+      "totalJs": 226468
+    },
+    "delta": {
+      "initialJs": 19879,
+      "lazyJs": -19634,
+      "totalJs": 245
+    }
+  },
+  "packages": [
+    {
+      "name": "date-fns",
+      "status": "changed",
+      "before": {
+        "initialBytes": 0,
+        "lazyBytes": 19625,
+        "totalBytes": 19625
+      },
+      "after": {
+        "initialBytes": 19731,
+        "lazyBytes": 0,
+        "totalBytes": 19731
+      },
+      "delta": {
+        "initialBytes": 19731,
+        "lazyBytes": -19625,
+        "totalBytes": 106
+      }
+    },
+    {
+      "name": "@angular/core",
+      "status": "changed",
+      "before": {
+        "initialBytes": 94305,
+        "lazyBytes": 0,
+        "totalBytes": 94305
+      },
+      "after": {
+        "initialBytes": 94339,
+        "lazyBytes": 0,
+        "totalBytes": 94339
+      },
+      "delta": {
+        "initialBytes": 34,
+        "lazyBytes": 0,
+        "totalBytes": 34
+      }
+    },
+    {
+      "name": "@angular/common",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 5688,
+        "lazyBytes": 0,
+        "totalBytes": 5688
+      },
+      "after": {
+        "initialBytes": 5688,
+        "lazyBytes": 0,
+        "totalBytes": 5688
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    },
+    {
+      "name": "@angular/platform-browser",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 12146,
+        "lazyBytes": 0,
+        "totalBytes": 12146
+      },
+      "after": {
+        "initialBytes": 12146,
+        "lazyBytes": 0,
+        "totalBytes": 12146
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    },
+    {
+      "name": "@angular/router",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 73537,
+        "lazyBytes": 0,
+        "totalBytes": 73537
+      },
+      "after": {
+        "initialBytes": 73537,
+        "lazyBytes": 0,
+        "totalBytes": 73537
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    },
+    {
+      "name": "rxjs",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 15738,
+        "lazyBytes": 0,
+        "totalBytes": 15738
+      },
+      "after": {
+        "initialBytes": 15738,
+        "lazyBytes": 0,
+        "totalBytes": 15738
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    },
+    {
+      "name": "tslib",
+      "status": "unchanged",
+      "before": {
+        "initialBytes": 1905,
+        "lazyBytes": 0,
+        "totalBytes": 1905
+      },
+      "after": {
+        "initialBytes": 1905,
+        "lazyBytes": 0,
+        "totalBytes": 1905
+      },
+      "delta": {
+        "initialBytes": 0,
+        "lazyBytes": 0,
+        "totalBytes": 0
+      }
+    }
+  ]
+}

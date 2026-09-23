@@ -41,15 +41,15 @@ jobs:
         run: go test -v . -run TestDocumentationContract -count=1
 
       - name: Build Binary
-        run: go build -o bundlecheck .
+        run: go build -o bundleradar .
 
       - name: Validate install.sh
         run: sh -n install.sh
 
       - name: Smoke Test Binary on Fixture
         run: |
-          ./bundlecheck summary testdata/minimal
-          ./bundlecheck check testdata/minimal --max-initial 5MB
+          ./bundleradar summary testdata/minimal
+          ./bundleradar check testdata/minimal --max-initial 5MB
 
   publish:
     name: Build & Publish GitHub Release
@@ -78,11 +78,11 @@ jobs:
           mkdir -p "$DIST_DIR"
 
           TARGETS=(
-            "darwin/amd64/bundlecheck_${VERSION}_darwin_amd64.tar.gz"
-            "darwin/arm64/bundlecheck_${VERSION}_darwin_arm64.tar.gz"
-            "linux/amd64/bundlecheck_${VERSION}_linux_amd64.tar.gz"
-            "linux/arm64/bundlecheck_${VERSION}_linux_arm64.tar.gz"
-            "windows/amd64/bundlecheck_${VERSION}_windows_amd64.zip"
+            "darwin/amd64/bundleradar_${VERSION}_darwin_amd64.tar.gz"
+            "darwin/arm64/bundleradar_${VERSION}_darwin_arm64.tar.gz"
+            "linux/amd64/bundleradar_${VERSION}_linux_amd64.tar.gz"
+            "linux/arm64/bundleradar_${VERSION}_linux_arm64.tar.gz"
+            "windows/amd64/bundleradar_${VERSION}_windows_amd64.zip"
           )
 
           for TARGET in "${TARGETS[@]}"; do
@@ -92,9 +92,9 @@ jobs:
             TMP_BUILD="build-${GOOS}-${GOARCH}"
             mkdir -p "$TMP_BUILD"
 
-            EXE_NAME="bundlecheck"
+            EXE_NAME="bundleradar"
             if [ "$GOOS" = "windows" ]; then
-              EXE_NAME="bundlecheck.exe"
+              EXE_NAME="bundleradar.exe"
             fi
 
             CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w" -o "${TMP_BUILD}/${EXE_NAME}" .

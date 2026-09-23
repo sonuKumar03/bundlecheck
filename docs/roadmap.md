@@ -1,4 +1,4 @@
-# Performance & Architecture Roadmap: `bundlecheck`
+# Performance & Architecture Roadmap: `bundleradar`
 
 **Last updated**: 2026-09-19  
 **Status**: Active Architecture & Roadmap Specification
@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary
 
-`bundlecheck` is a high-speed, zero-dependency bundle analysis tool and AI agent skill engineered specifically for Angular esbuild outputs and Nx enterprise workspaces.
+`bundleradar` is a high-speed, zero-dependency bundle analysis tool and AI agent skill engineered specifically for Angular esbuild outputs and Nx enterprise workspaces.
 
 Following comprehensive performance audits across the CLI, this document outlines:
 1. **Completed Performance Enhancements (Stage 1)**: Algorithmic optimizations eliminating quadratic bottlenecks.
@@ -67,22 +67,22 @@ flowchart TD
 
 ### 1. Standalone Interactive HTML Treemap Visualizer *(Planned)*
 - **Status**: Planned (Not yet implemented in current CLI)
-- **Proposed Command**: `bundlecheck summary --format html --output report.html`
+- **Proposed Command**: `bundleradar summary --format html --output report.html`
 - **Capabilities**:
   - Zero-dependency, self-contained SVG/Canvas interactive treemap and zoomable sunburst partition chart.
   - Interactive drill-down from initial vs lazy chunks down to individual NPM packages and source files.
   - Built-in Gzip vs Raw toggle, search filter, and inline optimization recommendations.
 
 ### 2. GitHub Actions PR Automation & Sticky Comment Mode *(Completed)*
-- **Command**: `bundlecheck measure --format github-pr` (and `check --format github-pr`)
+- **Command**: `bundleradar measure --format github-pr` (and `check --format github-pr`)
 - **Capabilities**:
-  - Embedded sticky comment marker (`<!-- bundlecheck-comment -->`) for seamless in-place PR comment updates.
+  - Embedded sticky comment marker (`<!-- bundleradar-comment -->`) for seamless in-place PR comment updates.
   - Visual Unicode/ASCII diff progress bars (`[████████░░]`) and % changes.
   - Foldable `<details>` breakdowns for changed and unchanged package contributions.
   - Automatic status badges for reductions, regressions, and threshold/budget failures.
 
 ### 3. Named Baselines Worktree Synchronization *(Completed)*
-- **Command**: `bundlecheck baseline create <name> --from-git <ref>`
+- **Command**: `bundleradar baseline create <name> --from-git <ref>`
 - **Capabilities**:
   - Automatically spins up an isolated temporary git worktree at a reference branch/tag (e.g. `origin/main` or `HEAD`).
   - Symlinks parent `node_modules` avoiding costly dependency installs.

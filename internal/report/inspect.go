@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
 )
 
 func InspectText(w io.Writer, r *analysis.InspectResult) error {

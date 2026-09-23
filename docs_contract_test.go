@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 
-	"github.com/sonuKumar03/bundlecheck/cmd"
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/config"
+	"github.com/sonuKumar03/bundleradar/cmd"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/config"
 )
 
 // TestDocumentationContract_ActionInputs parses action.yml and verifies that all
@@ -41,8 +41,8 @@ func TestDocumentationContract_ActionInputs(t *testing.T) {
 		filepath.Join("docs", "index.html"),
 	}
 
-	// Regex to extract with: blocks inside bundlecheck GitHub Action YAML examples
-	withBlockRegex := regexp.MustCompile(`(?s)uses:\s*[^'\n]*bundlecheck[^\n]*\n\s*with:\s*\n((?:\s{8,14}[a-zA-Z0-9_-]+:\s*[^\n]*\n)+)`)
+	// Regex to extract with: blocks inside bundleradar GitHub Action YAML examples
+	withBlockRegex := regexp.MustCompile(`(?s)uses:\s*[^'\n]*bundleradar[^\n]*\n\s*with:\s*\n((?:\s{8,14}[a-zA-Z0-9_-]+:\s*[^\n]*\n)+)`)
 	keyRegex := regexp.MustCompile(`^\s*([a-zA-Z0-9_-]+):`)
 
 	for _, docFile := range docFiles {
@@ -76,7 +76,7 @@ func TestDocumentationContract_ActionInputs(t *testing.T) {
 	}
 }
 
-// TestDocumentationContract_ConfigurationExamples ensures that every .bundlecheck.yml
+// TestDocumentationContract_ConfigurationExamples ensures that every .bundleradar.yml
 // example in public documentation parses cleanly using the strict configuration loader.
 func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 	docFiles := []string{
@@ -84,8 +84,8 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 		filepath.Join("docs", "index.html"),
 	}
 
-	mdYamlRegex := regexp.MustCompile("(?s)```ya?ml\\s*\n(# \\.bundlecheck\\.yml.*?)```")
-	htmlYamlRegex := regexp.MustCompile(`(?s)<pre><code>(# \.bundlecheck\.yml.*?)</code></pre>`)
+	mdYamlRegex := regexp.MustCompile("(?s)```ya?ml\\s*\n(# \\.bundleradar\\.yml.*?)```")
+	htmlYamlRegex := regexp.MustCompile(`(?s)<pre><code>(# \.bundleradar\.yml.*?)</code></pre>`)
 
 	for _, docFile := range docFiles {
 		content, err := os.ReadFile(docFile)
@@ -106,7 +106,7 @@ func TestDocumentationContract_ConfigurationExamples(t *testing.T) {
 			decoder := yaml.NewDecoder(bytes.NewReader([]byte(snippet)))
 			decoder.KnownFields(true)
 			if err := decoder.Decode(&cfg); err != nil {
-				t.Errorf("%s contains invalid or unsupported .bundlecheck.yml snippet:\n%s\nError: %v", docFile, snippet, err)
+				t.Errorf("%s contains invalid or unsupported .bundleradar.yml snippet:\n%s\nError: %v", docFile, snippet, err)
 			}
 		}
 	}
@@ -132,8 +132,8 @@ func TestDocumentationContract_VersionSync(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read go.mod: %v", err)
 	}
-	if !strings.Contains(string(modData), "module github.com/sonuKumar03/bundlecheck") {
-		t.Errorf("go.mod does not declare module github.com/sonuKumar03/bundlecheck")
+	if !strings.Contains(string(modData), "module github.com/sonuKumar03/bundleradar") {
+		t.Errorf("go.mod does not declare module github.com/sonuKumar03/bundleradar")
 	}
 
 	agentDocs, err := os.ReadFile(filepath.Join("docs", "agents.md"))
@@ -151,7 +151,7 @@ func TestDocumentationContract_VersionSync(t *testing.T) {
 	}
 	for label, pattern := range map[string]string{
 		"softwareVersion": `"softwareVersion": "([^"]+)"`,
-		"visible badge":   `data-version-badge>bundlecheck v([^<]+)<`,
+		"visible badge":   `data-version-badge>bundleradar v([^<]+)<`,
 	} {
 		match := regexp.MustCompile(pattern).FindSubmatch(website)
 		if len(match) != 2 || string(match[1]) != version {

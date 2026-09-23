@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 const DefaultFallbackRatio = 0.32

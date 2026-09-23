@@ -351,28 +351,28 @@ git commit -m "feat(report): format application ingress path cleanly in PR comme
 
 ---
 
-### Task 4: End-to-End Verification on `bundlecheck-nx-test`
+### Task 4: End-to-End Verification on `bundleradar-nx-test`
 
 **Files:**
-- Build: `bundlecheck` binary in `/Users/sonukumar/project/bundlecheck/`
-- Test against: `/Users/sonukumar/project/bundlecheck-nx-test/dist/apps/portal`
+- Build: `bundleradar` binary in `/Users/sonukumar/project/bundleradar/`
+- Test against: `/Users/sonukumar/project/bundleradar-nx-test/dist/apps/portal`
 
-- [ ] **Step 1: Build local bundlecheck binary**
+- [ ] **Step 1: Build local bundleradar binary**
 
-Run in `/Users/sonukumar/project/bundlecheck`:
-`rtk go build -o /Users/sonukumar/go/bin/bundlecheck .`
+Run in `/Users/sonukumar/project/bundleradar`:
+`rtk go build -o /Users/sonukumar/go/bin/bundleradar .`
 
-- [ ] **Step 2: Run `bundlecheck why moment-timezone` in `bundlecheck-nx-test`**
+- [ ] **Step 2: Run `bundleradar why moment-timezone` in `bundleradar-nx-test`**
 
-Run in `/Users/sonukumar/project/bundlecheck-nx-test`:
-`rtk bundlecheck why moment-timezone -p portal`
+Run in `/Users/sonukumar/project/bundleradar-nx-test`:
+`rtk bundleradar why moment-timezone -p portal`
 Expected output:
 Chain starts with `apps/portal/src/main.ts` and traverses `app.module.ts` to `libs/timezone-scheduler/src/index.ts` to `moment-timezone`.
 
-- [ ] **Step 3: Run `bundlecheck measure` against baseline**
+- [ ] **Step 3: Run `bundleradar measure` against baseline**
 
-Run in `/Users/sonukumar/project/bundlecheck-nx-test`:
-`rtk bundlecheck measure -p portal -b .bundlecheck/baseline-origin-master.json -o test-report.md`
+Run in `/Users/sonukumar/project/bundleradar-nx-test`:
+`rtk bundleradar measure -p portal -b .bundleradar/baseline-origin-master.json -o test-report.md`
 Verify `test-report.md` shows the application ingress path for `moment-timezone` in the Regression Explanation section!
 
 - [ ] **Step 4: Clean up temporary test file**

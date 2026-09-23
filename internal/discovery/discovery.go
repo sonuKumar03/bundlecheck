@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 type Candidate struct {
@@ -74,7 +74,7 @@ func Locate(rootDir string, projectName string) (string, string, error) {
 		names = append(names, fmt.Sprintf("%s (stats: %s, dist: %s)", c.Project, c.Stats, c.Dist))
 	}
 	firstProject := candidates[0].Project
-	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using 'bundlecheck summary --project %s', or run 'bundlecheck workspace summary'", strings.Join(names, "\n  - "), firstProject)
+	return "", "", fmt.Errorf("multiple Angular build outputs found:\n  - %s\nSpecify which project to analyze using 'bundleradar summary --project %s', or run 'bundleradar workspace summary'", strings.Join(names, "\n  - "), firstProject)
 }
 
 // Resolve determines the stats.json and browser dist paths based on provided inputs and workspace discovery.
@@ -181,7 +181,7 @@ func FindCandidates(rootDir string) ([]Candidate, error) {
 		// Avoid walking node_modules or .git
 		if d.IsDir() {
 			name := d.Name()
-			if name == "node_modules" || name == ".git" || name == ".bundlecheck" {
+			if name == "node_modules" || name == ".git" || name == ".bundleradar" {
 				return filepath.SkipDir
 			}
 			return nil

@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 const (
-	DefaultDir              = ".bundlecheck"
+	DefaultDir              = ".bundleradar"
 	DefaultBaselinesSubdir  = "baselines"
 	DefaultActiveFilename   = "active"
-	DefaultBaselineFilename = ".bundlecheck/baseline.json"
+	DefaultBaselineFilename = ".bundleradar/baseline.json"
 )
 
 // Metadata captures provenance for a baseline (git ref, commit, build command, timestamp).
@@ -88,7 +88,7 @@ func Load(pathOrName string) (*analysis.AnalysisResult, error) {
 	resolved := ResolvePath(pathOrName)
 	if _, err := os.Stat(resolved); err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("baseline %q not found\nHint: run 'bundlecheck baseline' or 'bundlecheck baseline save' first", resolved)
+			return nil, fmt.Errorf("baseline %q not found\nHint: run 'bundleradar baseline' or 'bundleradar baseline save' first", resolved)
 		}
 		return nil, fmt.Errorf("read baseline %q: %w", resolved, err)
 	}

@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 // CompareWithSnapshot computes before/after comparison and attaches deterministic regression findings

@@ -12,10 +12,10 @@ func TestBenchmarkCommand(t *testing.T) {
 	rawLog := `
 goos: darwin
 goarch: arm64
-pkg: bundlecheck/internal/advisor
+pkg: bundleradar/internal/advisor
 cpu: Apple M4
 BenchmarkAdvisorScaling-10    	    1372	    889770 ns/op	 1191148 B/op	    9416 allocs/op
-pkg: bundlecheck/internal/angular
+pkg: bundleradar/internal/angular
 BenchmarkParse-10    	   83103	     12445 ns/op	    5416 B/op	      46 allocs/op
 `
 	tmpDir := t.TempDir()

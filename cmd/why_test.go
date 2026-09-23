@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
 )
 
 func TestWhyCommandTextAndJSON(t *testing.T) {

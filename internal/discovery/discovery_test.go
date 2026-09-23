@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/discovery"
+	"github.com/sonuKumar03/bundleradar/internal/discovery"
 )
 
 func ensureNxWorkspaceBuilt(t *testing.T, nxRoot string) {
@@ -325,7 +325,7 @@ func TestResolve_AmbiguousErrorShowsRecoveryCommand(t *testing.T) {
 	if !strings.Contains(errMsg, "--project") {
 		t.Errorf("expected recovery flag --project in error message, got: %s", errMsg)
 	}
-	if !strings.Contains(errMsg, "bundlecheck workspace summary") {
+	if !strings.Contains(errMsg, "bundleradar workspace summary") {
 		t.Errorf("expected workspace summary recommendation, got: %s", errMsg)
 	}
 }

@@ -8,11 +8,11 @@ import (
 	"path"
 	"slices"
 
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
-// ToolVersion is the bundlecheck version, which can be overridden at compile time via:
-// go build -ldflags "-X bundlecheck/internal/analysis.ToolVersion=vX.Y.Z"
+// ToolVersion is the bundleradar version, which can be overridden at compile time via:
+// go build -ldflags "-X bundleradar/internal/analysis.ToolVersion=vX.Y.Z"
 var ToolVersion = "0.6.2"
 
 type SourceContribution struct {

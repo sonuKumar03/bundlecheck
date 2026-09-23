@@ -1,0 +1,12 @@
+Angular Bundle Summary
+Initial JS  201.44 KB
+Lazy JS     19.6 KB
+Total JS    221.05 KB
+
+Largest initial packages
+@angular/core              92.09 KB
+@angular/router            71.81 KB
+rxjs                       15.37 KB
+@angular/platform-browser  11.86 KB
+@angular/common            5.55 KB
+tslib                      1.86 KB

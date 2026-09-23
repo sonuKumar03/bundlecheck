@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/advisor"
+	"github.com/sonuKumar03/bundleradar/internal/advisor"
 )
 
 func TestSuggestCommand(t *testing.T) {

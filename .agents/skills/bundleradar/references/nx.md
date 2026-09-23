@@ -1,10 +1,10 @@
 # Nx and multi-app analysis
 
-Build selected Angular applications with production stats before analysis. BundleCheck supports Angular application and browser-esbuild builders; it does not build apps itself.
+Build selected Angular applications with production stats before analysis. BundleRadar supports Angular application and browser-esbuild builders; it does not build apps itself.
 
 ```sh
 nx run-many -t build --projects=shop,admin --configuration=production --stats-json
-bundlecheck workspace summary --projects shop,admin --format json
+bundleradar workspace summary --projects shop,admin --format json
 ```
 
 Use the report's exact stats/dist paths for single-app summary, why, baseline, and measure commands.

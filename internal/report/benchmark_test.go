@@ -5,15 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/report"
 )
 
 func TestParseBenchmarkOutputAndMarkdown(t *testing.T) {
 	raw := `
-pkg: bundlecheck/internal/angular
+pkg: bundleradar/internal/angular
 cpu: Apple M4
 BenchmarkParse-10    	   83103	     12445 ns/op	    5416 B/op	      46 allocs/op
-pkg: bundlecheck/internal/advisor
+pkg: bundleradar/internal/advisor
 BenchmarkAdvisorScaling-10    	    1372	    889770 ns/op	 1191148 B/op	    9416 allocs/op
 `
 	metrics := report.ParseBenchmarkOutput(strings.NewReader(raw))

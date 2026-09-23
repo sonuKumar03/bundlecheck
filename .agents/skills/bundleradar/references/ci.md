@@ -3,10 +3,10 @@
 ## Local baseline loop
 
 ```sh
-bundlecheck baseline save --name pre-change --format json
+bundleradar baseline save --name pre-change --format json
 # edit, rebuild production stats, and run project tests
-bundlecheck measure --baseline pre-change --format json
-bundlecheck check --baseline pre-change --max-initial-delta 0B --format json
+bundleradar measure --baseline pre-change --format json
+bundleradar check --baseline pre-change --max-initial-delta 0B --format json
 ```
 
 Use `baseline save --ref <git-ref> --name <name>` only when Git is available and the build can run in an isolated worktree. `baseline list`, `use`, `show`, `rebuild`, and `delete` manage named snapshots. Use `compare` for two arbitrary saved snapshots.
@@ -18,8 +18,8 @@ Measure and check the same project and entry scope captured by the baseline. A n
 `summary`, `compare`, `measure`, and `check` support Markdown output for CI summaries or PR comments:
 
 ```sh
-bundlecheck measure --baseline pre-change --format markdown -o bundle-report.md
-bundlecheck check --max-initial 250KB --format markdown
+bundleradar measure --baseline pre-change --format markdown -o bundle-report.md
+bundleradar check --max-initial 250KB --format markdown
 ```
 
 Do not claim runtime-performance improvement from these reports. Include the measured byte delta and build/test evidence.

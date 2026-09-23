@@ -12,12 +12,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/advisor"
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/advisor"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 // setupTwoEntryFixture creates a temporary two-entry build artifact fixture:

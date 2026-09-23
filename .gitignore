@@ -1,4 +1,4 @@
-/bundlecheck
+/bundleradar
 *.test
 /coverage.out
 .DS_Store
@@ -6,7 +6,7 @@
 /testdata/angular-esbuild/.angular/
 /testdata/angular-esbuild/dist/
 /testdata/angular-esbuild/.vscode/
-/testdata/angular-esbuild/bundlecheck-validation/
+/testdata/angular-esbuild/bundleradar-validation/
 *.map
 .vscode/
 /testdata/nx-workspace/node_modules/
@@ -17,5 +17,5 @@
 .nx/
 node_modules/
 /.superpowers/
-/.bundlecheck/
+/.bundleradar/
 /bin/

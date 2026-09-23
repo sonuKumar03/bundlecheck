@@ -1,4 +1,4 @@
-module github.com/sonuKumar03/bundlecheck
+module github.com/sonuKumar03/bundleradar
 
 go 1.27.1
 

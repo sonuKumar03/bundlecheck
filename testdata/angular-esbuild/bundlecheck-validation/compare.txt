@@ -1,0 +1,10 @@
+Angular Bundle Comparison
+            Before     After      Change
+Initial JS  201.36 KB  220.77 KB  +19.41 KB
+Lazy JS     19.56 KB   395 B      -19.17 KB
+Total JS    220.92 KB  221.16 KB  +245 B
+
+Largest package changes
+Package        Status   Initial change  Lazy change  Total change
+date-fns       changed  +19.27 KB       -19.17 KB    +106 B
+@angular/core  changed  +34 B           0 B          +34 B

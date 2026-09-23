@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/report"
-	"github.com/sonuKumar03/bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/workspace"
 )
 
 func workspaceCommand() *cobra.Command {

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────────────────
-# bundlecheck release contract verification script
+# bundleradar release contract verification script
 # Validates public tag, installer URL, release assets, and action
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
 fi
 
 VERSION="${TAG#v}"
-REPO="sonuKumar03/bundlecheck"
+REPO="sonuKumar03/bundleradar"
 
 echo "🔍 Verifying release contract for $TAG (version: $VERSION)..."
 
@@ -60,11 +60,11 @@ fi
 # 5. Check release assets if release page exists
 echo "  [5/5] Checking release asset availability..."
 ASSETS=(
-  "bundlecheck_${VERSION}_darwin_arm64.tar.gz"
-  "bundlecheck_${VERSION}_darwin_amd64.tar.gz"
-  "bundlecheck_${VERSION}_linux_amd64.tar.gz"
-  "bundlecheck_${VERSION}_linux_arm64.tar.gz"
-  "bundlecheck_${VERSION}_windows_amd64.zip"
+  "bundleradar_${VERSION}_darwin_arm64.tar.gz"
+  "bundleradar_${VERSION}_darwin_amd64.tar.gz"
+  "bundleradar_${VERSION}_linux_amd64.tar.gz"
+  "bundleradar_${VERSION}_linux_arm64.tar.gz"
+  "bundleradar_${VERSION}_windows_amd64.zip"
   "checksums.txt"
 )
 ALL_ASSETS_OK=true

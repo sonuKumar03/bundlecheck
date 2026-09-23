@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
 )
 
 type TextOptions struct {

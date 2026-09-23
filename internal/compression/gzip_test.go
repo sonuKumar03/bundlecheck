@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/artifact"
-	"github.com/sonuKumar03/bundlecheck/internal/compression"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/artifact"
+	"github.com/sonuKumar03/bundleradar/internal/compression"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func TestMeasureBytes(t *testing.T) {
-	data := []byte(strings.Repeat("console.log('hello bundlecheck world');\n", 100))
+	data := []byte(strings.Repeat("console.log('hello bundleradar world');\n", 100))
 	gzSize := compression.MeasureBytes(data)
 
 	if gzSize <= 0 || gzSize >= int64(len(data)) {

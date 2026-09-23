@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func TestIsGitHubPRFormat(t *testing.T) {
@@ -83,8 +83,8 @@ func TestComparisonGitHubPR(t *testing.T) {
 	out := buf.String()
 
 	// 1. Must contain sticky comment marker tag
-	if !strings.Contains(out, "<!-- bundlecheck-comment -->") {
-		t.Errorf("expected sticky comment marker <!-- bundlecheck-comment -->")
+	if !strings.Contains(out, "<!-- bundleradar-comment -->") {
+		t.Errorf("expected sticky comment marker <!-- bundleradar-comment -->")
 	}
 
 	// 2. Must contain status badge
@@ -161,7 +161,7 @@ func TestCheckGitHubPR(t *testing.T) {
 		t.Fatalf("CheckGitHubPR returned error: %v", err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "<!-- bundlecheck-comment -->") {
+	if !strings.Contains(out, "<!-- bundleradar-comment -->") {
 		t.Errorf("expected sticky comment marker")
 	}
 	if !strings.Contains(out, "✅ Angular Bundle Budget Check: PASSED") {
@@ -413,7 +413,7 @@ func TestComparisonGitHubPR_ProjectTitleAndMicroDrift(t *testing.T) {
 	out := buf.String()
 
 	// Should have project in title
-	if !strings.Contains(out, "## 📦 BundleCheck PR Report (`portal`)") {
+	if !strings.Contains(out, "## 📦 BundleRadar PR Report (`portal`)") {
 		t.Errorf("expected project in PR title:\n%s", out)
 	}
 

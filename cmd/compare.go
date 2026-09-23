@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func compareCommand() *cobra.Command {
@@ -55,7 +55,7 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 			}
 
 			if before == "" || after == "" {
-				return fmt.Errorf("both before and after paths are required (e.g. 'bundlecheck compare baseline.json current.json' or -b and -a)")
+				return fmt.Errorf("both before and after paths are required (e.g. 'bundleradar compare baseline.json current.json' or -b and -a)")
 			}
 			if format != "text" && format != "json" && !report.IsMarkdownFormat(format) && !report.IsGitHubPRFormat(format) {
 				return fmt.Errorf("unsupported format %q: use text, json, markdown, or github-pr", format)

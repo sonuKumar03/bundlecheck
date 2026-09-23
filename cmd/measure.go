@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/report"
 )
 
 func measureCommand() *cobra.Command {
@@ -31,7 +31,7 @@ func measureCommand() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "measure",
 		Short: "Measure current build changes against a saved baseline",
-		Long: `Measure current build changes against a baseline summary (defaults to .bundlecheck/baseline.json).
+		Long: `Measure current build changes against a baseline summary (defaults to .bundleradar/baseline.json).
 Reports initial/lazy/total JS deltas and package movements.
 Optionally verifies that size regressions do not exceed specified limits.`,
 		Args: cobra.NoArgs,

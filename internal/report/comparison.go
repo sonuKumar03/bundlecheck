@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
 )
 
 func ComparisonText(w io.Writer, r *comparison.Result) error {

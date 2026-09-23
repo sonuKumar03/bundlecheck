@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func TestBaselineSaveAndLoad(t *testing.T) {

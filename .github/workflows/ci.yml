@@ -64,7 +64,7 @@ jobs:
         run: go test -v . -run TestDocumentationContract -count=1
 
       - name: Build Binary
-        run: go build -o bundlecheck .
+        run: go build -o bundleradar .
 
       - name: Validate install.sh
         if: runner.os != 'Windows'
@@ -97,11 +97,11 @@ jobs:
       - name: Ensure cache directory exists
         run: mkdir -p ./cache
 
-      - name: Build bundlecheck CLI
-        run: go build -o bundlecheck .
+      - name: Build bundleradar CLI
+        run: go build -o bundleradar .
 
       - name: Format Human-Readable Benchmark Summary
-        run: ./bundlecheck benchmark benchmark-output.txt -f markdown >> $GITHUB_STEP_SUMMARY
+        run: ./bundleradar benchmark benchmark-output.txt -f markdown >> $GITHUB_STEP_SUMMARY
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1

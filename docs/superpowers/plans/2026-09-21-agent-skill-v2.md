@@ -1,8 +1,8 @@
-# BundleCheck Agent Skill v2 Implementation Plan
+# BundleRadar Agent Skill v2 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Do not commit this plan unless the user explicitly asks.
 
-**Goal:** Turn BundleCheck's distributable Agent Skill from a command reference into a reliable Angular bundle-optimization workflow, package its conditional references correctly across supported agents, add a measurable evaluation corpus, and align public claims with the repository's real contracts.
+**Goal:** Turn BundleRadar's distributable Agent Skill from a command reference into a reliable Angular bundle-optimization workflow, package its conditional references correctly across supported agents, add a measurable evaluation corpus, and align public claims with the repository's real contracts.
 
 **Architecture:** Keep activation, workflow selection, safety rules, MCP/CLI routing, and reporting in a short `SKILL.md`. Move command, schema, Nx, and CI detail into routed references. Treat the Skill as the reasoning layer, prefer MCP when its tools are available, and use JSON CLI commands as the universal fallback. Extend the existing installer and Go documentation-contract tests instead of adding a second packaging or validation system.
 
@@ -12,10 +12,10 @@
 
 ## Global Constraints
 
-- Keep the skill name `bundlecheck` and automatic discovery behavior.
+- Keep the skill name `bundleradar` and automatic discovery behavior.
 - Target Angular applications built with esbuild. Do not activate for Lighthouse, Web Vitals, runtime CPU/memory, generic Vite/webpack, or Node bundle work unless compatible Angular/esbuild stats are available.
 - The binary and Angular `stats.json` are prerequisites. Node/Nx is required only when the agent must build or inspect an Nx workspace; Git is required only for git-ref baseline workflows.
-- Prefer available BundleCheck MCP tools. Otherwise run the CLI with `--format json`. MCP and CLI implement the same diagnostic workflow; neither replaces the Skill.
+- Prefer available BundleRadar MCP tools. Otherwise run the CLI with `--format json`. MCP and CLI implement the same diagnostic workflow; neither replaces the Skill.
 - Never claim LCP, INP, memory, CPU, or runtime improvements from bundle-size evidence alone.
 - Treat `savingsBytes` as an estimate until a production rebuild and `measure` confirm the delta.
 - Establish a baseline before edits, inspect the traced application usage before changing code, run relevant project tests after edits, and preserve unrelated user work.
@@ -26,7 +26,7 @@
 
 ## Review Focus
 
-- Running the skill outside the BundleCheck source checkout must never suggest local `./install.sh`.
+- Running the skill outside the BundleRadar source checkout must never suggest local `./install.sh`.
 - A CLI-only environment and an MCP-enabled environment must follow the same baseline-to-verification decisions.
 - Installing the split skill must include every referenced file in local-source and remote-installer modes.
 - Negative trigger prompts about runtime performance or non-Angular bundles must not activate the skill.
@@ -34,16 +34,16 @@
 
 ## File Map and Interfaces
 
-- Modify `.agents/skills/bundlecheck/SKILL.md`: discriminating frontmatter, decision routing, optimization loop, safety rules, final report contract.
-- Create `.agents/skills/bundlecheck/references/cli.md`: CLI fallback, discovery, command matrix, errors, and install prerequisite.
-- Create `.agents/skills/bundlecheck/references/json-schema.md`: summary, suggestion, trace, comparison, exit-code, and compatibility contracts.
-- Create `.agents/skills/bundlecheck/references/nx.md`: Nx discovery, partial-result, freshness, and multi-app interpretation rules.
-- Create `.agents/skills/bundlecheck/references/ci.md`: baseline, measure, check, Markdown, and GitHub Action workflows.
+- Modify `.agents/skills/bundleradar/SKILL.md`: discriminating frontmatter, decision routing, optimization loop, safety rules, final report contract.
+- Create `.agents/skills/bundleradar/references/cli.md`: CLI fallback, discovery, command matrix, errors, and install prerequisite.
+- Create `.agents/skills/bundleradar/references/json-schema.md`: summary, suggestion, trace, comparison, exit-code, and compatibility contracts.
+- Create `.agents/skills/bundleradar/references/nx.md`: Nx discovery, partial-result, freshness, and multi-app interpretation rules.
+- Create `.agents/skills/bundleradar/references/ci.md`: baseline, measure, check, Markdown, and GitHub Action workflows.
 - Modify `install.sh` and `install_test.go`: install the complete skill tree into canonical agent locations.
 - Create `testdata/skill-evals/triggers.yaml` and `testdata/skill-evals/workflows.yaml`: positive, negative, and workflow evaluation cases.
 - Create `testdata/skill-evals/README.md`: repeatable forward-evaluation protocol and acceptance thresholds.
 - Create `skill_contract_test.go`: skill metadata/reference/eval corpus contracts.
-- Modify `README.md`, `npm/bundlecheck/README.md`, `docs/agents.md`, `docs/index.html`: Skill → MCP → CLI positioning and corrected trust claims.
+- Modify `README.md`, `npm/bundleradar/README.md`, `docs/agents.md`, `docs/index.html`: Skill → MCP → CLI positioning and corrected trust claims.
 - Modify `docs_contract_test.go`: version and marketing-copy drift prevention.
 - Modify `scripts/bump-version.sh` only if the new contract exposes a missing version target.
 
@@ -53,7 +53,7 @@
 
 **Files:**
 - Create: `skill_contract_test.go`
-- Test: `.agents/skills/bundlecheck/SKILL.md` and future `references/*.md`
+- Test: `.agents/skills/bundleradar/SKILL.md` and future `references/*.md`
 
 **Interfaces:**
 - Consumes: YAML frontmatter from `SKILL.md`.
@@ -71,20 +71,20 @@ type skillMetadata struct {
 }
 ~~~
 
-Implement `readSkill(t *testing.T) (skillMetadata, string)` by reading `.agents/skills/bundlecheck/SKILL.md`, requiring the opening `---` delimiter, splitting at the next `---`, and unmarshalling the first section with the already-installed `gopkg.in/yaml.v3`.
+Implement `readSkill(t *testing.T) (skillMetadata, string)` by reading `.agents/skills/bundleradar/SKILL.md`, requiring the opening `---` delimiter, splitting at the next `---`, and unmarshalling the first section with the already-installed `gopkg.in/yaml.v3`.
 
 Add `TestAgentSkillMetadata` assertions:
 
 ~~~go
-if meta.Name != "bundlecheck" {
-	t.Fatalf("name = %q, want bundlecheck", meta.Name)
+if meta.Name != "bundleradar" {
+	t.Fatalf("name = %q, want bundleradar", meta.Name)
 }
 for _, term := range []string{"Angular", "esbuild", "bundle size", "Do not use"} {
 	if !strings.Contains(meta.Description, term) {
 		t.Errorf("description must contain %q", term)
 	}
 }
-for _, term := range []string{"bundlecheck CLI", "stats.json"} {
+for _, term := range []string{"bundleradar CLI", "stats.json"} {
 	if !strings.Contains(meta.Compatibility, term) {
 		t.Errorf("compatibility must contain %q", term)
 	}
@@ -106,7 +106,7 @@ Reject the fragile local-install instruction with:
 
 ~~~go
 if strings.Contains(body, "./install.sh --with-skill") {
-	t.Fatal("skill must not assume the bundlecheck source checkout")
+	t.Fatal("skill must not assume the bundleradar source checkout")
 }
 ~~~
 
@@ -119,11 +119,11 @@ Expected: FAIL because compatibility, routed references, and the line limit are 
 ### Task 2: Rewrite the Skill as the decision and safety layer
 
 **Files:**
-- Modify: `.agents/skills/bundlecheck/SKILL.md`
-- Create: `.agents/skills/bundlecheck/references/cli.md`
-- Create: `.agents/skills/bundlecheck/references/json-schema.md`
-- Create: `.agents/skills/bundlecheck/references/nx.md`
-- Create: `.agents/skills/bundlecheck/references/ci.md`
+- Modify: `.agents/skills/bundleradar/SKILL.md`
+- Create: `.agents/skills/bundleradar/references/cli.md`
+- Create: `.agents/skills/bundleradar/references/json-schema.md`
+- Create: `.agents/skills/bundleradar/references/nx.md`
+- Create: `.agents/skills/bundleradar/references/ci.md`
 - Test: `skill_contract_test.go`
 
 **Interfaces:**
@@ -136,7 +136,7 @@ Use this exact frontmatter:
 
 ~~~yaml
 ---
-name: bundlecheck
+name: bundleradar
 description: >
   Use this skill when the user wants to understand, compare, or reduce the
   JavaScript bundle size of an Angular application built with esbuild.
@@ -147,7 +147,7 @@ description: >
   Web Vitals, network profiling, or non-Angular builds unless compatible
   Angular/esbuild stats are available.
 compatibility: >
-  Requires the bundlecheck CLI and Angular esbuild stats.json. Node and Nx are
+  Requires the bundleradar CLI and Angular esbuild stats.json. Node and Nx are
   required only to build or inspect an Nx workspace. Git is required only for
   git-ref baseline workflows.
 ---
@@ -170,8 +170,8 @@ Keep this routing in the entrypoint:
 State execution selection immediately after the table:
 
 1. Use matching `bundle_*` / `workspace_summary` MCP tools when available.
-2. Otherwise verify `command -v bundlecheck` and use CLI JSON.
-3. If the command is missing, stop and give the supported remote install command; never assume the BundleCheck repository or local `./install.sh` exists.
+2. Otherwise verify `command -v bundleradar` and use CLI JSON.
+3. If the command is missing, stop and give the supported remote install command; never assume the BundleRadar repository or local `./install.sh` exists.
 
 - [ ] **Step 3: Encode the autonomous optimization loop**
 
@@ -212,8 +212,8 @@ Expected: PASS.
 - [ ] **Step 8: Commit the skill unit**
 
 ~~~sh
-rtk git add .agents/skills/bundlecheck skill_contract_test.go
-rtk git commit -m "feat(skill): turn bundlecheck into an optimization workflow"
+rtk git add .agents/skills/bundleradar skill_contract_test.go
+rtk git commit -m "feat(skill): turn bundleradar into an optimization workflow"
 ~~~
 
 ### Task 3: Package the full skill tree for supported agents
@@ -221,7 +221,7 @@ rtk git commit -m "feat(skill): turn bundlecheck into an optimization workflow"
 **Files:**
 - Modify: `install.sh`
 - Modify: `install_test.go`
-- Test: `.agents/skills/bundlecheck/references/*.md`
+- Test: `.agents/skills/bundleradar/references/*.md`
 
 **Interfaces:**
 - Consumes: the five-file skill manifest from Task 2.
@@ -229,7 +229,7 @@ rtk git commit -m "feat(skill): turn bundlecheck into an optimization workflow"
 
 - [ ] **Step 1: Extend installer tests before changing the script**
 
-Add `assertSkillTree(t *testing.T, root, installed string)` in `install_test.go`. For each path below, compare the installed bytes with `root/.agents/skills/bundlecheck/<path>`:
+Add `assertSkillTree(t *testing.T, root, installed string)` in `install_test.go`. For each path below, compare the installed bytes with `root/.agents/skills/bundleradar/<path>`:
 
 ~~~text
 SKILL.md
@@ -242,16 +242,16 @@ references/ci.md
 Update `TestInstall` so `--with-skill` requires identical trees at:
 
 ~~~text
-$HOME/.agents/skills/bundlecheck
-$HOME/.claude/skills/bundlecheck
-$HOME/.codex/skills/bundlecheck
+$HOME/.agents/skills/bundleradar
+$HOME/.claude/skills/bundleradar
+$HOME/.codex/skills/bundleradar
 ~~~
 
 Keep the existing `notes.txt` assertion. Update `TestInstallCustomSkillDir` to require the complete tree only in the custom destination.
 
 - [ ] **Step 2: Add a remote-mode test**
 
-Create `TestRemoteSkillInstallDownloadsReferences` by copying `install.sh` to a temporary directory without `go.mod`, placing mock `uname`, `curl`, and a failing `go` on `PATH`, and invoking `--with-skill`. The mock `curl` must return the existing fake binary archive for release URLs and copy the matching repository skill file for each raw `.agents/skills/bundlecheck/...` URL. Assert all three default destinations contain the five files.
+Create `TestRemoteSkillInstallDownloadsReferences` by copying `install.sh` to a temporary directory without `go.mod`, placing mock `uname`, `curl`, and a failing `go` on `PATH`, and invoking `--with-skill`. The mock `curl` must return the existing fake binary archive for release URLs and copy the matching repository skill file for each raw `.agents/skills/bundleradar/...` URL. Assert all three default destinations contain the five files.
 
 - [ ] **Step 3: Run the installer tests and observe failure**
 
@@ -271,11 +271,11 @@ references/nx.md
 references/ci.md'
 ~~~
 
-Implement `install_skill_tree()` to create each parent directory and either copy from `$script_dir/.agents/skills/bundlecheck/$rel` or download `https://raw.githubusercontent.com/$REPO/master/.agents/skills/bundlecheck/$rel`. Do not delete the destination directory.
+Implement `install_skill_tree()` to create each parent directory and either copy from `$script_dir/.agents/skills/bundleradar/$rel` or download `https://raw.githubusercontent.com/$REPO/master/.agents/skills/bundleradar/$rel`. Do not delete the destination directory.
 
 - [ ] **Step 5: Install explicit destinations**
 
-For `--with-skill` without `--skill-dir`, call `install_skill_tree` for `$HOME/.agents/skills/bundlecheck`, `$HOME/.claude/skills/bundlecheck`, and `$HOME/.codex/skills/bundlecheck`. Retain the current conditional Antigravity legacy destination. For `--skill-dir`, install only the requested destination.
+For `--with-skill` without `--skill-dir`, call `install_skill_tree` for `$HOME/.agents/skills/bundleradar`, `$HOME/.claude/skills/bundleradar`, and `$HOME/.codex/skills/bundleradar`. Retain the current conditional Antigravity legacy destination. For `--skill-dir`, install only the requested destination.
 
 - [ ] **Step 6: Verify syntax and behavior**
 
@@ -387,7 +387,7 @@ rtk git commit -m "test(skill): add activation and workflow eval corpora"
 
 **Files:**
 - Modify: `README.md`
-- Modify: `npm/bundlecheck/README.md`
+- Modify: `npm/bundleradar/README.md`
 - Modify: `docs/agents.md`
 - Modify: `docs/index.html`
 - Modify: `docs_contract_test.go`
@@ -456,7 +456,7 @@ Remove the competing `<5ms`, “sub-millisecond,” `<10ms`, and `<1ms` marketin
 
 - [ ] **Step 6: Keep synchronized surfaces synchronized**
 
-Edit `README.md` first, copy it to `npm/bundlecheck/README.md`, then update HTML and agent docs. Inspect `scripts/bump-version.sh`; change it only if the extended version test shows one of the new checked surfaces is not already updated.
+Edit `README.md` first, copy it to `npm/bundleradar/README.md`, then update HTML and agent docs. Inspect `scripts/bump-version.sh`; change it only if the extended version test shows one of the new checked surfaces is not already updated.
 
 - [ ] **Step 7: Run documentation contracts**
 
@@ -467,7 +467,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit the documentation unit**
 
 ~~~sh
-rtk git add README.md npm/bundlecheck/README.md docs/agents.md docs/index.html docs_contract_test.go scripts/bump-version.sh
+rtk git add README.md npm/bundleradar/README.md docs/agents.md docs/index.html docs_contract_test.go scripts/bump-version.sh
 rtk git commit -m "docs(agent): explain the measured optimization workflow"
 ~~~
 

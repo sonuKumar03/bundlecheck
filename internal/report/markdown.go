@@ -6,10 +6,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/sonuKumar03/bundlecheck/internal/advisor"
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/advisor"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
 )
 
 // IsMarkdownFormat returns true if format is "markdown" or "md".

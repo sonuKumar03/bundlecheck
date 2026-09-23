@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/artifact"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/artifact"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 type TraceChain struct {

@@ -42,7 +42,7 @@ func ParseBenchmarkOutput(r io.Reader) []BenchmarkMetric {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "pkg: ") {
-			currentPkg = strings.TrimPrefix(line, "pkg: bundlecheck/")
+			currentPkg = strings.TrimPrefix(line, "pkg: bundleradar/")
 			continue
 		}
 

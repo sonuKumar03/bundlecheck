@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
 )
 
 func TestMeasureCommandSuccess(t *testing.T) {
@@ -140,10 +140,10 @@ func TestMeasureGitHubPR(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "<!-- bundlecheck-comment -->") {
+	if !strings.Contains(output, "<!-- bundleradar-comment -->") {
 		t.Errorf("expected sticky comment marker in measure output, got: %s", output)
 	}
-	if !strings.Contains(output, "## 📦 BundleCheck PR Report") {
+	if !strings.Contains(output, "## 📦 BundleRadar PR Report") {
 		t.Errorf("expected PR report header in measure output, got: %s", output)
 	}
 	if !strings.Contains(output, "<code>[") {

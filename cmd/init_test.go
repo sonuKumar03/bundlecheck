@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/config"
+	"github.com/sonuKumar03/bundleradar/internal/config"
 )
 
 func TestInitCommand_Preview(t *testing.T) {
@@ -33,9 +33,9 @@ func TestInitCommand_Preview(t *testing.T) {
 		t.Errorf("missing total_max in YAML output:\n%s", out)
 	}
 
-	// Verify the directory does NOT have .bundlecheck.yml written in preview mode
-	if _, err := os.Stat(filepath.Join(minimalDir, ".bundlecheck.yml")); err == nil {
-		t.Errorf("preview mode must NOT write .bundlecheck.yml to disk")
+	// Verify the directory does NOT have .bundleradar.yml written in preview mode
+	if _, err := os.Stat(filepath.Join(minimalDir, ".bundleradar.yml")); err == nil {
+		t.Errorf("preview mode must NOT write .bundleradar.yml to disk")
 	}
 }
 
@@ -79,9 +79,9 @@ func TestInitCommand_WriteAndRefusal(t *testing.T) {
 	if code != ExitCodeSuccess {
 		t.Fatalf("init write failed with code %d: %s", code, stderr.String())
 	}
-	targetFile := filepath.Join(tmpDir, ".bundlecheck.yml")
+	targetFile := filepath.Join(tmpDir, ".bundleradar.yml")
 	if _, err := os.Stat(targetFile); err != nil {
-		t.Fatalf(".bundlecheck.yml was not created on disk: %v", err)
+		t.Fatalf(".bundleradar.yml was not created on disk: %v", err)
 	}
 
 	// Verify written file is strictly valid YAML loadable by config parser

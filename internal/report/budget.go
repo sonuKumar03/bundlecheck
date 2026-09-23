@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
 )
 
 func BudgetReport(w io.Writer, res budget.CheckResult) error {

@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/config"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/config"
 )
 
 func initCommand() *cobra.Command {
@@ -24,10 +24,10 @@ func initCommand() *cobra.Command {
 
 	c := &cobra.Command{
 		Use:   "init [path]",
-		Short: "Generate or propose a .bundlecheck.yml configuration",
-		Long: `Generate a starting .bundlecheck.yml budget configuration from measured bundle size or existing Angular budgets.
+		Short: "Generate or propose a .bundleradar.yml configuration",
+		Long: `Generate a starting .bundleradar.yml budget configuration from measured bundle size or existing Angular budgets.
 Without --write, the command prints the proposed configuration and its derivation to stdout.
-With --write, it writes .bundlecheck.yml only if the destination does not already exist.`,
+With --write, it writes .bundleradar.yml only if the destination does not already exist.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			targetDir := "."
@@ -110,8 +110,8 @@ With --write, it writes .bundlecheck.yml only if the destination does not alread
 				return fmt.Errorf("internal error: rendered invalid YAML: %w", err)
 			}
 
-			destPath := filepath.Join(absTarget, ".bundlecheck.yml")
-			destAlt := filepath.Join(absTarget, ".bundlecheck.yaml")
+			destPath := filepath.Join(absTarget, ".bundleradar.yml")
+			destAlt := filepath.Join(absTarget, ".bundleradar.yaml")
 
 			if write {
 				if _, err := os.Stat(destPath); err == nil {
@@ -140,7 +140,7 @@ With --write, it writes .bundlecheck.yml only if the destination does not alread
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces")
 	c.Flags().Float64Var(&headroom, "headroom", 5.0, "Headroom percentage to add over measured bundle sizes")
 	c.Flags().BoolVar(&fromAngularBudgets, "from-angular-budgets", false, "Import existing budget limits from angular.json or project.json")
-	c.Flags().BoolVar(&write, "write", false, "Write proposed configuration to .bundlecheck.yml if file does not exist")
+	c.Flags().BoolVar(&write, "write", false, "Write proposed configuration to .bundleradar.yml if file does not exist")
 
 	return c
 }

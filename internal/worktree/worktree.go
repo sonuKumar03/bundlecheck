@@ -89,7 +89,7 @@ func Create(rootDir string, ref string) (string, func(), error) {
 		return "", nil, err
 	}
 
-	tempDir, err := os.MkdirTemp("", "bundlecheck-wt-*")
+	tempDir, err := os.MkdirTemp("", "bundleradar-wt-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("create temp worktree dir: %w", err)
 	}

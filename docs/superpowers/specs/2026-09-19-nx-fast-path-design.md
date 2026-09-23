@@ -9,11 +9,11 @@
 
 ## 1. Overview & Goals
 
-In Nx enterprise workspaces, `bundlecheck workspace summary` currently calls `node node_modules/nx/bin/nx.js graph --print` to retrieve project definitions and targets. On Node.js runners, this incurs a constant ~260ms VM initialization and graph compilation overhead even for small and medium workspaces.
+In Nx enterprise workspaces, `bundleradar workspace summary` currently calls `node node_modules/nx/bin/nx.js graph --print` to retrieve project definitions and targets. On Node.js runners, this incurs a constant ~260ms VM initialization and graph compilation overhead even for small and medium workspaces.
 
 ### Goals
 1. **Sub-10ms Workspace Discovery**: Parse modern Nx workspace structure directly in pure Go by traversing `project.json` files and workspace configuration.
-2. **Zero-Dependency Execution**: Allow `bundlecheck workspace` to inspect existing build artifacts even when `node_modules` is absent or Node.js runtime is unavailable.
+2. **Zero-Dependency Execution**: Allow `bundleradar workspace` to inspect existing build artifacts even when `node_modules` is absent or Node.js runtime is unavailable.
 3. **100% Backward Compatibility**: Seamlessly fall back to `node nx graph --print` whenever dynamic Nx plugins, inferred targets, or complex workspace configurations are encountered.
 4. **Exact Equivalence**: Produce identical `workspace.Metadata` models (projects, targets, executors, options, configurations) as the Nx CLI output for standard Angular applications.
 

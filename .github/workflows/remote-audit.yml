@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout bundlecheck
+      - name: Checkout bundleradar
         uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -144,7 +144,7 @@ jobs:
           echo "- **Subdirectory**: \`$SUB_DIR\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-      - name: Run BundleCheck Action
+      - name: Run BundleRadar Action
         uses: ./
         with:
           working-directory: target-repo/${{ inputs.sub_dir }}
@@ -152,13 +152,13 @@ jobs:
           suggest: 'true'
           format: 'markdown'
           output: 'bundle-report.md'
-          json-output: 'bundlecheck-audit.json'
+          json-output: 'bundleradar-audit.json'
 
       - name: Upload Audit Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bundlecheck-audit-result
+          name: bundleradar-audit-result
           path: |
             target-repo/**/bundle-report.md
-            target-repo/**/bundlecheck-audit.json
+            target-repo/**/bundleradar-audit.json
           if-no-files-found: error

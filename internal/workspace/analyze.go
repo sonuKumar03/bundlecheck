@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/build"
-	"github.com/sonuKumar03/bundlecheck/internal/compression"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/build"
+	"github.com/sonuKumar03/bundleradar/internal/compression"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 // AnalyzeOptions provides configuration for workspace analysis.
@@ -177,8 +177,8 @@ func Analyze(ctx context.Context, opts AnalyzeOptions) (*Result, error) {
 		app.Freshness = CheckFreshness(workspaceRoot, metadata.Graph.Nodes[app.Name].Data.Root, app.Stats, snap)
 		packages[app.Name] = result.Packages
 		app.DrillDown = [][]string{
-			{"bundlecheck", "why", "--stats", app.Stats, "--dist", app.Dist, "--package", "<package-name>"},
-			{"bundlecheck", "suggest", "--stats", app.Stats, "--dist", app.Dist},
+			{"bundleradar", "why", "--stats", app.Stats, "--dist", app.Dist, "--package", "<package-name>"},
+			{"bundleradar", "suggest", "--stats", app.Stats, "--dist", app.Dist},
 		}
 	}
 

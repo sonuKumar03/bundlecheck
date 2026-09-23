@@ -1,4 +1,4 @@
-name: 'BundleCheck - Angular Bundle Analyzer & PR Reporter'
+name: 'BundleRadar - Angular Bundle Analyzer & PR Reporter'
 description: 'Analyze Angular bundle sizes, estimate Gzip wire transfers, generate PR reports, and enforce size budgets in CI.'
 author: 'Sonu Kumar'
 branding:
@@ -7,7 +7,7 @@ branding:
 
 inputs:
   working-directory:
-    description: 'Working directory to run bundlecheck in'
+    description: 'Working directory to run bundleradar in'
     required: false
     default: '.'
   stats:
@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ''
   entry:
-    description: 'Scope bundlecheck analysis and budget enforcement to a specific entrypoint (e.g. src/main.ts)'
+    description: 'Scope bundleradar analysis and budget enforcement to a specific entrypoint (e.g. src/main.ts)'
     required: false
     default: ''
   format:
@@ -87,7 +87,7 @@ inputs:
     required: false
     default: 'false'
   artifact-name:
-    description: 'Name of the baseline workflow artifact (defaults to bundlecheck-baseline or bundlecheck-baseline-<project>)'
+    description: 'Name of the baseline workflow artifact (defaults to bundleradar-baseline or bundleradar-baseline-<project>)'
     required: false
     default: ''
   upload-artifact-baseline:
@@ -106,22 +106,22 @@ inputs:
 outputs:
   initial-bytes:
     description: 'Initial bundle size in raw bytes'
-    value: ${{ steps.run-bundlecheck.outputs.initial_bytes }}
+    value: ${{ steps.run-bundleradar.outputs.initial_bytes }}
   lazy-bytes:
     description: 'Lazy chunks size in raw bytes'
-    value: ${{ steps.run-bundlecheck.outputs.lazy_bytes }}
+    value: ${{ steps.run-bundleradar.outputs.lazy_bytes }}
   total-bytes:
     description: 'Total JavaScript size in raw bytes'
-    value: ${{ steps.run-bundlecheck.outputs.total_bytes }}
+    value: ${{ steps.run-bundleradar.outputs.total_bytes }}
   report-path:
     description: 'Path where the bundle report was written'
     value: ${{ inputs.output }}
   comparison-status:
     description: 'Comparison status: completed or unavailable'
-    value: ${{ steps.run-bundlecheck.outputs.comparison_status }}
+    value: ${{ steps.run-bundleradar.outputs.comparison_status }}
   comparison-message:
     description: 'Detailed explanation of comparison status'
-    value: ${{ steps.run-bundlecheck.outputs.comparison_message }}
+    value: ${{ steps.run-bundleradar.outputs.comparison_message }}
 
 runs:
   using: 'composite'
@@ -131,23 +131,23 @@ runs:
       with:
         go-version: 'stable'
 
-    - name: Build & Install bundlecheck
+    - name: Build & Install bundleradar
       shell: bash
       run: |
-        if ! command -v bundlecheck >/dev/null 2>&1; then
+        if ! command -v bundleradar >/dev/null 2>&1; then
           if [ -f "${{ github.action_path }}/main.go" ]; then
-            echo "Building bundlecheck from local action path: ${{ github.action_path }}"
-            cd "${{ github.action_path }}" && (go build -o /usr/local/bin/bundlecheck . 2>/dev/null || (mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/bundlecheck" . && echo "$HOME/.local/bin" >> $GITHUB_PATH))
+            echo "Building bundleradar from local action path: ${{ github.action_path }}"
+            cd "${{ github.action_path }}" && (go build -o /usr/local/bin/bundleradar . 2>/dev/null || (mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/bundleradar" . && echo "$HOME/.local/bin" >> $GITHUB_PATH))
           else
-            echo "Installing precompiled bundlecheck binary..."
-            curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+            echo "Installing precompiled bundleradar binary..."
+            curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh
             echo "$HOME/.local/bin" >> $GITHUB_PATH
             echo "/usr/local/bin" >> $GITHUB_PATH
           fi
         fi
 
-    - name: Run bundlecheck Analysis & Budgets
-      id: run-bundlecheck
+    - name: Run bundleradar Analysis & Budgets
+      id: run-bundleradar
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -203,16 +203,16 @@ runs:
         EFFECTIVE_ARTIFACT_NAME="$INPUT_ARTIFACT_NAME"
         if [ -z "$EFFECTIVE_ARTIFACT_NAME" ]; then
           if [ -n "$INPUT_PROJECT" ]; then
-            EFFECTIVE_ARTIFACT_NAME="bundlecheck-baseline-$INPUT_PROJECT"
+            EFFECTIVE_ARTIFACT_NAME="bundleradar-baseline-$INPUT_PROJECT"
           else
-            EFFECTIVE_ARTIFACT_NAME="bundlecheck-baseline"
+            EFFECTIVE_ARTIFACT_NAME="bundleradar-baseline"
           fi
         fi
 
         # Attempt to retrieve baseline artifact if requested
         if [ "$INPUT_ARTIFACT_BASELINE" = "true" ] && [ -z "$BASELINE_FILE" ]; then
           echo "Attempting to retrieve baseline artifact '$EFFECTIVE_ARTIFACT_NAME'..."
-          ARTIFACT_DIR=".bundlecheck/artifacts/$EFFECTIVE_ARTIFACT_NAME"
+          ARTIFACT_DIR=".bundleradar/artifacts/$EFFECTIVE_ARTIFACT_NAME"
           mkdir -p "$ARTIFACT_DIR"
 
           GH_DOWNLOAD_ARGS=("--name" "$EFFECTIVE_ARTIFACT_NAME" "--dir" "$ARTIFACT_DIR")
@@ -264,8 +264,8 @@ runs:
             echo "Comparing against base git ref: $TARGET_BASE_REF..."
           fi
 
-          WT_BASE_FILE=".bundlecheck/baseline-${TARGET_BASE_REF//\//-}.json"
-          SAVE_CMD=("bundlecheck" "baseline" "save" "--ref" "$TARGET_BASE_REF" "-o" "$WT_BASE_FILE")
+          WT_BASE_FILE=".bundleradar/baseline-${TARGET_BASE_REF//\//-}.json"
+          SAVE_CMD=("bundleradar" "baseline" "save" "--ref" "$TARGET_BASE_REF" "-o" "$WT_BASE_FILE")
           if [ -n "$INPUT_BUILD_CMD" ]; then
             SAVE_CMD+=("--build-cmd" "$INPUT_BUILD_CMD")
           fi
@@ -303,7 +303,7 @@ runs:
           if [ -n "$INPUT_OUTPUT" ]; then MEASURE_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
 
           set +e
-          bundlecheck measure "${MEASURE_FLAGS[@]}"
+          bundleradar measure "${MEASURE_FLAGS[@]}"
           MEASURE_EXIT=$?
           set -e
 
@@ -312,7 +312,7 @@ runs:
             if [ -n "$INPUT_OUTPUT" ] && [ -f "$INPUT_OUTPUT" ]; then
               echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
             else
-              echo "::error::bundlecheck measure execution or report generation failed (exit code $MEASURE_EXIT)"
+              echo "::error::bundleradar measure execution or report generation failed (exit code $MEASURE_EXIT)"
               exit $MEASURE_EXIT
             fi
           fi
@@ -321,7 +321,7 @@ runs:
           if [ "$INPUT_GZIP" = "true" ]; then SUMMARY_FLAGS+=("--gzip"); fi
           if [ "$INPUT_SUGGEST" = "true" ]; then SUMMARY_FLAGS+=("--suggest"); fi
           if [ -n "$INPUT_OUTPUT" ]; then SUMMARY_FLAGS+=("-o" "$INPUT_OUTPUT"); fi
-          bundlecheck summary "${SUMMARY_FLAGS[@]}"
+          bundleradar summary "${SUMMARY_FLAGS[@]}"
         fi
 
         # Append to Job Summary if output file exists and GITHUB_STEP_SUMMARY is set
@@ -330,13 +330,13 @@ runs:
         fi
 
         # Extract structured metrics via JSON
-        JSON_OUT=$(bundlecheck summary "${ARGS[@]}" -f json)
+        JSON_OUT=$(bundleradar summary "${ARGS[@]}" -f json)
         if [ -n "$INPUT_JSON_OUTPUT" ]; then
           echo "$JSON_OUT" > "$INPUT_JSON_OUTPUT"
         fi
 
         if [ "$INPUT_UPLOAD_ARTIFACT_BASELINE" = "true" ]; then
-          BASELINE_UPLOAD_DIR=".bundlecheck/upload/$EFFECTIVE_ARTIFACT_NAME"
+          BASELINE_UPLOAD_DIR=".bundleradar/upload/$EFFECTIVE_ARTIFACT_NAME"
           mkdir -p "$BASELINE_UPLOAD_DIR"
           echo "$JSON_OUT" > "$BASELINE_UPLOAD_DIR/baseline.json"
           echo "UPLOAD_BASELINE_DIR=$BASELINE_UPLOAD_DIR" >> "$GITHUB_ENV"
@@ -354,7 +354,7 @@ runs:
             }
             console.log([parsed.summary.initialJs, parsed.summary.lazyJs ?? 0, parsed.summary.totalJs].join(" "));
           } catch (e) {
-            console.error("Failed to parse bundlecheck JSON summary:", e.message);
+            console.error("Failed to parse bundleradar JSON summary:", e.message);
             process.exit(1);
           }
         ' "$JSON_OUT")
@@ -377,7 +377,7 @@ runs:
 
         if [ "$HAS_BUDGET" = "true" ]; then
           echo "Enforcing bundle size budgets..."
-          if ! bundlecheck check "${CHECK_FLAGS[@]}"; then
+          if ! bundleradar check "${CHECK_FLAGS[@]}"; then
             echo "BUDGET_FAILED=true" >> "$GITHUB_ENV"
           fi
         fi
@@ -409,12 +409,12 @@ runs:
             const reportContent = fs.readFileSync(reportPath, 'utf8');
             const rawProject = (process.env.PROJECT_NAME || '').trim();
             const project = rawProject ? rawProject.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
-            const headerTag = project ? `<!-- bundlecheck-comment-${project} -->` : '<!-- bundlecheck-comment -->';
-            const fallbackHeaderTag = project ? `<!-- bundlecheck-report-${project} -->` : '<!-- bundlecheck-report -->';
+            const headerTag = project ? `<!-- bundleradar-comment-${project} -->` : '<!-- bundleradar-comment -->';
+            const fallbackHeaderTag = project ? `<!-- bundleradar-report-${project} -->` : '<!-- bundleradar-report -->';
             let body = reportContent;
             if (project) {
-              body = body.replace(/<!-- bundlecheck-comment -->/g, headerTag)
-                         .replace(/<!-- bundlecheck-report -->/g, fallbackHeaderTag);
+              body = body.replace(/<!-- bundleradar-comment -->/g, headerTag)
+                         .replace(/<!-- bundleradar-report -->/g, fallbackHeaderTag);
 
               if (!body.includes(`(\`${rawProject}\`)`)) {
                 body = body.replace(
@@ -469,6 +469,6 @@ runs:
       shell: bash
       run: |
         if [ "${BUDGET_FAILED:-false}" = "true" ]; then
-          echo "::error::BundleCheck size budget check failed."
+          echo "::error::BundleRadar size budget check failed."
           exit 1
         fi

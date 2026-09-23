@@ -299,7 +299,7 @@ rtk git commit -m "feat(report): format application source regression findings i
 ### Task 4: Full Test Suite, Release Bump to `v0.4.2`, and Live PR Verification
 
 **Files:**
-- Bump: `VERSION`, `npm/bundlecheck/package.json`, docs via `./scripts/bump-version.sh 0.4.2`
+- Bump: `VERSION`, `npm/bundleradar/package.json`, docs via `./scripts/bump-version.sh 0.4.2`
 - Test: All repository unit tests and contracts (`go test ./...`)
 
 - [ ] **Step 1: Run complete repository test suite**
@@ -314,8 +314,8 @@ Expected: Clean version sync across all targets
 
 - [ ] **Step 3: Build local binary and verify CLI output**
 
-Run: `rtk go build -v -o bundlecheck . && rtk ./bundlecheck --version`
-Expected: `bundlecheck 0.4.2`
+Run: `rtk go build -v -o bundleradar . && rtk ./bundleradar --version`
+Expected: `bundleradar 0.4.2`
 
 - [ ] **Step 4: Commit, tag, and push release**
 
@@ -328,7 +328,7 @@ rtk git push origin v0.4.2
 rtk git push origin v0 --force
 rtk gh release create v0.4.2 --title "v0.4.2" --notes "### Features
 - Direct application source attribution for regressions (replaces generic unattributed with actual component paths).
-- Distinguish package vs. application component regressions in PR reports." --repo sonuKumar03/bundlecheck
+- Distinguish package vs. application component regressions in PR reports." --repo sonuKumar03/bundleradar
 ```
 
 - [ ] **Step 5: Re-run PR #1 check on `angular-movies` to verify live output**

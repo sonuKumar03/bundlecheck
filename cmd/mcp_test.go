@@ -13,8 +13,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/mcp"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/mcp"
 )
 
 func TestMCPCommand_Help(t *testing.T) {
@@ -85,8 +85,8 @@ func TestMCPStdioServer_LegacyProtocol(t *testing.T) {
 		t.Fatalf("expected result map in initialize response: %v", initResp)
 	}
 	serverInfo, ok := result["serverInfo"].(map[string]any)
-	if !ok || serverInfo["name"] != "bundlecheck" {
-		t.Errorf("expected server name bundlecheck, got %v", serverInfo)
+	if !ok || serverInfo["name"] != "bundleradar" {
+		t.Errorf("expected server name bundleradar, got %v", serverInfo)
 	}
 
 	// 2. Send tools/list
@@ -146,13 +146,13 @@ func TestMCPStdioServer_LegacyProtocol(t *testing.T) {
 		t.Fatalf("expected non-empty tool call content")
 	}
 
-	// 4. Send resources/read (bundlecheck://rules)
+	// 4. Send resources/read (bundleradar://rules)
 	readReq := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      4,
 		"method":  "resources/read",
 		"params": map[string]any{
-			"uri": "bundlecheck://rules",
+			"uri": "bundleradar://rules",
 		},
 	}
 	readData, _ := json.Marshal(readReq)
@@ -311,7 +311,7 @@ func TestMCPAndCLIEquivalence(t *testing.T) {
 		_ = os.WriteFile(filepath.Join(browserDir, "main.js"), jsData, 0644)
 
 		cfgContent := []byte("budgets:\n  initial_js_max: 50B\nrules:\n  disallow_packages:\n    - lodash\n")
-		cfgPath := filepath.Join(tmpDir, ".bundlecheck.yml")
+		cfgPath := filepath.Join(tmpDir, ".bundleradar.yml")
 		_ = os.WriteFile(cfgPath, cfgContent, 0644)
 
 		// 1. Run CLI check

@@ -1,22 +1,22 @@
 <div align="center">
 
-# ⚡ bundlecheck
+# ⚡ bundleradar
 
 **Lightning-fast bundle inspector, dependency tracer, optimization advisor, and CI budget gate for Angular esbuild.**
 
 <br>
 
-[![Release](https://img.shields.io/github/v/release/sonuKumar03/bundlecheck?color=indigo&label=release&logo=github)](https://github.com/sonuKumar03/bundlecheck/releases)
+[![Release](https://img.shields.io/github/v/release/sonuKumar03/bundleradar?color=indigo&label=release&logo=github)](https://github.com/sonuKumar03/bundleradar/releases)
 [![GitHub Action](https://img.shields.io/badge/GitHub%20Action-Ready-2088FF?logo=githubactions&logoColor=white)](#-ci--github-actions-integration)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/sonuKumar03/bundlecheck/ci.yml?branch=master&label=CI&logo=githubactions)](https://github.com/sonuKumar03/bundlecheck/actions)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/sonuKumar03/bundleradar/ci.yml?branch=master&label=CI&logo=githubactions)](https://github.com/sonuKumar03/bundleradar/actions)
 [![Go Report](https://img.shields.io/badge/Go-1.27.1+-00ADD8?style=flat&logo=go)](https://go.dev)
-[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/sonuKumar03/bundlecheck/releases)
-[![Agent Skill](https://img.shields.io/badge/AI%20Skill-Ready-8A2BE2?style=flat&logo=anthropic)](.agents/skills/bundlecheck/SKILL.md)
-[![License](https://img.shields.io/github/license/sonuKumar03/bundlecheck?color=emerald)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/sonuKumar03/bundleradar/releases)
+[![Agent Skill](https://img.shields.io/badge/AI%20Skill-Ready-8A2BE2?style=flat&logo=anthropic)](.agents/skills/bundleradar/SKILL.md)
+[![License](https://img.shields.io/github/license/sonuKumar03/bundleradar?color=emerald)](LICENSE)
 
 <br>
 
-[**Website & Live Docs**](https://sonukumar03.github.io/bundlecheck/) • [**Why bundlecheck?**](#-why-bundlecheck) • [**Installation**](#-installation) • [**Quick Start**](#-quick-start) • [**Command Reference**](#-command-reference) • [**CI & GitHub Actions**](#-ci--github-actions-integration) • [**AI Agent Skill**](#-ai-agent-skill-integration)
+[**Website & Live Docs**](https://sonukumar03.github.io/bundleradar/) • [**Why bundleradar?**](#-why-bundleradar) • [**Installation**](#-installation) • [**Quick Start**](#-quick-start) • [**Command Reference**](#-command-reference) • [**CI & GitHub Actions**](#-ci--github-actions-integration) • [**AI Agent Skill**](#-ai-agent-skill-integration)
 
 </div>
 
@@ -26,10 +26,10 @@
 
 Modern Angular applications build with **esbuild** for incredible compilation speed. However, esbuild's raw `stats.json` files are massive, complex, and unreadable for quick human inspection or CI pull request reviews.
 
-`bundlecheck` is a self-contained Go binary with zero runtime dependencies that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**. Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.
+`bundleradar` is a self-contained Go binary with zero runtime dependencies that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**. Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.
 
 ```text
-$ bundlecheck summary dist/my-app/stats.json --gzip --suggest
+$ bundleradar summary dist/my-app/stats.json --gzip --suggest
 
 BUNDLE SUMMARY
 -------------------------------------------------------------
@@ -53,9 +53,9 @@ TOP CONTRIBUTING NPM PACKAGES
 
 ---
 
-## 🥊 Why bundlecheck?
+## 🥊 Why bundleradar?
 
-| Feature | `bundlecheck` | `webpack-bundle-analyzer` | `source-map-explorer` | Standard `angular.json` Budgets |
+| Feature | `bundleradar` | `webpack-bundle-analyzer` | `source-map-explorer` | Standard `angular.json` Budgets |
 | :--- | :---: | :---: | :---: | :---: |
 | **Execution** | **Fast native analysis** | Node.js process | Node.js process | Integrated into build |
 | **Runtime Dependencies** | **Zero** (Self-contained binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
@@ -75,27 +75,27 @@ TOP CONTRIBUTING NPM PACKAGES
 Downloads the latest precompiled native binary to `$GOBIN` when set, otherwise `/usr/local/bin` (or `~/.local/bin`). No Go installation is needed for release binaries. Running the installer from a source checkout builds that checkout using Go:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh
 ```
 
 *To install the binary alongside the AI Agent skill:*
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh -s -- --with-skill
 ```
 
 ### Option 2: Precompiled Multi-Arch Binaries
 
-Download standalone binaries directly from the [**GitHub Releases**](https://github.com/sonuKumar03/bundlecheck/releases/latest):
-- 🍏 **macOS Apple Silicon (M1/M2/M3/M4)**: `bundlecheck_*_darwin_arm64.tar.gz`
-- 🍏 **macOS Intel**: `bundlecheck_*_darwin_amd64.tar.gz`
-- 🐧 **Linux x86_64**: `bundlecheck_*_linux_amd64.tar.gz`
-- 🐧 **Linux ARM64**: `bundlecheck_*_linux_arm64.tar.gz`
-- 🪟 **Windows x64**: `bundlecheck_*_windows_amd64.zip`
+Download standalone binaries directly from the [**GitHub Releases**](https://github.com/sonuKumar03/bundleradar/releases/latest):
+- 🍏 **macOS Apple Silicon (M1/M2/M3/M4)**: `bundleradar_*_darwin_arm64.tar.gz`
+- 🍏 **macOS Intel**: `bundleradar_*_darwin_amd64.tar.gz`
+- 🐧 **Linux x86_64**: `bundleradar_*_linux_amd64.tar.gz`
+- 🐧 **Linux ARM64**: `bundleradar_*_linux_arm64.tar.gz`
+- 🪟 **Windows x64**: `bundleradar_*_windows_amd64.zip`
 
 ### Option 3: Go Install
 
 ```bash
-go install github.com/sonuKumar03/bundlecheck@latest
+go install github.com/sonuKumar03/bundleradar@latest
 ```
 
 ---
@@ -111,78 +111,78 @@ ng build --configuration production --stats-json
 ```
 *This produces `dist/<project-name>/stats.json`.*
 
-### 2. Inspect with bundlecheck
+### 2. Inspect with bundleradar
 
 ```bash
 # View initial JS vs lazy breakdown & top npm contributors
-bundlecheck summary dist/my-app/stats.json
+bundleradar summary dist/my-app/stats.json
 
 # Scope analysis to a specific entrypoint by source file or chunk glob
-bundlecheck summary dist/my-app/stats.json --entry src/main.ts
-bundlecheck summary dist/my-app/stats.json -e "main-*.js"
+bundleradar summary dist/my-app/stats.json --entry src/main.ts
+bundleradar summary dist/my-app/stats.json -e "main-*.js"
 
 # Inspect the modules and packages inside one emitted chunk
-bundlecheck inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
+bundleradar inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
 
 # Trace why a package was pulled into initial JS
-bundlecheck why dist/my-app/stats.json lodash-es
+bundleradar why dist/my-app/stats.json lodash-es
 
 # Get automated optimization recommendations
-bundlecheck suggest dist/my-app/stats.json
+bundleradar suggest dist/my-app/stats.json
 
 # Enforce CI size budget (fails with exit code 1 on violation)
-bundlecheck check dist/my-app/stats.json --max-initial 250kb --max-total 1.2mb
+bundleradar check dist/my-app/stats.json --max-initial 250kb --max-total 1.2mb
 ```
 
 ---
 
 ## 📖 Command Reference
 
-### 1. `bundlecheck summary`
+### 1. `bundleradar summary`
 Calculates accurate initial vs. lazy JavaScript byte totals and ranks all contributing npm packages.
 
 ```bash
 # Basic summary
-bundlecheck summary dist/my-app/stats.json
+bundleradar summary dist/my-app/stats.json
 
 # Scope summary to a specific entrypoint (source path or emitted chunk glob)
-bundlecheck summary dist/my-app/stats.json --entry src/main.ts
-bundlecheck summary dist/my-app/stats.json -e "main-*.js"
+bundleradar summary dist/my-app/stats.json --entry src/main.ts
+bundleradar summary dist/my-app/stats.json -e "main-*.js"
 
 # Include estimated Gzip wire transfer sizes
-bundlecheck summary dist/my-app/stats.json --gzip
+bundleradar summary dist/my-app/stats.json --gzip
 
 # Show top 15 packages and filter by name
-bundlecheck summary dist/my-app/stats.json --top 15 --filter @angular
+bundleradar summary dist/my-app/stats.json --top 15 --filter @angular
 
 # Export machine-readable JSON (ideal for scripts & agent loops)
-bundlecheck summary dist/my-app/stats.json --format json -o summary.json
+bundleradar summary dist/my-app/stats.json --format json -o summary.json
 ```
 
 > **Entrypoint Scoping & TotalJS Invariant:** Using `--entry` / `-e` with either a source path (e.g. `src/main.ts`) or an emitted chunk glob (e.g. `main-*.js`, `worker.js`) scopes initial versus lazy reachability, package attribution, and root traces strictly to the selected entrypoint. The overall `TotalJS` metric consistently reflects the whole browser build across all chunks.
 
 ---
 
-### 2. `bundlecheck inspect <chunk>`
+### 2. `bundleradar inspect <chunk>`
 Shows the exact module and npm package contributions inside one emitted JavaScript chunk. The target can be its full output path or a unique filename.
 
 ```bash
-bundlecheck inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
-bundlecheck inspect browser/chunk-ABC123.js --format json
+bundleradar inspect chunk-ABC123.js --stats dist/my-app/stats.json --dist dist/my-app/browser
+bundleradar inspect browser/chunk-ABC123.js --format json
 ```
 
 ---
 
-### 3. `bundlecheck why <package>`
+### 3. `bundleradar why <package>`
 Traces the exact import graph path from entrypoints (`src/main.ts`) down to any bundled file or package.
 
 ```bash
 # Find why lodash-es is inside your bundle
-bundlecheck why dist/my-app/stats.json lodash-es
+bundleradar why dist/my-app/stats.json lodash-es
 
 # Trace import path starting from a specific entrypoint
-bundlecheck why dist/my-app/stats.json lodash-es --entry src/main.ts
-bundlecheck why dist/my-app/stats.json lodash-es -e "main-*.js"
+bundleradar why dist/my-app/stats.json lodash-es --entry src/main.ts
+bundleradar why dist/my-app/stats.json lodash-es -e "main-*.js"
 ```
 
 **Example ASCII Tree Output:**
@@ -199,12 +199,12 @@ src/main.ts
 
 ---
 
-### 4. `bundlecheck suggest`
+### 4. `bundleradar suggest`
 Scans the bundle against optimization heuristics to suggest concrete refactoring opportunities.
 
 ```bash
-bundlecheck suggest dist/my-app/stats.json
-bundlecheck suggest dist/my-app/stats.json --entry src/main.ts
+bundleradar suggest dist/my-app/stats.json
+bundleradar suggest dist/my-app/stats.json --entry src/main.ts
 ```
 
 **Built-in Optimization Rules:**
@@ -214,29 +214,29 @@ bundlecheck suggest dist/my-app/stats.json --entry src/main.ts
 
 ---
 
-### 5. `bundlecheck baseline` & `measure` (Git Worktrees & Snapshots)
+### 5. `bundleradar baseline` & `measure` (Git Worktrees & Snapshots)
 Capture, manage, switch, and compare baseline bundle metrics across git branches without manual branch switching or rebuilding.
 
 ```bash
 # ─── 1. CAPTURE BASELINE FROM CURRENT BUILD OR GIT BRANCH ───
-bundlecheck baseline save                                     # Save current build as active baseline
-bundlecheck baseline save --entry src/main.ts                 # Save baseline scoped to an entrypoint
-bundlecheck baseline save --ref release/v2.0 --name rel-v2   # Build branch in isolated worktree
+bundleradar baseline save                                     # Save current build as active baseline
+bundleradar baseline save --entry src/main.ts                 # Save baseline scoped to an entrypoint
+bundleradar baseline save --ref release/v2.0 --name rel-v2   # Build branch in isolated worktree
 
 # ─── 2. LIST & SWITCH SAVED BASELINES ───
-bundlecheck baseline list                                     # List all saved baselines and active status
-bundlecheck baseline use rel-v2                               # Switch active baseline for 'measure'
+bundleradar baseline list                                     # List all saved baselines and active status
+bundleradar baseline use rel-v2                               # Switch active baseline for 'measure'
 
 # ─── 3. REBUILD & UPDATE BASELINES ───
-bundlecheck baseline rebuild rel-v2                           # Re-runs worktree build for latest branch commits
+bundleradar baseline rebuild rel-v2                           # Re-runs worktree build for latest branch commits
 
 # ─── 4. CONTINUOUS LIVE DELTA MEASUREMENT ───
-bundlecheck measure                                           # Measure current build against active baseline
-bundlecheck measure --entry src/main.ts                       # Measure scoped to entrypoint
-bundlecheck measure -b rel-v2 --max-initial-delta 0B          # Fail in CI if initial bundle grows
+bundleradar measure                                           # Measure current build against active baseline
+bundleradar measure --entry src/main.ts                       # Measure scoped to entrypoint
+bundleradar measure -b rel-v2 --max-initial-delta 0B          # Fail in CI if initial bundle grows
 ```
 
-**Example Output (`bundlecheck measure`):**
+**Example Output (`bundleradar measure`):**
 ```text
 MEASURING AGAINST ACTIVE BASELINE (rel-v2)
 -------------------------------------------------------------
@@ -247,77 +247,77 @@ Total Bundle Size:   4.52 MB  -> 4.13 MB  (-390.00 KB / -8.6%)  🎉
 
 ---
 
-### 6. `bundlecheck compare`
+### 6. `bundleradar compare`
 Compares saved JSON summary snapshots, or a baseline snapshot against Angular build stats:
 
 ```bash
-bundlecheck compare .bundlecheck/baseline.json dist/my-app/stats.json
+bundleradar compare .bundleradar/baseline.json dist/my-app/stats.json
 ```
 
 ---
 
-### 7. `bundlecheck check`
+### 7. `bundleradar check`
 Strict CI budget gate with custom pass/fail exit codes.
 
 ```bash
 # Enforce initial and total JS size limits
-bundlecheck check dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
+bundleradar check dist/my-app/stats.json --max-initial 250kb --max-total 1.5mb
 
 # Scope size budgets to a specific entrypoint by source file or chunk glob
-bundlecheck check dist/my-app/stats.json --entry src/main.ts --max-initial 250kb
-bundlecheck check dist/my-app/stats.json -e "main-*.js" --max-initial 250kb
-bundlecheck check dist/my-app/stats.json -e "worker.js" --max-initial 100kb
+bundleradar check dist/my-app/stats.json --entry src/main.ts --max-initial 250kb
+bundleradar check dist/my-app/stats.json -e "main-*.js" --max-initial 250kb
+bundleradar check dist/my-app/stats.json -e "worker.js" --max-initial 100kb
 
 # Enforce regression limits against a baseline snapshot
-bundlecheck check dist/my-app/stats.json --baseline baseline.json --max-initial-delta 0kb
+bundleradar check dist/my-app/stats.json --baseline baseline.json --max-initial-delta 0kb
 ```
 *Exits with status `0` on success, or status `1` when any budget is exceeded.*
 
 ---
 
-### 8. `bundlecheck init`
-Assisted setup to generate or propose a reviewable `.bundlecheck.yml` configuration:
+### 8. `bundleradar init`
+Assisted setup to generate or propose a reviewable `.bundleradar.yml` configuration:
 
 ```bash
 # Preview proposed budgets with 5% headroom over measured size
-bundlecheck init
+bundleradar init
 
 # Import budgets directly from angular.json
-bundlecheck init --from-angular-budgets
+bundleradar init --from-angular-budgets
 
-# Save proposed configuration to .bundlecheck.yml
-bundlecheck init --write --headroom 10
+# Save proposed configuration to .bundleradar.yml
+bundleradar init --write --headroom 10
 ```
-*Creates `.bundlecheck.yml` only if it does not already exist.*
+*Creates `.bundleradar.yml` only if it does not already exist.*
 
 ---
 
-### 9. `bundlecheck workspace summary` (Nx & Monorepo Intelligence)
+### 9. `bundleradar workspace summary` (Nx & Monorepo Intelligence)
 
 Compare app sizes, shared library costs, and duplicate npm dependencies across an Nx or Angular multi-app workspace:
 
 ```bash
 # Analyze all applications in workspace
-bundlecheck workspace summary
+bundleradar workspace summary
 
 # Select specific projects
-bundlecheck workspace summary --projects admin-dashboard,portal
+bundleradar workspace summary --projects admin-dashboard,portal
 
 # Export machine-readable JSON or markdown
-bundlecheck workspace summary --format json -o workspace-report.json
-bundlecheck workspace summary --format markdown --all
+bundleradar workspace summary --format json -o workspace-report.json
+bundleradar workspace summary --format markdown --all
 ```
 
 Supported builders include `@nx/angular:application`, `@nx/angular:browser-esbuild`, `@angular-devkit/build-angular:application`, `@angular-devkit/build-angular:browser-esbuild`, and `@angular/build:application`. Reports include app initial/lazy/total sizes, npm and source-built Nx library contribution matrices, repeated initial contributions, freshness indicators, and drill-down commands.
 
 ---
 
-### 10. `bundlecheck mcp` (Model Context Protocol Server for AI Agents)
+### 10. `bundleradar mcp` (Model Context Protocol Server for AI Agents)
 
 Launch a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server over standard I/O for AI coding assistants (**Claude Code**, **Antigravity**, **Cursor**, **Claude Desktop**).
 
 ```bash
-bundlecheck mcp
+bundleradar mcp
 ```
 
 **Exposed MCP Tools:**
@@ -331,13 +331,13 @@ bundlecheck mcp
 All bundle MCP tools accept `entry`. If `index.html` contains an injected script such as `ENV_polyfills.js` that is absent from `stats.json`, the server retries with the configured Angular `browser`/`main` entry when it matches the stats; otherwise it returns valid entry selectors for an agent retry.
 
 **Exposed MCP Resource:**
-- `bundlecheck://rules`: Standard bundle optimization heuristics and modern replacement guidelines for common heavy packages.
+- `bundleradar://rules`: Standard bundle optimization heuristics and modern replacement guidelines for common heavy packages.
 
 ---
 
 ## 🛡️ CI & GitHub Actions Integration
 
-### Official GitHub Action (`uses: sonuKumar03/bundlecheck@v0.6.2`)
+### Official GitHub Action (`uses: sonuKumar03/bundleradar@v0.6.2`)
 
 Add automated bundle size budget validation and PR delta comments to `.github/workflows/bundle-size.yml`:
 
@@ -350,7 +350,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  bundlecheck:
+  bundleradar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -362,8 +362,8 @@ jobs:
       - run: npm ci
       - run: npx ng build --configuration production --stats-json
 
-      - name: Run bundlecheck & Post PR Report
-        uses: sonuKumar03/bundlecheck@v0.6.2
+      - name: Run bundleradar & Post PR Report
+        uses: sonuKumar03/bundleradar@v0.6.2
         with:
           stats: dist/my-app/stats.json
           entry: src/main.ts
@@ -380,9 +380,9 @@ jobs:
 | `stats` | *(auto)* | Path to `stats.json` (auto-detected if omitted). |
 | `dist` | *(auto)* | Path to emitted `browser` dist with `index.html` (auto-detected if omitted). |
 | `project` | `""` | Project name for multi-project or Nx workspaces. |
-| `entry` | `""` | Scope bundlecheck analysis and budget enforcement to a specific entrypoint (e.g. `src/main.ts` or `main-*.js`). |
+| `entry` | `""` | Scope bundleradar analysis and budget enforcement to a specific entrypoint (e.g. `src/main.ts` or `main-*.js`). |
 | `artifact-baseline` | `false` | Attempt to restore baseline summary JSON from a GitHub Actions workflow artifact on base-ref. |
-| `artifact-name` | `""` | Name of the baseline workflow artifact (defaults to `bundlecheck-baseline` or `bundlecheck-baseline-<project>`). |
+| `artifact-name` | `""` | Name of the baseline workflow artifact (defaults to `bundleradar-baseline` or `bundleradar-baseline-<project>`). |
 | `upload-artifact-baseline` | `false` | Save current bundle summary and upload as an immutable baseline workflow artifact. |
 | `github-token` | `github.token` | Token used for downloading baseline artifacts and posting PR comments. |
 | `base-ref` | `github.base_ref` | Git ref for baseline comparison in PRs. Automatically fetched in shallow checkouts (`fetch-depth: 1` or `0`). |
@@ -395,7 +395,7 @@ jobs:
 Instead of rebuilding the base branch in an isolated Git worktree for every PR, you can enable persistent baseline memory:
 1. **On `push` to `main`:** Set `upload-artifact-baseline: true` to save and upload the baseline snapshot as a GitHub workflow artifact.
 2. **On `pull_request`:** Set `artifact-baseline: true` to automatically download the immutable baseline artifact using GitHub CLI. If the artifact is not found, it gracefully falls back to the Git worktree build.
-3. **Multi-App Monorepos:** In multi-app workspaces, specifying `project: my-app` automatically namespaces the artifact to `bundlecheck-baseline-my-app`, enabling safe parallel matrix builds across applications.
+3. **Multi-App Monorepos:** In multi-app workspaces, specifying `project: my-app` automatically namespaces the artifact to `bundleradar-baseline-my-app`, enabling safe parallel matrix builds across applications.
 
 **Fallback & Error Handling:**
 - If comparing against an artifact baseline or base ref succeeds, full visual diffs and package deltas are posted to the PR.
@@ -410,12 +410,12 @@ Audit any public open-source Angular repository directly via GitHub Actions with
 
 ---
 
-## ⚙️ Configuration (`.bundlecheck.yml`)
+## ⚙️ Configuration (`.bundleradar.yml`)
 
 Persist size budgets and disallowed-package rules at the root of your project. `check` loads the nearest configuration in the current directory or a parent directory; CLI budgets override corresponding configuration budgets. Invalid YAML and unsupported settings fail the check:
 
 ```yaml
-# .bundlecheck.yml
+# .bundleradar.yml
 budgets:
   initial_js_max: 250kb
   total_max: 1.5mb
@@ -435,8 +435,8 @@ Bundlecheck enforces limits strictly according to the following deterministic pr
 |:---:|:---|:---|
 | **1 (Highest)** | **CLI Flags** | Explicit command-line arguments (e.g., `--max-initial 200KB`, `--max-total 1MB`) override all configuration values. |
 | **2** | **Explicit Config** | Configuration file specified explicitly via `--config <path>`. |
-| **3** | **Auto-Loaded Config** | Automatically discovered `.bundlecheck.yml` / `.bundlecheck.yaml` in current or parent directory. |
-| **4** | **Imported Budgets** | Budgets imported from `angular.json` (e.g. via `bundlecheck init --from-angular-budgets`). |
+| **3** | **Auto-Loaded Config** | Automatically discovered `.bundleradar.yml` / `.bundleradar.yaml` in current or parent directory. |
+| **4** | **Imported Budgets** | Budgets imported from `angular.json` (e.g. via `bundleradar init --from-angular-budgets`). |
 | **5 (Lowest)** | **No Limit** | Default for unconfigured projects: report-only mode with zero invented failures. |
 
 ### Outcome Semantics
@@ -460,7 +460,7 @@ Give your coding agent a measured bundle optimization loop:
 - **MCP**: the preferred structured tool interface when available.
 - **CLI JSON**: the universal fallback, using `--format json`.
 
-The installed `bundlecheck` binary and Angular esbuild `stats.json` are prerequisites. The Skill chooses MCP or CLI transport without changing the workflow.
+The installed `bundleradar` binary and Angular esbuild `stats.json` are prerequisites. The Skill chooses MCP or CLI transport without changing the workflow.
 
 ### MCP server
 
@@ -468,26 +468,26 @@ Add the preferred structured interface to your agent's MCP configuration:
 
 **Claude Code:**
 ```bash
-claude mcp add bundlecheck -- bundlecheck mcp
+claude mcp add bundleradar -- bundleradar mcp
 ```
 
 **Claude Desktop / Cursor (`claude_desktop_config.json` / `.cursor/mcp.json`):**
 ```json
 {
   "mcpServers": {
-    "bundlecheck": {
-      "command": "bundlecheck",
+    "bundleradar": {
+      "command": "bundleradar",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-### Agent Skill ([`SKILL.md`](.agents/skills/bundlecheck/SKILL.md))
+### Agent Skill ([`SKILL.md`](.agents/skills/bundleradar/SKILL.md))
 
 Install the binary and complete skill tree for generic agents, Claude Code, and Codex:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh -s -- --with-skill
 ```
 
 Use `--skill-dir <path>` to install only to an explicit custom skill location.
@@ -543,7 +543,7 @@ go test -v ./...
 go vet ./...
 
 # Build binary
-go build -o bundlecheck .
+go build -o bundleradar .
 ```
 
 ---

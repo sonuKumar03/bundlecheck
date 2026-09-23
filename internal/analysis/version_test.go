@@ -55,10 +55,10 @@ func TestVersionSyncContract(t *testing.T) {
 		t.Fatalf("failed to read %s: %v", readmeFile, err)
 	}
 	readme := string(readmeBytes)
-	actionRefPattern := regexp.MustCompile(`uses:\s*sonuKumar03/bundlecheck@v([0-9.]+)`)
+	actionRefPattern := regexp.MustCompile(`uses:\s*sonuKumar03/bundleradar@v([0-9.]+)`)
 	actionMatch := actionRefPattern.FindStringSubmatch(readme)
 	if len(actionMatch) < 2 {
-		t.Errorf("README.md missing GitHub Action reference 'sonuKumar03/bundlecheck@v...'")
+		t.Errorf("README.md missing GitHub Action reference 'sonuKumar03/bundleradar@v...'")
 	} else if actionMatch[1] != rootVersion {
 		t.Errorf("README.md Action reference version mismatch: got %q, want %q", actionMatch[1], rootVersion)
 	}
@@ -69,7 +69,7 @@ func TestVersionSyncContract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read %s: %v", goModFile, err)
 	}
-	expectedModule := "module github.com/sonuKumar03/bundlecheck"
+	expectedModule := "module github.com/sonuKumar03/bundleradar"
 	if !strings.Contains(string(goModBytes), expectedModule) {
 		t.Errorf("go.mod missing expected module declaration %q", expectedModule)
 	}

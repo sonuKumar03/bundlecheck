@@ -1,0 +1,10 @@
+import { Component } from '@angular/core';
+import { format } from 'date-fns';
+import { RouterLink, RouterOutlet } from '@angular/router';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterLink, RouterOutlet],
+  template: `<h1>bundlecheck smoke test</h1><p>{{ today }}</p><a routerLink="/">Home</a> <a routerLink="/lazy">Lazy report</a><router-outlet />`,
+})
+export class App { readonly today = format(new Date(), 'yyyy-MM-dd'); }

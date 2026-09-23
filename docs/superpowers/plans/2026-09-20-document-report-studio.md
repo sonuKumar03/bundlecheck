@@ -14,7 +14,7 @@
 - Target workspace directory: `testdata/nx-workspace`.
 - Angular 21 standalone component architecture.
 - Local dev server must run and serve at `http://localhost:3000`.
-- All `bundlecheck` unit tests (`go test ./...`) must pass with zero regressions.
+- All `bundleradar` unit tests (`go test ./...`) must pass with zero regressions.
 - Preserve expected dependencies (`moment`, `chart.js`, `pdfjs-dist`, `lodash`) in `apps/portal` bundle analysis.
 
 ---
@@ -928,15 +928,15 @@ git commit -m "feat: add document-editor library with markdown editor and live p
   - `@nx-workspace/spreadsheet-studio` (`SpreadsheetStudioComponent`)
   - `@nx-workspace/pdf-studio` (`PdfStudioComponent`)
   - `@nx-workspace/document-editor` (`DocumentEditorComponent`)
-  - `lodash/cloneDeep` (preserves bundlecheck gotcha requirement)
-  - `moment` (preserves bundlecheck gotcha requirement)
+  - `lodash/cloneDeep` (preserves bundleradar gotcha requirement)
+  - `moment` (preserves bundleradar gotcha requirement)
 
 - [x] **Step 1: Update app.routes.ts**
 
 Update `testdata/nx-workspace/apps/portal/src/app/app.routes.ts`:
 ```typescript
 import { Route } from '@angular/router';
-// Eagerly imported components to preserve existing bundlecheck test assertions
+// Eagerly imported components to preserve existing bundleradar test assertions
 import { PdfReportComponent } from '@nx-workspace/reports';
 import { ExecutiveChartComponent } from '@nx-workspace/charting';
 

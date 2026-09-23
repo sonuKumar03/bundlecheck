@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
 )
 
 func TestSummaryFixtures(t *testing.T) {

@@ -12,32 +12,32 @@ import (
 	mcpspec "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/sonuKumar03/bundlecheck/internal/advisor"
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/artifact"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/build"
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/compression"
-	"github.com/sonuKumar03/bundlecheck/internal/config"
-	"github.com/sonuKumar03/bundlecheck/internal/discovery"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
-	"github.com/sonuKumar03/bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundleradar/internal/advisor"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/artifact"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/build"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/compression"
+	"github.com/sonuKumar03/bundleradar/internal/config"
+	"github.com/sonuKumar03/bundleradar/internal/discovery"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/workspace"
 )
 
 // ServerVersion references analysis.ToolVersion as the single source of truth.
 var ServerVersion = analysis.ToolVersion
 
-// NewServer creates and initializes a bundlecheck MCP server with all tools and resources.
+// NewServer creates and initializes a bundleradar MCP server with all tools and resources.
 func NewServer() *server.MCPServer {
 	s := server.NewMCPServer(
-		"bundlecheck",
+		"bundleradar",
 		ServerVersion,
 		server.WithToolCapabilities(true),
 		server.WithResourceCapabilities(false, false),
-		server.WithInstructions("BundleCheck MCP server provides Angular bundle inspection, size budget validation, and dependency tracing for AI coding agents."),
+		server.WithInstructions("BundleRadar MCP server provides Angular bundle inspection, size budget validation, and dependency tracing for AI coding agents."),
 	)
 
 	registerTools(s)
@@ -95,7 +95,7 @@ func registerTools(s *server.MCPServer) {
 	// 4. bundle_check
 	s.AddTool(mcpspec.NewTool(
 		"bundle_check",
-		mcpspec.WithDescription("Validate bundle sizes, regressions, and repository rules against defined performance budgets and .bundlecheck.yml."),
+		mcpspec.WithDescription("Validate bundle sizes, regressions, and repository rules against defined performance budgets and .bundleradar.yml."),
 		mcpspec.WithReadOnlyHintAnnotation(true),
 		mcpspec.WithDestructiveHintAnnotation(false),
 		mcpspec.WithIdempotentHintAnnotation(true),
@@ -103,7 +103,7 @@ func registerTools(s *server.MCPServer) {
 		mcpspec.WithString("path", mcpspec.Description("Optional directory or stats.json file path.")),
 		mcpspec.WithString("project", mcpspec.Description("Optional project name in a multi-app workspace.")),
 		mcpspec.WithString("entry", mcpspec.Description("Optional source entrypoint or emitted chunk selector. Inferred from Angular project configuration when possible.")),
-		mcpspec.WithString("config", mcpspec.Description("Optional path to .bundlecheck.yml configuration file.")),
+		mcpspec.WithString("config", mcpspec.Description("Optional path to .bundleradar.yml configuration file.")),
 		mcpspec.WithString("baseline", mcpspec.Description("Optional path to baseline summary JSON or saved baseline name for regression checks.")),
 		mcpspec.WithString("max_initial", mcpspec.Description("Maximum initial JS budget (e.g. '500KB', '1.5MB').")),
 		mcpspec.WithString("max_lazy", mcpspec.Description("Maximum lazy JS budget (e.g. '500KB', '1MB').")),
@@ -146,8 +146,8 @@ func registerTools(s *server.MCPServer) {
 func registerResources(s *server.MCPServer) {
 	s.AddResource(
 		mcpspec.NewResource(
-			"bundlecheck://rules",
-			"BundleCheck Optimization Rules",
+			"bundleradar://rules",
+			"BundleRadar Optimization Rules",
 			mcpspec.WithResourceDescription("Standard bundle optimization rules and modern replacement guidelines for common heavy packages."),
 			mcpspec.WithMIMEType("application/json"),
 		),
@@ -168,7 +168,7 @@ func registerResources(s *server.MCPServer) {
 			data, _ := json.MarshalIndent(rules, "", "  ")
 			return []mcpspec.ResourceContents{
 				mcpspec.TextResourceContents{
-					URI:      "bundlecheck://rules",
+					URI:      "bundleradar://rules",
 					MIMEType: "application/json",
 					Text:     string(data),
 				},

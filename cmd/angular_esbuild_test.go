@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
 )
 
 func ensureAngularEsbuildBuilt(t *testing.T, base string) {
 	t.Helper()
-	statsPath := filepath.Join(base, "dist", "bundlecheck-smoke", "stats.json")
+	statsPath := filepath.Join(base, "dist", "bundleradar-smoke", "stats.json")
 	if _, err := os.Stat(statsPath); err == nil {
 		return
 	}
@@ -113,8 +113,8 @@ func TestAngularEsbuildProject(t *testing.T) {
 	})
 
 	t.Run("Inspect dynamic chunk without hardcoded names", func(t *testing.T) {
-		browserDir := filepath.Join(base, "dist", "bundlecheck-smoke", "browser")
-		targetChunk := findAnyJSChunk(t, filepath.Join(base, "dist", "bundlecheck-smoke"))
+		browserDir := filepath.Join(base, "dist", "bundleradar-smoke", "browser")
+		targetChunk := findAnyJSChunk(t, filepath.Join(base, "dist", "bundleradar-smoke"))
 
 		var out, errOut bytes.Buffer
 		code := Execute([]string{"inspect", targetChunk, "-s", base, "-f", "json"}, &out, &errOut)

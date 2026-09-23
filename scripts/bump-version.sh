@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────────────────────
-# bundlecheck version bump & sync utility
+# bundleradar version bump & sync utility
 # Single source of truth: root VERSION file
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ fi
 
 OLD_VER="$(cat VERSION | tr -d '[:space:]')"
 
-echo "⚡ Bumping bundlecheck version: $OLD_VER -> $NEW_VER"
+echo "⚡ Bumping bundleradar version: $OLD_VER -> $NEW_VER"
 
 # 1. Update VERSION file (Single Source of Truth)
 echo "$NEW_VER" > VERSION
@@ -55,7 +55,7 @@ with open('docs/index.html', 'r') as f:
 import re
 html = re.sub(r'\"softwareVersion\": \"[^\"]+\"', f'\"softwareVersion\": \"$NEW_VER\"', html)
 html = re.sub(r'v$OLD_VER', f'v$NEW_VER', html)
-html = re.sub(r'bundlecheck v$OLD_VER', f'bundlecheck v$NEW_VER', html)
+html = re.sub(r'bundleradar v$OLD_VER', f'bundleradar v$NEW_VER', html)
 with open('docs/index.html', 'w') as f:
     f.write(html)
 "
@@ -81,7 +81,7 @@ python3 -c "
 with open('README.md', 'r') as f:
     readme = f.read()
 import re
-readme = re.sub(r'uses: sonuKumar03/bundlecheck@v[0-9.]+', f'uses: sonuKumar03/bundlecheck@v$NEW_VER', readme)
+readme = re.sub(r'uses: sonuKumar03/bundleradar@v[0-9.]+', f'uses: sonuKumar03/bundleradar@v$NEW_VER', readme)
 with open('README.md', 'w') as f:
     f.write(readme)
 "

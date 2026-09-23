@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/graph"
+	"github.com/sonuKumar03/bundleradar/internal/graph"
 )
 
 func WhyText(w io.Writer, r *graph.WhyResult) error {

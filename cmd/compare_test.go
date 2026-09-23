@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/comparison"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/comparison"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func TestCompareFixtures(t *testing.T) {
@@ -154,10 +154,10 @@ func TestCompareGitHubPRFormat(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "<!-- bundlecheck-comment -->") {
+	if !strings.Contains(output, "<!-- bundleradar-comment -->") {
 		t.Errorf("expected sticky marker in compare output, got: %s", output)
 	}
-	if !strings.Contains(output, "## 📦 BundleCheck PR Report") {
+	if !strings.Contains(output, "## 📦 BundleRadar PR Report") {
 		t.Errorf("expected PR report header in compare output, got: %s", output)
 	}
 	if !strings.Contains(output, "| Metric | Before | After | Delta | % Change | Visual Diff |") {

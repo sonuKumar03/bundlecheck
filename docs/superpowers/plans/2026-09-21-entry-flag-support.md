@@ -54,7 +54,7 @@
 - `internal/baseline/baseline.go`: add optional metadata field `Entry` with JSON name `entry`.
 - Tests: corresponding `*_test.go` files in artifact, build, graph, advisor, baseline, and cmd.
 - CLI: `cmd/summary.go`, `suggest.go`, `why.go`, `measure.go`, `check.go`, `baseline.go`.
-- Action/docs: `action.yml`, `.github/workflows/e2e.yml`, `docs_contract_test.go`, `README.md`, `npm/bundlecheck/README.md`, `docs/index.html`.
+- Action/docs: `action.yml`, `.github/workflows/e2e.yml`, `docs_contract_test.go`, `README.md`, `npm/bundleradar/README.md`, `docs/index.html`.
 
 ---
 
@@ -104,7 +104,7 @@
 
 ### Task 4: Wire Action and public documentation
 
-**Files:** `action.yml`, `.github/workflows/e2e.yml`, `docs_contract_test.go`, `README.md`, `npm/bundlecheck/README.md`, `docs/index.html`
+**Files:** `action.yml`, `.github/workflows/e2e.yml`, `docs_contract_test.go`, `README.md`, `npm/bundleradar/README.md`, `docs/index.html`
 
 - [x] Extend documentation-contract expectations for `--entry` / `-e` and the Action `entry` input across all three public documentation surfaces.
 - [x] Run `rtk go test . -run TestDocumentationContract` and confirm failure.

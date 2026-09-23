@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sonuKumar03/bundlecheck/internal/workspace"
+	"github.com/sonuKumar03/bundleradar/internal/workspace"
 )
 
 // Workspace renders deployment costs without changing the machine-readable result.
@@ -270,9 +270,9 @@ func Workspace(w io.Writer, r *workspace.Result, opts TextOptions, markdown bool
 		stats, dist := workspaceRelative(r.Root, app.Stats), workspaceRelative(r.Root, app.Dist)
 		fmt.Fprintf(&b, "\n# %s\n", strings.NewReplacer("\n", " ", "\r", " ").Replace(app.Name))
 		if target != "" {
-			fmt.Fprintf(&b, "bundlecheck why --stats %s --dist %s --package %s\n", workspaceQuote(stats), workspaceQuote(dist), workspaceQuote(target))
+			fmt.Fprintf(&b, "bundleradar why --stats %s --dist %s --package %s\n", workspaceQuote(stats), workspaceQuote(dist), workspaceQuote(target))
 		}
-		fmt.Fprintf(&b, "bundlecheck suggest --stats %s --dist %s\n", workspaceQuote(stats), workspaceQuote(dist))
+		fmt.Fprintf(&b, "bundleradar suggest --stats %s --dist %s\n", workspaceQuote(stats), workspaceQuote(dist))
 	}
 	if markdown {
 		b.WriteString("```\n\n</details>\n")

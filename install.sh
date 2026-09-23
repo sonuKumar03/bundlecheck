@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO="sonuKumar03/bundlecheck"
+REPO="sonuKumar03/bundleradar"
 
 usage() {
   printf 'Usage: %s [--with-skill] [--skill-dir <path>]\n' "$0"
@@ -83,7 +83,7 @@ install_binary() {
   if [ "$OS" = "unknown" ] || [ "$ARCH" = "unknown" ]; then
     if command -v go >/dev/null 2>&1; then
       printf 'Unrecognized OS/Arch, building from source via go install...\n'
-      go install github.com/sonuKumar03/bundlecheck@latest
+      go install github.com/sonuKumar03/bundleradar@latest
       return 0
     else
       printf 'Error: Unsupported OS (%s) or Architecture (%s)\n' "$OS" "$ARCH" >&2
@@ -102,12 +102,12 @@ install_binary() {
   trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
   EXT="tar.gz"
-  BINARY_NAME="bundlecheck"
+  BINARY_NAME="bundleradar"
   if [ "$OS" = "windows" ]; then
     EXT="zip"
-    BINARY_NAME="bundlecheck.exe"
+    BINARY_NAME="bundleradar.exe"
   fi
-  printf 'Downloading precompiled bundlecheck binary for %s/%s...\n' "$OS" "$ARCH"
+  printf 'Downloading precompiled bundleradar binary for %s/%s...\n' "$OS" "$ARCH"
 
   TAG=""
   if download_file "https://api.github.com/repos/${REPO}/releases/latest" "$TMP_DIR/release.json"; then
@@ -117,8 +117,8 @@ install_binary() {
   case "$TAG" in
     v*[!a-zA-Z0-9._-]*|v|"") TAG="" ;;
   esac
-  ARCHIVE="$TMP_DIR/bundlecheck.$EXT"
-  if [ -n "$TAG" ] && download_file "https://github.com/${REPO}/releases/download/${TAG}/bundlecheck_${TAG#v}_${OS}_${ARCH}.${EXT}" "$ARCHIVE"; then
+  ARCHIVE="$TMP_DIR/bundleradar.$EXT"
+  if [ -n "$TAG" ] && download_file "https://github.com/${REPO}/releases/download/${TAG}/bundleradar_${TAG#v}_${OS}_${ARCH}.${EXT}" "$ARCHIVE"; then
     if [ "$EXT" = "zip" ]; then
       if command -v unzip >/dev/null 2>&1; then
         unzip -oq "$ARCHIVE" -d "$TMP_DIR"
@@ -137,10 +137,10 @@ install_binary() {
     fi
     cp "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
-    printf 'Installed bundlecheck to %s/%s\n' "$INSTALL_DIR" "$BINARY_NAME"
+    printf 'Installed bundleradar to %s/%s\n' "$INSTALL_DIR" "$BINARY_NAME"
   elif command -v go >/dev/null 2>&1; then
     printf 'Precompiled release download failed, installing via go install...\n'
-    go install github.com/sonuKumar03/bundlecheck@latest
+    go install github.com/sonuKumar03/bundleradar@latest
   else
     printf 'Error: Failed to download precompiled binary from GitHub Releases\n' >&2
     exit 1
@@ -158,10 +158,10 @@ install_skill_tree() {
   printf '%s\n' "$skill_files" | while IFS= read -r rel; do
     target="$skill_dest/$rel"
     mkdir -p "$(dirname "$target")"
-    if [ -n "$script_dir" ] && [ -f "$script_dir/.agents/skills/bundlecheck/$rel" ]; then
-      cp "$script_dir/.agents/skills/bundlecheck/$rel" "$target"
+    if [ -n "$script_dir" ] && [ -f "$script_dir/.agents/skills/bundleradar/$rel" ]; then
+      cp "$script_dir/.agents/skills/bundleradar/$rel" "$target"
     else
-      download_file "https://raw.githubusercontent.com/${REPO}/master/.agents/skills/bundlecheck/$rel" "$target"
+      download_file "https://raw.githubusercontent.com/${REPO}/master/.agents/skills/bundleradar/$rel" "$target"
     fi
   done
 }
@@ -171,21 +171,21 @@ install_binary
 if [ "$with_skill" = true ]; then
   if [ -n "$custom_skill_dir" ]; then
     install_skill_tree "$custom_skill_dir"
-    printf 'Installed bundlecheck skill at %s\n' "$custom_skill_dir"
+    printf 'Installed bundleradar skill at %s\n' "$custom_skill_dir"
   else
     for skill_dir in \
-      "$HOME/.agents/skills/bundlecheck" \
-      "$HOME/.claude/skills/bundlecheck" \
-      "$HOME/.codex/skills/bundlecheck"
+      "$HOME/.agents/skills/bundleradar" \
+      "$HOME/.claude/skills/bundleradar" \
+      "$HOME/.codex/skills/bundleradar"
     do
       install_skill_tree "$skill_dir"
-      printf 'Installed bundlecheck skill at %s\n' "$skill_dir"
+      printf 'Installed bundleradar skill at %s\n' "$skill_dir"
     done
 
     if [ -d "$HOME/.gemini/antigravity-cli/skills" ]; then
-      agy_dir="$HOME/.gemini/antigravity-cli/skills/bundlecheck"
+      agy_dir="$HOME/.gemini/antigravity-cli/skills/bundleradar"
       install_skill_tree "$agy_dir"
-      printf 'Installed bundlecheck skill at %s\n' "$agy_dir"
+      printf 'Installed bundleradar skill at %s\n' "$agy_dir"
     fi
   fi
 fi

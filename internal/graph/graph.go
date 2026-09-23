@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 // Classify marks the static closure of roots as initial. Dynamic imports are

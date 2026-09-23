@@ -1,4 +1,4 @@
-// Package config loads and parses project-level .bundlecheck.yml configuration.
+// Package config loads and parses project-level .bundleradar.yml configuration.
 package config
 
 import (
@@ -12,8 +12,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
 )
 
 type Config struct {
@@ -171,7 +171,7 @@ func LoadFromAngularJSON(jsonPath string, projectName string) (*Config, error) {
 	return cfg, nil
 }
 
-// FindAndLoad looks for .bundlecheck.yml or .bundlecheck.yaml in rootDir or parent directories.
+// FindAndLoad looks for .bundleradar.yml or .bundleradar.yaml in rootDir or parent directories.
 func FindAndLoad(rootDir string) (*Config, string, error) {
 	if rootDir == "" {
 		var err error
@@ -186,7 +186,7 @@ func FindAndLoad(rootDir string) (*Config, string, error) {
 		return nil, "", err
 	}
 	for {
-		for _, name := range []string{".bundlecheck.yml", ".bundlecheck.yaml", ".bundlecheck/config.yml", ".bundlecheck/config.yaml"} {
+		for _, name := range []string{".bundleradar.yml", ".bundleradar.yaml", ".bundleradar/config.yml", ".bundleradar/config.yaml"} {
 			candidate := filepath.Join(rootDir, name)
 			if _, err := os.Stat(candidate); os.IsNotExist(err) {
 				continue

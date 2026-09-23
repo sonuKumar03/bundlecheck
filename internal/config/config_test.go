@@ -5,15 +5,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/budget"
-	"github.com/sonuKumar03/bundlecheck/internal/config"
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/budget"
+	"github.com/sonuKumar03/bundleradar/internal/config"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 func TestConfigLoadAndApply(t *testing.T) {
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".bundlecheck.yml")
+	cfgPath := filepath.Join(tmp, ".bundleradar.yml")
 
 	yamlContent := `
 budgets:
@@ -69,7 +69,7 @@ func TestFindConfigInParentDirectory(t *testing.T) {
 	if err := os.MkdirAll(child, 0755); err != nil {
 		t.Fatal(err)
 	}
-	configPath := filepath.Join(root, ".bundlecheck.yml")
+	configPath := filepath.Join(root, ".bundleradar.yml")
 	if err := os.WriteFile(configPath, []byte("budgets:\n  initial_js_max: 1B\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestFindConfigInParentDirectory(t *testing.T) {
 }
 
 func TestRejectUnsupportedConfigFields(t *testing.T) {
-	path := filepath.Join(t.TempDir(), ".bundlecheck.yml")
+	path := filepath.Join(t.TempDir(), ".bundleradar.yml")
 	if err := os.WriteFile(path, []byte("budgets:\n  initial_js_typo: 1B\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ rules:
     - lodash
 `
 	tmp := t.TempDir()
-	cfgPath := filepath.Join(tmp, ".bundlecheck.yml")
+	cfgPath := filepath.Join(tmp, ".bundleradar.yml")
 	if err := os.WriteFile(cfgPath, []byte(docConfig), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestRenderYAMLAndLoadRoundTrip(t *testing.T) {
 		t.Fatalf("render yaml: %v", err)
 	}
 
-	tmpFile := filepath.Join(t.TempDir(), ".bundlecheck.yml")
+	tmpFile := filepath.Join(t.TempDir(), ".bundleradar.yml")
 	if err := os.WriteFile(tmpFile, yamlData, 0644); err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/sonuKumar03/bundlecheck/internal/snapshot"
+	"github.com/sonuKumar03/bundleradar/internal/snapshot"
 )
 
 type rawInput struct {

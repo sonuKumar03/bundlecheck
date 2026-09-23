@@ -1,4 +1,4 @@
-# Using bundlecheck as an AI Coding Agent
+# Using bundleradar as an AI Coding Agent
 
 Give your coding agent a measured bundle optimization loop for Angular applications using esbuild:
 
@@ -8,13 +8,13 @@ Give your coding agent a measured bundle optimization loop for Angular applicati
 - **MCP**: the preferred structured tool interface when available.
 - **CLI JSON**: the universal fallback, using `--format json`.
 
-The installed `bundlecheck` binary and compatible Angular esbuild `stats.json` are prerequisites. Install the binary and complete skill tree for generic agents, Claude Code, and Codex with:
+The installed `bundleradar` binary and compatible Angular esbuild `stats.json` are prerequisites. Install the binary and complete skill tree for generic agents, Claude Code, and Codex with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh -s -- --with-skill
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh -s -- --with-skill
 ```
 
-Use `--skill-dir <path>` to install only to a custom skill location. Do not assume the BundleCheck source checkout is available.
+Use `--skill-dir <path>` to install only to a custom skill location. Do not assume the BundleRadar source checkout is available.
 
 Example prompt:
 
@@ -27,10 +27,10 @@ Example prompt:
 
 ## 🔌 Model Context Protocol (MCP) Server
 
-`bundlecheck` includes a native, high-performance MCP server built into the binary:
+`bundleradar` includes a native, high-performance MCP server built into the binary:
 
 ```sh
-bundlecheck mcp
+bundleradar mcp
 ```
 
 ### Agent Client Configuration
@@ -38,14 +38,14 @@ bundlecheck mcp
 #### 1. Claude Code
 Add to your project's `.claude.json` or run:
 ```sh
-claude mcp add bundlecheck -- bundlecheck mcp
+claude mcp add bundleradar -- bundleradar mcp
 ```
 
 #### 2. Antigravity / Gemini CLI
-Add to `~/.gemini/antigravity-cli/mcp/bundlecheck.json` (or project MCP settings):
+Add to `~/.gemini/antigravity-cli/mcp/bundleradar.json` (or project MCP settings):
 ```json
 {
-  "command": "bundlecheck",
+  "command": "bundleradar",
   "args": ["mcp"]
 }
 ```
@@ -54,8 +54,8 @@ Add to `~/.gemini/antigravity-cli/mcp/bundlecheck.json` (or project MCP settings
 ```json
 {
   "mcpServers": {
-    "bundlecheck": {
-      "command": "bundlecheck",
+    "bundleradar": {
+      "command": "bundleradar",
       "args": ["mcp"]
     }
   }
@@ -66,8 +66,8 @@ Add to `~/.gemini/antigravity-cli/mcp/bundlecheck.json` (or project MCP settings
 ```json
 {
   "mcpServers": {
-    "bundlecheck": {
-      "command": "bundlecheck",
+    "bundleradar": {
+      "command": "bundleradar",
       "args": ["mcp"]
     }
   }
@@ -93,24 +93,24 @@ When `index.html` references a script absent from `stats.json`, bundle tools ret
 
 ### Exposed MCP Resources
 
-- **`bundlecheck://rules`** (`application/json`): Standard optimization heuristics, replacement guidelines for heavy libraries (`moment`, `lodash`, `exceljs`, `pdfjs-dist`), and default budget guidelines.
+- **`bundleradar://rules`** (`application/json`): Standard optimization heuristics, replacement guidelines for heavy libraries (`moment`, `lodash`, `exceljs`, `pdfjs-dist`), and default budget guidelines.
 
 ---
 
 ## ⚡ Auto-Discovery & Zero-Config CLI Usage
 
-When executed in an Angular application directory after `ng build --configuration production --stats-json`, `bundlecheck` automatically locates `stats.json` and matching browser `dist` directories.
+When executed in an Angular application directory after `ng build --configuration production --stats-json`, `bundleradar` automatically locates `stats.json` and matching browser `dist` directories.
 
 ```sh
 # Zero-config summary (JSON)
-bundlecheck summary --format json
+bundleradar summary --format json
 
 # Summary with Gzip wire transfer estimation
-bundlecheck summary --gzip --format json
+bundleradar summary --gzip --format json
 
 # Multi-app workspace: specify project positionally or with flag
-bundlecheck summary portal
-bundlecheck summary --project portal --format json
+bundleradar summary portal
+bundleradar summary --project portal --format json
 ```
 
 ---
@@ -121,10 +121,10 @@ Analyze the bundle to receive prioritized, actionable size optimization recommen
 
 ```sh
 # Get ranked suggestions
-bundlecheck suggest --format json
+bundleradar suggest --format json
 
 # Summary with suggestions appended
-bundlecheck summary --suggest --format json
+bundleradar summary --suggest --format json
 ```
 
 Each suggestion includes:
@@ -142,13 +142,13 @@ Trace the import path explaining why a package or module is in the bundle:
 
 ```sh
 # Trace dependency path to lodash
-bundlecheck why lodash --format json
+bundleradar why lodash --format json
 
 # Trace in a multi-app monorepo
-bundlecheck why portal lodash --format json
+bundleradar why portal lodash --format json
 
 # Trace only initial bundle import paths
-bundlecheck why @angular/material --initial-only --format json
+bundleradar why @angular/material --initial-only --format json
 ```
 
 Inspect `chains[].path` to see the sequence of source files leading from root entrypoints (`src/main.ts`) to the target package.
@@ -161,10 +161,10 @@ In Nx or Angular multi-app monorepos:
 
 ```sh
 # Compare all applications, shared library costs, and duplicated dependencies
-bundlecheck workspace summary --format json
+bundleradar workspace summary --format json
 
 # Filter specific applications
-bundlecheck workspace summary --projects admin-dashboard,portal --format json
+bundleradar workspace summary --projects admin-dashboard,portal --format json
 ```
 
 ---
@@ -173,19 +173,19 @@ bundlecheck workspace summary --projects admin-dashboard,portal --format json
 
 ### 1. Establish Baseline Before Modifying Code
 ```sh
-bundlecheck baseline save --name pre-refactor --format json
+bundleradar baseline save --name pre-refactor --format json
 ```
-Saves the initial bundle state to `.bundlecheck/baselines/pre-refactor.json`.
+Saves the initial bundle state to `.bundleradar/baselines/pre-refactor.json`.
 
 ### 2. Trace & Apply Optimization
-1. Run `bundlecheck suggest --format json` to find high-impact targets.
-2. Run `bundlecheck why <package> --format json` to identify the importing component.
+1. Run `bundleradar suggest --format json` to find high-impact targets.
+2. Run `bundleradar why <package> --format json` to identify the importing component.
 3. Replace heavy modules with lazy loading (`import(...)`, `@defer`, `loadComponent`).
 
 ### 3. Measure Changes & Verify
 ```sh
 ng build --configuration production --stats-json
-bundlecheck measure -b pre-refactor --format json
+bundleradar measure -b pre-refactor --format json
 ```
 Inspect `summary.delta`:
 - `summary.delta.initialJs`: Negative = savings (success); Positive = regression.
@@ -194,7 +194,7 @@ Inspect `summary.delta`:
 ### 4. Gate Regressions
 ```sh
 # Fails with exit code 1 if initial JS grew
-bundlecheck measure -b pre-refactor --max-initial-delta 0B
+bundleradar measure -b pre-refactor --max-initial-delta 0B
 ```
 
 ---
@@ -278,7 +278,7 @@ Integrations and CI scripts can rely on stable, numeric exit codes:
 | Failure | Next check |
 | :--- | :--- |
 | `no Angular build artifacts found` | Run `ng build --configuration production --stats-json` first or pass `--stats` and `--dist`. |
-| `multiple Angular build outputs found` | Specify the project: `bundlecheck summary <project>` or `--project <name>`. |
-| `target package not found` | Verify spelling or check `bundlecheck summary` for attributed packages. |
-| `baseline file not found` | Run `bundlecheck baseline save` to initialize the reference baseline. |
+| `multiple Angular build outputs found` | Specify the project: `bundleradar summary <project>` or `--project <name>`. |
+| `target package not found` | Verify spelling or check `bundleradar summary` for attributed packages. |
+| `baseline file not found` | Run `bundleradar baseline save` to initialize the reference baseline. |
 | `budget check failed` | Review `violations[]` in JSON or error table in stderr to see which threshold was breached. |

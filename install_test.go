@@ -24,7 +24,7 @@ var skillFiles = []string{
 func assertSkillTree(t *testing.T, root, installed string) {
 	t.Helper()
 	for _, rel := range skillFiles {
-		want, err := os.ReadFile(filepath.Join(root, ".agents", "skills", "bundlecheck", rel))
+		want, err := os.ReadFile(filepath.Join(root, ".agents", "skills", "bundleradar", rel))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -69,7 +69,7 @@ func TestInstall(t *testing.T) {
 			if err := os.MkdirAll(caller, 0700); err != nil {
 				t.Fatal(err)
 			}
-			skillDir := filepath.Join(home, ".agents", "skills", "bundlecheck")
+			skillDir := filepath.Join(home, ".agents", "skills", "bundleradar")
 			if tt.skill {
 				if err := os.MkdirAll(skillDir, 0700); err != nil {
 					t.Fatal(err)
@@ -119,9 +119,9 @@ func TestInstall(t *testing.T) {
 			if code != tt.exit {
 				t.Fatalf("exit %d, want %d: %s", code, tt.exit, out)
 			}
-			binName := "bundlecheck"
+			binName := "bundleradar"
 			if filepath.Separator == '\\' {
-				binName = "bundlecheck.exe"
+				binName = "bundleradar.exe"
 			}
 			binary := filepath.Join(bin, binName)
 			_, err := os.Stat(binary)
@@ -134,7 +134,7 @@ func TestInstall(t *testing.T) {
 			}
 			if tt.binary {
 				version, err := exec.Command(binary, "--version").CombinedOutput()
-				if err != nil || !strings.HasPrefix(string(version), "bundlecheck version ") {
+				if err != nil || !strings.HasPrefix(string(version), "bundleradar version ") {
 					t.Fatalf("installed binary: %s,%v", version, err)
 				}
 				if code, out := install(); code != 0 {
@@ -144,8 +144,8 @@ func TestInstall(t *testing.T) {
 			if tt.skill {
 				for _, dir := range []string{
 					skillDir,
-					filepath.Join(home, ".claude", "skills", "bundlecheck"),
-					filepath.Join(home, ".codex", "skills", "bundlecheck"),
+					filepath.Join(home, ".claude", "skills", "bundleradar"),
+					filepath.Join(home, ".codex", "skills", "bundleradar"),
 				} {
 					assertSkillTree(t, root, dir)
 				}
@@ -164,7 +164,7 @@ func TestInstallCustomSkillDir(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := t.TempDir()
-	customDir := filepath.Join(base, "custom", "skills", "bundlecheck")
+	customDir := filepath.Join(base, "custom", "skills", "bundleradar")
 	bin := filepath.Join(base, "bin")
 
 	var cmd *exec.Cmd
@@ -189,7 +189,7 @@ func TestInstallCustomSkillDir(t *testing.T) {
 
 	assertSkillTree(t, root, customDir)
 	for _, dir := range []string{".agents", ".claude", ".codex"} {
-		if _, err := os.Stat(filepath.Join(base, dir, "skills", "bundlecheck", "SKILL.md")); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(base, dir, "skills", "bundleradar", "SKILL.md")); !os.IsNotExist(err) {
 			t.Fatalf("custom install unexpectedly populated %s", dir)
 		}
 	}
@@ -213,11 +213,11 @@ func TestRemoteSkillInstallDownloadsReferences(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body := []byte("#!/bin/sh\necho bundlecheck version 9.8.7\n")
+	body := []byte("#!/bin/sh\necho bundleradar version 9.8.7\n")
 	var archive bytes.Buffer
 	gz := gzip.NewWriter(&archive)
 	tw := tar.NewWriter(gz)
-	if err := tw.WriteHeader(&tar.Header{Name: "bundlecheck", Mode: 0755, Size: int64(len(body))}); err != nil {
+	if err := tw.WriteHeader(&tar.Header{Name: "bundleradar", Mode: 0755, Size: int64(len(body))}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := tw.Write(body); err != nil {
@@ -247,8 +247,8 @@ dest="$4"
 case "$url" in
   https://api.github.com/*) printf '{"tag_name":"v9.8.7"}' > "$dest" ;;
   https://github.com/*/releases/download/*) cp "$BUNDLECHECK_TEST_ARCHIVE" "$dest" ;;
-  https://raw.githubusercontent.com/*/.agents/skills/bundlecheck/*)
-    prefix="https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/.agents/skills/bundlecheck/"
+  https://raw.githubusercontent.com/*/.agents/skills/bundleradar/*)
+    prefix="https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/.agents/skills/bundleradar/"
     rel=${url#"$prefix"}
     cp "$BUNDLECHECK_TEST_SKILL_ROOT/$rel" "$dest"
     ;;
@@ -268,15 +268,15 @@ esac
 		"HOME="+home,
 		"GOBIN="+filepath.Join(base, "bin"),
 		"BUNDLECHECK_TEST_ARCHIVE="+archivePath,
-		"BUNDLECHECK_TEST_SKILL_ROOT="+filepath.Join(root, ".agents", "skills", "bundlecheck"),
+		"BUNDLECHECK_TEST_SKILL_ROOT="+filepath.Join(root, ".agents", "skills", "bundleradar"),
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("remote skill install failed: %v\n%s", err, out)
 	}
 	for _, dir := range []string{
-		filepath.Join(home, ".agents", "skills", "bundlecheck"),
-		filepath.Join(home, ".claude", "skills", "bundlecheck"),
-		filepath.Join(home, ".codex", "skills", "bundlecheck"),
+		filepath.Join(home, ".agents", "skills", "bundleradar"),
+		filepath.Join(home, ".claude", "skills", "bundleradar"),
+		filepath.Join(home, ".codex", "skills", "bundleradar"),
 	} {
 		assertSkillTree(t, root, dir)
 	}
@@ -291,8 +291,8 @@ func TestPrecompiledInstallUsesLatestVersionAndPlatformArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ name, osName, ext, binary string }{
-		{"Linux", "Linux", "tar.gz", "bundlecheck"},
-		{"Windows", "MINGW64_NT", "zip", "bundlecheck.exe"},
+		{"Linux", "Linux", "tar.gz", "bundleradar"},
+		{"Windows", "MINGW64_NT", "zip", "bundleradar.exe"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.ext == "zip" {
@@ -305,7 +305,7 @@ func TestPrecompiledInstallUsesLatestVersionAndPlatformArchive(t *testing.T) {
 			if err := os.WriteFile(installer, source, 0755); err != nil {
 				t.Fatal(err)
 			}
-			body := []byte("#!/bin/sh\necho bundlecheck version 9.8.7\n")
+			body := []byte("#!/bin/sh\necho bundleradar version 9.8.7\n")
 			var archive bytes.Buffer
 			if tc.ext == "zip" {
 				w := zip.NewWriter(&archive)
@@ -345,7 +345,7 @@ func TestPrecompiledInstallUsesLatestVersionAndPlatformArchive(t *testing.T) {
 			}
 			for name, script := range map[string]string{
 				"uname": "#!/bin/sh\nif [ \"$1\" = -s ]; then echo \"$BUNDLECHECK_TEST_OS\"; else echo x86_64; fi\n",
-				"curl":  "#!/bin/sh\ncase \"$2\" in\nhttps://api.github.com/repos/sonuKumar03/bundlecheck/releases/latest) printf '{\"tag_name\":\"v9.8.7\"}' > \"$4\" ;;\n\"$BUNDLECHECK_TEST_RELEASE_URL\") cp \"$BUNDLECHECK_TEST_ARCHIVE\" \"$4\" ;;\n*) exit 22 ;;\nesac\n",
+				"curl":  "#!/bin/sh\ncase \"$2\" in\nhttps://api.github.com/repos/sonuKumar03/bundleradar/releases/latest) printf '{\"tag_name\":\"v9.8.7\"}' > \"$4\" ;;\n\"$BUNDLECHECK_TEST_RELEASE_URL\") cp \"$BUNDLECHECK_TEST_ARCHIVE\" \"$4\" ;;\n*) exit 22 ;;\nesac\n",
 				"go":    "#!/bin/sh\nexit 42\n",
 			} {
 				if err := os.WriteFile(filepath.Join(mockBin, name), []byte(script), 0755); err != nil {
@@ -360,7 +360,7 @@ func TestPrecompiledInstallUsesLatestVersionAndPlatformArchive(t *testing.T) {
 			cmd := exec.Command("sh", installer)
 			cmd.Env = append(os.Environ(), "PATH="+mockBin+string(os.PathListSeparator)+os.Getenv("PATH"), "GOBIN="+bin,
 				"BUNDLECHECK_TEST_OS="+tc.osName, "BUNDLECHECK_TEST_ARCHIVE="+archivePath,
-				"BUNDLECHECK_TEST_RELEASE_URL=https://github.com/sonuKumar03/bundlecheck/releases/download/v9.8.7/bundlecheck_9.8.7_"+osName+"_amd64."+tc.ext)
+				"BUNDLECHECK_TEST_RELEASE_URL=https://github.com/sonuKumar03/bundleradar/releases/download/v9.8.7/bundleradar_9.8.7_"+osName+"_amd64."+tc.ext)
 			if out, err := cmd.CombinedOutput(); err != nil {
 				t.Fatalf("precompiled installation failed: %v\n%s", err, out)
 			}

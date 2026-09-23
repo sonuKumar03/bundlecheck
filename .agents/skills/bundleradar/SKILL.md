@@ -1,5 +1,5 @@
 ---
-name: bundlecheck
+name: bundleradar
 description: >
   Use this skill when the user wants to understand, compare, or reduce the
   JavaScript bundle size of an Angular application built with esbuild.
@@ -10,14 +10,14 @@ description: >
   Web Vitals, network profiling, or non-Angular builds unless compatible
   Angular/esbuild stats are available.
 compatibility: >
-  Requires the bundlecheck CLI and Angular esbuild stats.json. Node and Nx are
+  Requires the bundleradar CLI and Angular esbuild stats.json. Node and Nx are
   required only to build or inspect an Nx workspace. Git is required only for
   git-ref baseline workflows.
 ---
 
-# BundleCheck
+# BundleRadar
 
-Use BundleCheck as the reasoning loop for Angular esbuild bundle work. Prefer exact bytes and measured deltas over generic optimization advice.
+Use BundleRadar as the reasoning loop for Angular esbuild bundle work. Prefer exact bytes and measured deltas over generic optimization advice.
 
 ## Route the request
 
@@ -34,14 +34,14 @@ Use BundleCheck as the reasoning loop for Angular esbuild bundle work. Prefer ex
 ## Choose execution
 
 1. Use matching `bundle_*` or `workspace_summary` MCP tools when available.
-2. Otherwise verify `command -v bundlecheck` and run CLI commands with `--format json`.
+2. Otherwise verify `command -v bundleradar` and run CLI commands with `--format json`.
 3. If missing, stop and offer the supported remote install command:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundlecheck/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh
 ```
 
-Never assume the BundleCheck repository or a local `./install.sh` exists. MCP and CLI follow the same decisions; only transport differs.
+Never assume the BundleRadar repository or a local `./install.sh` exists. MCP and CLI follow the same decisions; only transport differs.
 
 ## Optimize safely
 

@@ -8,11 +8,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sonuKumar03/bundlecheck/internal/analysis"
-	"github.com/sonuKumar03/bundlecheck/internal/baseline"
-	"github.com/sonuKumar03/bundlecheck/internal/discovery"
-	"github.com/sonuKumar03/bundlecheck/internal/report"
-	"github.com/sonuKumar03/bundlecheck/internal/worktree"
+	"github.com/sonuKumar03/bundleradar/internal/analysis"
+	"github.com/sonuKumar03/bundleradar/internal/baseline"
+	"github.com/sonuKumar03/bundleradar/internal/discovery"
+	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/worktree"
 )
 
 func baselineCommand() *cobra.Command {
@@ -152,7 +152,7 @@ func baselineCommand() *cobra.Command {
 		Use:   "baseline",
 		Short: "Capture, manage, and inspect baseline metrics across branches",
 		Long: `Capture, save, list, switch, and rebuild baseline bundle metrics across git branches or local builds.
-Baselines are stored in .bundlecheck/baselines/ and compared against during 'bundlecheck measure'.`,
+Baselines are stored in .bundleradar/baselines/ and compared against during 'bundleradar measure'.`,
 		Args: cobra.NoArgs,
 		RunE: runSave,
 	}
@@ -215,7 +215,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 	// Subcommand: use
 	useCmd := &cobra.Command{
 		Use:   "use <name>",
-		Short: "Set the active baseline snapshot for 'bundlecheck measure'",
+		Short: "Set the active baseline snapshot for 'bundleradar measure'",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetName := args[0]
@@ -256,7 +256,7 @@ Baselines are stored in .bundlecheck/baselines/ and compared against during 'bun
 			}
 
 			if targetRef == "" {
-				return fmt.Errorf("baseline %q is not linked to a git ref and cannot be rebuilt automatically\nHint: capture from current build with 'bundlecheck baseline save --name %s'", targetName, targetName)
+				return fmt.Errorf("baseline %q is not linked to a git ref and cannot be rebuilt automatically\nHint: capture from current build with 'bundleradar baseline save --name %s'", targetName, targetName)
 			}
 
 			wd, err := os.Getwd()
