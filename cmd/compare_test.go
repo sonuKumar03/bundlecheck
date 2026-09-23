@@ -164,3 +164,31 @@ func TestCompareGitHubPRFormat(t *testing.T) {
 		t.Errorf("expected metrics table with visual diff bar, got: %s", output)
 	}
 }
+
+func TestCompare_MultiAppDirectoryWithProjectFlag(t *testing.T) {
+	tmp := t.TempDir()
+	portalDist := filepath.Join(tmp, "dist", "portal", "browser")
+	adminDist := filepath.Join(tmp, "dist", "admin", "browser")
+	_ = os.MkdirAll(portalDist, 0755)
+	_ = os.MkdirAll(adminDist, 0755)
+
+	statsData, _ := os.ReadFile("../testdata/minimal/stats.json")
+	indexHTML, _ := os.ReadFile("../testdata/minimal/browser/index.html")
+	mainJS, _ := os.ReadFile("../testdata/minimal/browser/main.js")
+
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "portal", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "admin", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(adminDist, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "main.js"), mainJS, 0644)
+	_ = os.WriteFile(filepath.Join(adminDist, "main.js"), mainJS, 0644)
+
+	baseJSON := filepath.Join(tmp, "baseline.json")
+	_ = os.WriteFile(baseJSON, []byte(`{"schemaVersion":"1","toolVersion":"0.6.2","command":"summary","summary":{"initialJs":1000,"lazyJs":500,"totalJs":1500},"packages":[]}`), 0644)
+
+	var out, errOut bytes.Buffer
+	code := Execute([]string{"compare", "--before", baseJSON, "--after", tmp, "--project", "portal", "-f", "json"}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("expected compare to succeed with --project portal, got exit %d: %s", code, errOut.String())
+	}
+}
