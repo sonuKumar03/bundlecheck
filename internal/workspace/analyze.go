@@ -20,6 +20,7 @@ type AnalyzeOptions struct {
 	Target          string
 	Configuration   string
 	Projects        []string
+	AppTargets      []AppTarget
 	WithCompression bool
 	AllowNxFallback bool
 }
@@ -42,80 +43,100 @@ func Analyze(ctx context.Context, opts AnalyzeOptions) (*Result, error) {
 		}
 	}
 
-	workspaceRoot, err := Root(start, opts.ExplicitRoot)
-	if err != nil {
-		return nil, err
-	}
-
 	var metadata Metadata
-	if opts.AllowNxFallback {
-		metadata, err = ReadMetadata(ctx, workspaceRoot)
+	var workspaceRoot string
+	var err error
+
+	if len(opts.AppTargets) > 0 {
+		workspaceRoot = start
+	} else {
+		workspaceRoot, err = Root(start, opts.ExplicitRoot)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		metadata, err = ReadMetadataStatic(workspaceRoot)
-		if err != nil {
-			return nil, fmt.Errorf("static Nx parsing failed: %w; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)", err)
-		}
-		if len(metadata.Graph.Nodes) == 0 {
-			return nil, fmt.Errorf("static Nx parsing found no projects; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)")
+
+		if opts.AllowNxFallback {
+			metadata, err = ReadMetadata(ctx, workspaceRoot)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			metadata, err = ReadMetadataStatic(workspaceRoot)
+			if err != nil {
+				return nil, fmt.Errorf("static Nx parsing failed: %w; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)", err)
+			}
+			if len(metadata.Graph.Nodes) == 0 {
+				return nil, fmt.Errorf("static Nx parsing found no projects; fallback to workspace-installed Nx CLI requires explicit opt-in (allow_nx_fallback)")
+			}
 		}
 	}
 
 	r := NewResult(workspaceRoot, opts.Target, opts.Configuration)
 
-	selected := []string{}
-	explicitProjects := len(opts.Projects) > 0
-	if explicitProjects {
-		selected = append(selected, opts.Projects...)
-	} else {
-		for name, p := range metadata.Graph.Nodes {
-			if IsApplication(p) {
-				selected = append(selected, name)
-			}
-		}
-	}
-	slices.Sort(selected)
-	selected = slices.Compact(selected)
-
 	packages := map[string][]snapshot.Package{}
 	libraries := map[string][]snapshot.Package{}
 	eligible := 0
 
-	for _, name := range selected {
-		app := App{Name: name}
-		p, exists := metadata.Graph.Nodes[name]
-		switch {
-		case !exists:
-			app.Status = "unknown-project"
-			app.Diagnostic = "project not present in Nx graph"
-			r.Complete = false
-		case !IsApplication(p) || !Supported(p, opts.Target):
-			app.Status = "unsupported"
-			app.Diagnostic = fmt.Sprintf("target %s executor %q is not a supported Angular application esbuild builder", opts.Target, p.Data.Targets[opts.Target].Executor)
-			if explicitProjects {
-				r.Complete = false
-			}
-		default:
+	if len(opts.AppTargets) > 0 {
+		for _, target := range opts.AppTargets {
 			eligible++
-			base, browser, resolveErr := OutputDirectories(workspaceRoot, p, opts.Target, opts.Configuration)
-			if resolveErr != nil {
-				app.Status = "configuration-error"
-				app.Diagnostic = resolveErr.Error()
-				r.Complete = false
-				break
+			app := App{
+				Name:   target.Name,
+				Stats:  target.Stats,
+				Dist:   target.Dist,
+				Status: "ready",
 			}
-			app.Stats, app.Dist, resolveErr = Artifacts(base, browser)
-			if resolveErr != nil {
-				app.Status = "missing-artifacts"
-				app.Diagnostic = resolveErr.Error()
-				r.Complete = false
-				break
-			}
-			app.Status = "ready"
+			r.Apps = append(r.Apps, app)
 		}
-		r.Apps = append(r.Apps, app)
+	} else {
+		selected := []string{}
+		explicitProjects := len(opts.Projects) > 0
+		if explicitProjects {
+			selected = append(selected, opts.Projects...)
+		} else {
+			for name, p := range metadata.Graph.Nodes {
+				if IsApplication(p) {
+					selected = append(selected, name)
+				}
+			}
+		}
+		slices.Sort(selected)
+		selected = slices.Compact(selected)
+
+		for _, name := range selected {
+			app := App{Name: name}
+			p, exists := metadata.Graph.Nodes[name]
+			switch {
+			case !exists:
+				app.Status = "unknown-project"
+				app.Diagnostic = "project not present in Nx graph"
+				r.Complete = false
+			case !IsApplication(p) || !Supported(p, opts.Target):
+				app.Status = "unsupported"
+				app.Diagnostic = fmt.Sprintf("target %s executor %q is not a supported Angular application esbuild builder", opts.Target, p.Data.Targets[opts.Target].Executor)
+				if explicitProjects {
+					r.Complete = false
+				}
+			default:
+				eligible++
+				base, browser, resolveErr := OutputDirectories(workspaceRoot, p, opts.Target, opts.Configuration)
+				if resolveErr != nil {
+					app.Status = "configuration-error"
+					app.Diagnostic = resolveErr.Error()
+					r.Complete = false
+					break
+				}
+				app.Stats, app.Dist, resolveErr = Artifacts(base, browser)
+				if resolveErr != nil {
+					app.Status = "missing-artifacts"
+					app.Diagnostic = resolveErr.Error()
+					r.Complete = false
+					break
+				}
+				app.Status = "ready"
+			}
+			r.Apps = append(r.Apps, app)
+		}
 	}
 
 	// Reject artifacts claimed by multiple selected projects before analyzing either.
@@ -162,7 +183,7 @@ func Analyze(ctx context.Context, opts AnalyzeOptions) (*Result, error) {
 			result.Packages = snap.Packages
 		}
 
-		if analysisErr == nil {
+		if analysisErr == nil && len(metadata.Graph.Nodes) > 0 {
 			libraries[app.Name], analysisErr = Libraries(workspaceRoot, metadata.Graph.Nodes, snap)
 		}
 		if analysisErr != nil {
@@ -174,7 +195,9 @@ func Analyze(ctx context.Context, opts AnalyzeOptions) (*Result, error) {
 
 		app.Status = "analyzed"
 		app.Analysis = result
-		app.Freshness = CheckFreshness(workspaceRoot, metadata.Graph.Nodes[app.Name].Data.Root, app.Stats, snap)
+		if p, exists := metadata.Graph.Nodes[app.Name]; exists {
+			app.Freshness = CheckFreshness(workspaceRoot, p.Data.Root, app.Stats, snap)
+		}
 		packages[app.Name] = result.Packages
 		app.DrillDown = [][]string{
 			{"bundleradar", "why", "--stats", app.Stats, "--dist", app.Dist, "--package", "<package-name>"},
