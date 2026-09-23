@@ -13,6 +13,7 @@ import (
 func workspaceCommand() *cobra.Command {
 	parent := &cobra.Command{Use: "workspace", Short: "Analyze existing Angular builds across an Nx workspace"}
 	var root, projects, target, configuration, format, output string
+	var apps []string
 	var top int
 	var all, showGzip bool
 	c := &cobra.Command{Use: "summary", Short: "Compare app sizes and shared npm/library contributions", Args: cobra.NoArgs, RunE: func(c *cobra.Command, args []string) error {
@@ -32,6 +33,24 @@ func workspaceCommand() *cobra.Command {
 				selected = append(selected, name)
 			}
 		}
+
+		var appTargets []workspace.AppTarget
+		if len(apps) > 0 {
+			var err error
+			appTargets, err = workspace.ParseAppTargets(root, nil, apps)
+			if err != nil {
+				return err
+			}
+		} else if len(selected) > 0 {
+			if _, rootErr := workspace.Root(root, root != ""); rootErr != nil {
+				var err error
+				appTargets, err = workspace.ParseAppTargets(root, selected, nil)
+				if err != nil {
+					return fmt.Errorf("%w; (and no nx.json found: %v)", err, rootErr)
+				}
+			}
+		}
+
 		needCompression := format == "json" || showGzip || output != ""
 		r, err := workspace.Analyze(c.Context(), workspace.AnalyzeOptions{
 			Root:            root,
@@ -39,6 +58,7 @@ func workspaceCommand() *cobra.Command {
 			Target:          target,
 			Configuration:   configuration,
 			Projects:        selected,
+			AppTargets:      appTargets,
 			WithCompression: needCompression,
 			AllowNxFallback: true,
 		})
@@ -85,6 +105,7 @@ func workspaceCommand() *cobra.Command {
 	c.Flags().IntVar(&top, "top", 10, "Number of npm/library contributors to display")
 	c.Flags().BoolVar(&all, "all", false, "Display all contributors")
 	c.Flags().BoolVarP(&showGzip, "gzip", "g", false, "Include estimated Gzip wire transfer sizes in report")
+	c.Flags().StringSliceVar(&apps, "app", nil, "Explicit app target mapping name=stats_path[:dist_path] (can be repeated)")
 	parent.AddCommand(c)
 	return parent
 }

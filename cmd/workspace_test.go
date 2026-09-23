@@ -231,3 +231,55 @@ func TestWorkspaceFileOutput(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkspaceSummary_ExplicitAppAndProjects_NoNxJson(t *testing.T) {
+	tmp := t.TempDir()
+	// No nx.json in tmp
+	app1Dir := filepath.Join(tmp, "dist", "portal", "browser")
+	app2Dir := filepath.Join(tmp, "dist", "admin", "browser")
+	_ = os.MkdirAll(app1Dir, 0755)
+	_ = os.MkdirAll(app2Dir, 0755)
+
+	statsData, _ := os.ReadFile("../testdata/minimal/stats.json")
+	indexHTML, _ := os.ReadFile("../testdata/minimal/browser/index.html")
+	mainJS, _ := os.ReadFile("../testdata/minimal/browser/main.js")
+
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "portal", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "admin", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(app1Dir, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(app2Dir, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(app1Dir, "main.js"), mainJS, 0644)
+	_ = os.WriteFile(filepath.Join(app2Dir, "main.js"), mainJS, 0644)
+
+	t.Run("with --app flag", func(t *testing.T) {
+		var out, stderr bytes.Buffer
+		app1 := "portal=" + filepath.Join(tmp, "dist", "portal", "stats.json") + ":" + app1Dir
+		app2 := "admin=" + filepath.Join(tmp, "dist", "admin", "stats.json") + ":" + app2Dir
+		code := Execute([]string{"workspace", "summary", "--root", tmp, "--app", app1, "--app", app2, "-f", "json"}, &out, &stderr)
+		if code != 0 {
+			t.Fatalf("expected code 0, got %d: %s", code, stderr.String())
+		}
+		var r workspace.Result
+		if err := json.Unmarshal(out.Bytes(), &r); err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+		if len(r.Apps) != 2 || !r.Complete {
+			t.Fatalf("expected 2 complete apps, got %+v", r)
+		}
+	})
+
+	t.Run("with --projects flag non-Nx discovery", func(t *testing.T) {
+		var out, stderr bytes.Buffer
+		code := Execute([]string{"workspace", "summary", "--root", tmp, "--projects", "portal,admin", "-f", "json"}, &out, &stderr)
+		if code != 0 {
+			t.Fatalf("expected code 0, got %d: %s", code, stderr.String())
+		}
+		var r workspace.Result
+		if err := json.Unmarshal(out.Bytes(), &r); err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+		if len(r.Apps) != 2 || !r.Complete {
+			t.Fatalf("expected 2 complete apps, got %+v", r)
+		}
+	})
+}

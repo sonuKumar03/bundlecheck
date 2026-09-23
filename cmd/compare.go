@@ -61,11 +61,11 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 				return fmt.Errorf("unsupported format %q: use text, json, markdown, or github-pr", format)
 			}
 
-			b, err := loadSnapshotOrBuild(before)
+			b, err := loadSnapshotOrBuild(before, project)
 			if err != nil {
 				return fmt.Errorf("before (%q): %w", before, err)
 			}
-			a, snap, err := loadSnapshotOrBuildWithSnapshot(after)
+			a, snap, err := loadSnapshotOrBuildWithSnapshot(after, project)
 			if err != nil {
 				return fmt.Errorf("after (%q): %w", after, err)
 			}
@@ -122,12 +122,12 @@ Supports both saved summary JSON files and raw Angular/esbuild build directories
 	return c
 }
 
-func loadSnapshotOrBuild(pathOrName string) (*analysis.AnalysisResult, error) {
-	res, _, err := loadSnapshotOrBuildWithSnapshot(pathOrName)
+func loadSnapshotOrBuild(pathOrName, project string) (*analysis.AnalysisResult, error) {
+	res, _, err := loadSnapshotOrBuildWithSnapshot(pathOrName, project)
 	return res, err
 }
 
-func loadSnapshotOrBuildWithSnapshot(pathOrName string) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
+func loadSnapshotOrBuildWithSnapshot(pathOrName, project string) (*analysis.AnalysisResult, *snapshot.BundleSnapshot, error) {
 	// 1. Try resolving via baseline manager
 	resolved := baseline.ResolvePath(pathOrName)
 	if fi, err := os.Stat(resolved); err == nil && !fi.IsDir() {
@@ -144,7 +144,7 @@ func loadSnapshotOrBuildWithSnapshot(pathOrName string) (*analysis.AnalysisResul
 	}
 
 	if fi.IsDir() {
-		sFile, dDir, err := resolveBuildArtifactsInDir(pathOrName, "", "", "")
+		sFile, dDir, err := resolveBuildArtifactsInDir(pathOrName, "", "", project)
 		if err != nil {
 			return nil, nil, err
 		}
