@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sonuKumar03/bundleradar/internal/core"
 	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 	"github.com/spf13/cobra"
 )
@@ -45,8 +46,12 @@ func newScanCommand() *cobra.Command {
 			}
 
 			if entry != "" {
-				if _, ok := bundle.Entrypoints[entry]; !ok {
+				ep, ok := bundle.ResolveEntrypoint(entry)
+				if !ok {
 					return fmt.Errorf("entrypoint %q not found in bundle", entry)
+				}
+				bundle.Entrypoints = map[string]core.Entrypoint{
+					ep.Name: *ep,
 				}
 			}
 

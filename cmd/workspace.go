@@ -60,8 +60,9 @@ func newWorkspaceCommand() *cobra.Command {
 	}
 
 	scanCmd := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan and summarize all discovered application targets in the workspace",
+		Use:     "scan",
+		Aliases: []string{"summary"},
+		Short:   "Scan and summarize all discovered application targets in the workspace",
 		RunE: func(c *cobra.Command, args []string) error {
 			if root == "" {
 				root = "."
@@ -140,6 +141,27 @@ func newWorkspaceCommand() *cobra.Command {
 				return enc.Encode(res)
 			}
 
+			if format == "markdown" {
+				fmt.Fprintf(w, "## ⚡ Workspace Bundle Scan (%d targets)\n\n", len(targets))
+				fmt.Fprintf(w, "| Application | Initial JS | Async JS | Chunks |\n")
+				fmt.Fprintf(w, "| :--- | :--- | :--- | :---: |\n")
+				for _, t := range targets {
+					b, err := client.Scan(ctx, bundleradar.ScanOptions{
+						StatsPath: t.StatsPath,
+						DistPath:  t.DistPath,
+						Bundler:   t.Bundler,
+					})
+					if err != nil {
+						fmt.Fprintf(w, "| **`%s`** | *Error: %v* | - | - |\n", t.Name, err)
+						continue
+					}
+					fmt.Fprintf(w, "| **`%s`** | `%s` | `%s` | %d |\n",
+						t.Name, bundleradar.FormatBytes(b.TotalInitialBytes()), bundleradar.FormatBytes(b.TotalAsyncBytes()), len(b.Chunks))
+				}
+				fmt.Fprintf(w, "\n")
+				return nil
+			}
+
 			fmt.Fprintf(w, "\n⚡ WORKSPACE BUNDLE SCAN (%d targets)\n", len(targets))
 			fmt.Fprintf(w, "-------------------------------------------------------------\n")
 			for _, t := range targets {
@@ -162,7 +184,7 @@ func newWorkspaceCommand() *cobra.Command {
 
 	parent.PersistentFlags().StringVar(&root, "root", ".", "Root directory of the workspace")
 	parent.PersistentFlags().StringSliceVar(&apps, "app", nil, "Explicit application target mapping name=stats[:dist]")
-	parent.PersistentFlags().StringVarP(&format, "format", "f", "terminal", "Output format: terminal, json")
+	parent.PersistentFlags().StringVarP(&format, "format", "f", "terminal", "Output format: terminal, markdown, json")
 	parent.PersistentFlags().StringVarP(&output, "output", "o", "", "Write output to file path")
 
 	parent.AddCommand(listCmd, scanCmd)

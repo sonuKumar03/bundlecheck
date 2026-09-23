@@ -1,7 +1,9 @@
 package core
 
 import (
+	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // LoadType defines how an asset or chunk is loaded by the browser.
@@ -216,3 +218,98 @@ func (b *Bundle) TopPackages(limit int) []PackageContribution {
 	}
 	return result
 }
+
+// ResolveEntrypoint resolves an entrypoint by direct name, source file path, chunk path, or chunk name.
+func (b *Bundle) ResolveEntrypoint(query string) (*Entrypoint, bool) {
+	if b == nil || len(b.Entrypoints) == 0 {
+		return nil, false
+	}
+
+	cleanQuery := filepath.Clean(strings.TrimPrefix(query, "./"))
+	baseQuery := filepath.Base(cleanQuery)
+	extLessQuery := strings.TrimSuffix(cleanQuery, filepath.Ext(cleanQuery))
+	baseExtLess := filepath.Base(extLessQuery)
+
+	// 1. Direct match on Entrypoint name
+	if ep, ok := b.Entrypoints[query]; ok {
+		return &ep, true
+	}
+	if ep, ok := b.Entrypoints[cleanQuery]; ok {
+		return &ep, true
+	}
+
+	// 2. Case-insensitive or extless match on Entrypoint name
+	for name, ep := range b.Entrypoints {
+		if strings.EqualFold(name, query) || strings.EqualFold(name, cleanQuery) {
+			return &ep, true
+		}
+		if strings.TrimSuffix(name, filepath.Ext(name)) == extLessQuery {
+			return &ep, true
+		}
+	}
+
+	// Helper to check if a chunk matches the query
+	chunkMatches := func(c Chunk) bool {
+		cleanEntry := filepath.Clean(strings.TrimPrefix(c.Entry, "./"))
+		cleanPath := filepath.Clean(strings.TrimPrefix(c.Path, "./"))
+		cleanName := filepath.Clean(strings.TrimPrefix(c.Name, "./"))
+
+		candidates := []string{
+			c.Entry, cleanEntry, filepath.Base(cleanEntry), strings.TrimSuffix(cleanEntry, filepath.Ext(cleanEntry)),
+			c.Path, cleanPath, filepath.Base(cleanPath), strings.TrimSuffix(cleanPath, filepath.Ext(cleanPath)),
+			c.Name, cleanName, filepath.Base(cleanName), strings.TrimSuffix(cleanName, filepath.Ext(cleanName)),
+		}
+
+		for _, cand := range candidates {
+			if cand == "" {
+				continue
+			}
+			if cand == query || cand == cleanQuery || cand == baseQuery || cand == extLessQuery || cand == baseExtLess {
+				return true
+			}
+		}
+
+		for _, mID := range c.ModuleIDs {
+			cleanMID := filepath.Clean(strings.TrimPrefix(mID, "./"))
+			if cleanMID == cleanQuery || filepath.Base(cleanMID) == baseQuery {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// 3. Search chunk associations within each Entrypoint
+	for _, ep := range b.Entrypoints {
+		for _, cid := range ep.ChunkIDs {
+			chunk, ok := b.FindChunk(cid)
+			if !ok {
+				continue
+			}
+			if chunkMatches(chunk) {
+				return &ep, true
+			}
+		}
+	}
+
+	// 4. Fallback: search all chunks in bundle and find corresponding Entrypoint
+	for _, chunk := range b.Chunks {
+		if chunkMatches(chunk) {
+			for _, ep := range b.Entrypoints {
+				for _, cid := range ep.ChunkIDs {
+					if cid == chunk.ID || cid == chunk.Name || cid == chunk.Path {
+						return &ep, true
+					}
+				}
+			}
+			if len(b.Entrypoints) == 1 {
+				for _, ep := range b.Entrypoints {
+					return &ep, true
+				}
+			}
+		}
+	}
+
+	return nil, false
+}
+

@@ -65,28 +65,24 @@ jobs:
       - name: Run Full Integration Tests with Real Nx Builds
         env:
           BUNDLECHECK_REQUIRE_E2E: "1"
-        run: go test -v -count=1 ./cmd/... ./internal/discovery/... ./internal/workspace/... ./internal/mcp/...
+        run: go test -v -count=1 ./...
 
       - name: Build bundleradar CLI
         run: go build -o bundleradar .
 
       - name: Verify bundleradar CLI on real Nx workspace
         run: |
-          ./bundleradar summary testdata/nx-workspace portal
-          ./bundleradar summary testdata/nx-workspace admin-dashboard
-          ./bundleradar workspace summary --root testdata/nx-workspace
-          ./bundleradar why testdata/nx-workspace lodash -p portal
-          ./bundleradar suggest testdata/nx-workspace -p portal
-          ./bundleradar check testdata/nx-workspace -p portal --max-initial 10MB
+          ./bundleradar workspace list --root testdata/nx-workspace
+          ./bundleradar workspace scan --root testdata/nx-workspace
+          ./bundleradar scan testdata/nx-workspace/dist/apps/portal/stats.json
+          ./bundleradar scan testdata/nx-workspace/dist/apps/admin-dashboard/stats.json
+          ./bundleradar gate testdata/nx-workspace/dist/apps/portal/stats.json --max-initial 10MB
 
       - name: Publish Bundlecheck Report to GitHub Step Summary
         run: |
-          echo "# 📊 Bundlecheck Real Nx Workspace Report" >> $GITHUB_STEP_SUMMARY
+          echo "# 📊 BundleRadar Real Nx Workspace Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          ./bundleradar workspace summary --root testdata/nx-workspace -f markdown >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          ./bundleradar suggest testdata/nx-workspace -p portal -f markdown >> $GITHUB_STEP_SUMMARY
+          ./bundleradar workspace scan --root testdata/nx-workspace -f markdown >> $GITHUB_STEP_SUMMARY
 
   action-consumer:
     name: Action Consumer & Regression Smoke

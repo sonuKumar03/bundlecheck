@@ -12,9 +12,7 @@ import (
 	"github.com/sonuKumar03/bundleradar/internal/core"
 )
 
-type AngularParser struct {
-	esbuild EsbuildParser
-}
+type AngularParser struct{}
 
 func (p *AngularParser) Name() string {
 	return "angular"

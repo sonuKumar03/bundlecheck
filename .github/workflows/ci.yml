@@ -101,7 +101,11 @@ jobs:
         run: go build -o bundleradar .
 
       - name: Format Human-Readable Benchmark Summary
-        run: ./bundleradar benchmark benchmark-output.txt -f markdown >> $GITHUB_STEP_SUMMARY
+        run: |
+          echo "### ⚡ Go Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchmark-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1

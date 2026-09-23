@@ -89,3 +89,59 @@ func TestBundleAggregation(t *testing.T) {
 		t.Fatalf("failed to find module src/main.ts")
 	}
 }
+
+func TestBundleResolveEntrypoint(t *testing.T) {
+	b := core.NewBundle(core.Metadata{Bundler: "angular"})
+	b.AddEntrypoint("main", core.Entrypoint{
+		Name:             "main",
+		InitialBytes:     50000,
+		InitialGzipBytes: 15000,
+		ChunkIDs:         []string{"main.js", "polyfills.js"},
+	})
+	b.AddChunk(core.Chunk{
+		ID:        "main.js",
+		Name:      "main.js",
+		Path:      "dist/browser/main.js",
+		SizeBytes: 40000,
+		Entry:     "src/main.ts",
+		ModuleIDs: []string{"src/main.ts"},
+	})
+	b.AddChunk(core.Chunk{
+		ID:        "polyfills.js",
+		Name:      "polyfills.js",
+		Path:      "dist/browser/polyfills.js",
+		SizeBytes: 10000,
+		Entry:     "src/polyfills.ts",
+		ModuleIDs: []string{"src/polyfills.ts"},
+	})
+
+	tests := []struct {
+		query string
+		want  string
+	}{
+		{"main", "main"},
+		{"MAIN", "main"},
+		{"src/main.ts", "main"},
+		{"./src/main.ts", "main"},
+		{"main.js", "main"},
+		{"main.ts", "main"},
+		{"src/polyfills.ts", "main"},
+		{"polyfills.js", "main"},
+	}
+
+	for _, tc := range tests {
+		ep, ok := b.ResolveEntrypoint(tc.query)
+		if !ok || ep == nil {
+			t.Errorf("ResolveEntrypoint(%q) expected found, got false", tc.query)
+			continue
+		}
+		if ep.Name != tc.want {
+			t.Errorf("ResolveEntrypoint(%q) = %q, want %q", tc.query, ep.Name, tc.want)
+		}
+	}
+
+	if _, ok := b.ResolveEntrypoint("non-existent"); ok {
+		t.Errorf("ResolveEntrypoint(non-existent) expected false, got true")
+	}
+}
+

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sonuKumar03/bundleradar/internal/core"
 	"github.com/sonuKumar03/bundleradar/internal/core/diff"
 	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ func newGateCommand() *cobra.Command {
 		maxInitialDelta     string
 		forbid              []string
 		detectDuplicatePkgs bool
+		entry               string
 	)
 
 	c := &cobra.Command{
@@ -48,6 +50,16 @@ func newGateCommand() *cobra.Command {
 			})
 			if err != nil {
 				return fmt.Errorf("scan bundle: %w", err)
+			}
+
+			if entry != "" {
+				ep, ok := bundle.ResolveEntrypoint(entry)
+				if !ok {
+					return fmt.Errorf("entrypoint %q not found in bundle", entry)
+				}
+				bundle.Entrypoints = map[string]core.Entrypoint{
+					ep.Name: *ep,
+				}
 			}
 
 			var diffResult *bundleradar.BundleDiff
@@ -122,6 +134,7 @@ func newGateCommand() *cobra.Command {
 	c.Flags().StringVar(&maxInitialDelta, "max-initial-delta", "", "Maximum allowed increase vs baseline")
 	c.Flags().StringSliceVar(&forbid, "forbid", nil, "Forbidden package names (e.g. moment,lodash)")
 	c.Flags().BoolVar(&detectDuplicatePkgs, "detect-duplicate-pkgs", true, "Fail if multiple versions of the same package are bundled")
+	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope budget checks to a specific entrypoint")
 
 	return c
 }

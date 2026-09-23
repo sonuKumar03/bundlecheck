@@ -62,3 +62,21 @@ func ParseBytes(s string) (int64, error) {
 	}
 	return result, nil
 }
+
+// FormatBytes formats an integer byte count into human-readable string (e.g. 1.25 MB).
+func FormatBytes(b int64) string {
+	const unit = 1024
+	if b < 0 {
+		return "-" + FormatBytes(-b)
+	}
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(b)/float64(div), "KMGTPE"[exp])
+}
+
