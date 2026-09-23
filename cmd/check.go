@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/sonuKumar03/bundleradar/internal/comparison"
 	"github.com/sonuKumar03/bundleradar/internal/config"
 	"github.com/sonuKumar03/bundleradar/internal/report"
+	"github.com/sonuKumar03/bundleradar/internal/workspace"
 )
 
 func checkCommand() *cobra.Command {
@@ -17,6 +19,8 @@ func checkCommand() *cobra.Command {
 		stats           string
 		dist            string
 		project         string
+		projects        string
+		apps            []string
 		entry           string
 		baselinePath    string
 		configFile      string
@@ -109,7 +113,110 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 				}
 			}
 
-			// 4. Analyze current build
+			// Check if multi-app mode requested via --projects or --app
+			if projects != "" || len(apps) > 0 {
+				var selected []string
+				if projects != "" {
+					for _, name := range strings.Split(projects, ",") {
+						name = strings.TrimSpace(name)
+						if name != "" {
+							selected = append(selected, name)
+						}
+					}
+				}
+				appTargets, err := workspace.ParseAppTargets("", selected, apps)
+				if err != nil {
+					return err
+				}
+
+				multiCheck := budget.MultiAppCheckResult{
+					Passed:   true,
+					Projects: make(map[string]budget.CheckResult),
+					Summary:  make([]budget.ProjectCheckSummary, 0, len(appTargets)),
+				}
+
+				for _, target := range appTargets {
+					currentResult, currentSnap, err := runAnalysisWithEntry(target.Stats, target.Dist, entry, false)
+					if err != nil {
+						return fmt.Errorf("analyze %q: %w", target.Name, err)
+					}
+
+					var checkResult budget.CheckResult
+					if limits.MaxInitialDelta != nil || limits.MaxTotalDelta != nil || baselinePath != "" {
+						targetBaseline := baselinePath
+						if targetBaseline == "" {
+							targetBaseline = target.Name
+						}
+						baseResult, err := baseline.Load(targetBaseline)
+						if err != nil {
+							return fmt.Errorf("load baseline for %q: %w", target.Name, err)
+						}
+						compResult := comparison.CompareWithSnapshot(baseResult, currentResult, currentSnap)
+						checkResult = budget.CheckComparison(compResult, limits)
+					} else {
+						checkResult = budget.CheckSummary(currentResult.Summary, limits)
+					}
+
+					if cfg != nil {
+						ruleViolations := cfg.CheckRules(currentResult)
+						if len(ruleViolations) > 0 {
+							checkResult.Passed = false
+							checkResult.Violations = append(checkResult.Violations, ruleViolations...)
+						}
+					}
+
+					if !checkResult.Passed {
+						multiCheck.Passed = false
+					}
+					multiCheck.Projects[target.Name] = checkResult
+					multiCheck.Summary = append(multiCheck.Summary, budget.ProjectCheckSummary{
+						Name:       target.Name,
+						Passed:     checkResult.Passed,
+						InitialJS:  currentResult.Summary.InitialJS,
+						TotalJS:    currentResult.Summary.TotalJS,
+						Violations: len(checkResult.Violations),
+					})
+				}
+
+				w, cleanup, err := getOutputWriter(c, output)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					_ = cleanup()
+				}()
+
+				if format == "json" {
+					if err := report.JSON(w, multiCheck); err != nil {
+						return err
+					}
+				} else if report.IsGitHubPRFormat(format) {
+					if err := report.MultiAppCheckGitHubPR(w, multiCheck); err != nil {
+						return err
+					}
+				} else if report.IsMarkdownFormat(format) {
+					if err := report.MultiAppCheckMarkdown(w, multiCheck); err != nil {
+						return err
+					}
+				} else {
+					if err := report.MultiAppBudgetReport(w, multiCheck); err != nil {
+						return err
+					}
+				}
+
+				if !multiCheck.Passed {
+					var failedNames []string
+					for _, s := range multiCheck.Summary {
+						if !s.Passed {
+							failedNames = append(failedNames, s.Name)
+						}
+					}
+					return &PolicyViolationError{Err: fmt.Errorf("bundle budget check failed for %s", strings.Join(failedNames, ", "))}
+				}
+				return nil
+			}
+
+			// 4. Analyze current build (single-app mode)
 			sFile, dDir, err := resolveBuildArtifacts(stats, dist, project)
 			if err != nil {
 				return err
@@ -179,6 +286,8 @@ Returns exit code 0 if all budgets and rules pass, or exit code 1 if any thresho
 	c.Flags().StringVarP(&stats, "stats", "s", "", "Path to Angular/esbuild stats.json (auto-detected if omitted)")
 	c.Flags().StringVarP(&dist, "dist", "d", "", "Path to emitted browser dist with index.html (auto-detected if omitted)")
 	c.Flags().StringVarP(&project, "project", "p", "", "Project name for multi-project workspaces when auto-detecting")
+	c.Flags().StringVar(&projects, "projects", "", "Comma-separated project names to check")
+	c.Flags().StringSliceVar(&apps, "app", nil, "Explicit app target mapping name=stats_path[:dist_path] (can be repeated)")
 	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope analysis to a specific entrypoint file or chunk name")
 	c.Flags().StringVarP(&baselinePath, "baseline", "b", "", "Path to baseline summary JSON for regression checks")
 	c.Flags().StringVarP(&configFile, "config", "c", "", "Path to .bundleradar.yml configuration file")

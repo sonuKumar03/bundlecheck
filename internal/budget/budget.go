@@ -33,6 +33,22 @@ type CheckResult struct {
 	Comparison *comparison.Result `json:"comparison,omitempty"`
 }
 
+// MultiAppCheckResult holds validation results across multiple tracked applications.
+type MultiAppCheckResult struct {
+	Passed   bool                   `json:"passed"`
+	Projects map[string]CheckResult `json:"projects"`
+	Summary  []ProjectCheckSummary  `json:"summary"`
+}
+
+// ProjectCheckSummary provides a high-level overview of a project's budget check.
+type ProjectCheckSummary struct {
+	Name       string `json:"name"`
+	Passed     bool   `json:"passed"`
+	InitialJS  int64  `json:"initialJs"`
+	TotalJS    int64  `json:"totalJs"`
+	Violations int    `json:"violations"`
+}
+
 // ParseBytes converts size strings like "200KB", "1.5MB", "1024B", "-10KB" into signed int64 bytes.
 func ParseBytes(s string) (int64, error) {
 	s = strings.TrimSpace(s)

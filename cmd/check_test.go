@@ -204,3 +204,67 @@ func TestCheckExplicitConfigFileOverridesAutoLoaded(t *testing.T) {
 		t.Fatalf("explicit --config must take precedence over auto-loaded config, got exit %d: %s", code, errOut.String())
 	}
 }
+
+func TestCheck_MultiApp_ProjectsAndAppFlags(t *testing.T) {
+	tmp := t.TempDir()
+	portalDist := filepath.Join(tmp, "dist", "portal", "browser")
+	adminDist := filepath.Join(tmp, "dist", "admin", "browser")
+	_ = os.MkdirAll(portalDist, 0755)
+	_ = os.MkdirAll(adminDist, 0755)
+
+	statsData, _ := os.ReadFile("../testdata/minimal/stats.json")
+	indexHTML, _ := os.ReadFile("../testdata/minimal/browser/index.html")
+	mainJS, _ := os.ReadFile("../testdata/minimal/browser/main.js")
+
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "portal", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "dist", "admin", "stats.json"), statsData, 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(adminDist, "index.html"), indexHTML, 0644)
+	_ = os.WriteFile(filepath.Join(portalDist, "main.js"), mainJS, 0644)
+	_ = os.WriteFile(filepath.Join(adminDist, "main.js"), mainJS, 0644)
+
+	origWd, _ := os.Getwd()
+	_ = os.Chdir(tmp)
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+
+	t.Run("Multi-app check passes with permissive budget", func(t *testing.T) {
+		var out, errOut bytes.Buffer
+		code := Execute([]string{"check", "--projects", "portal,admin", "--max-initial", "2KB", "-f", "json"}, &out, &errOut)
+		if code != 0 {
+			t.Fatalf("expected check to pass, got %d: %s", code, errOut.String())
+		}
+		if !strings.Contains(out.String(), `"passed": true`) {
+			t.Errorf("expected passed: true in JSON output: %s", out.String())
+		}
+		if !strings.Contains(out.String(), `"portal"`) || !strings.Contains(out.String(), `"admin"`) {
+			t.Errorf("expected portal and admin in JSON output: %s", out.String())
+		}
+	})
+
+	t.Run("Multi-app check fails with strict budget", func(t *testing.T) {
+		var out, errOut bytes.Buffer
+		code := Execute([]string{"check", "--projects", "portal,admin", "--max-initial", "500B", "-f", "text"}, &out, &errOut)
+		if code != ExitCodePolicyViolation {
+			t.Fatalf("expected policy violation exit code 1, got %d: %s", code, errOut.String())
+		}
+		if !strings.Contains(out.String(), "FAILED") {
+			t.Errorf("expected FAILED in text output: %s", out.String())
+		}
+	})
+
+	t.Run("Multi-app check with explicit --app flags and markdown output", func(t *testing.T) {
+		var out, errOut bytes.Buffer
+		app1 := "portal=" + filepath.Join(tmp, "dist", "portal", "stats.json") + ":" + portalDist
+		app2 := "admin=" + filepath.Join(tmp, "dist", "admin", "stats.json") + ":" + adminDist
+		code := Execute([]string{"check", "--app", app1, "--app", app2, "--max-initial", "2KB", "-f", "markdown"}, &out, &errOut)
+		if code != 0 {
+			t.Fatalf("expected check to pass, got %d: %s", code, errOut.String())
+		}
+		if !strings.Contains(out.String(), "BundleRadar Multi-App Budget Report") {
+			t.Errorf("expected Multi-App Budget Report header in markdown output: %s", out.String())
+		}
+		if !strings.Contains(out.String(), "portal") || !strings.Contains(out.String(), "admin") {
+			t.Errorf("expected apps in markdown table: %s", out.String())
+		}
+	})
+}
