@@ -37,16 +37,16 @@ echo "⚡ Bumping bundleradar version: $OLD_VER -> $NEW_VER"
 echo "$NEW_VER" > VERSION
 echo "  ✓ Updated VERSION"
 
-# 2. Update Go internal/analysis/summary.go
+# 2. Update Go pkg/bundleradar/version.go
 python3 -c "
-with open('internal/analysis/summary.go', 'r') as f:
+with open('pkg/bundleradar/version.go', 'r') as f:
     content = f.read()
 import re
 new_content = re.sub(r'var ToolVersion = \"[^\"]+\"', f'var ToolVersion = \"$NEW_VER\"', content)
-with open('internal/analysis/summary.go', 'w') as f:
+with open('pkg/bundleradar/version.go', 'w') as f:
     f.write(new_content)
 "
-echo "  ✓ Updated internal/analysis/summary.go"
+echo "  ✓ Updated pkg/bundleradar/version.go"
 
 # 3. Update docs/index.html
 python3 -c "
