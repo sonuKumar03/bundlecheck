@@ -172,3 +172,66 @@ func TestParsersRegistry_WebpackStats(t *testing.T) {
 		t.Fatalf("expected lodash in top packages: %+v", top)
 	}
 }
+
+func TestParsersRegistry_RealAngularNxApps(t *testing.T) {
+	reg := parsers.DefaultRegistry()
+	workspaceRoot := filepath.Join("..", "..", "..", "testdata", "nx-workspace")
+
+	testCases := []struct {
+		name         string
+		statsRelPath string
+		distRelPath  string
+		expectedName string
+	}{
+		{
+			name:         "portal",
+			statsRelPath: filepath.Join("dist", "apps", "portal", "stats.json"),
+			distRelPath:  filepath.Join("dist", "apps", "portal", "browser"),
+			expectedName: "angular",
+		},
+		{
+			name:         "admin-dashboard",
+			statsRelPath: filepath.Join("dist", "apps", "admin-dashboard", "stats.json"),
+			distRelPath:  filepath.Join("dist", "apps", "admin-dashboard", "browser"),
+			expectedName: "angular",
+		},
+	}
+
+	for _, tc := range testCases {
+		statsPath := filepath.Join(workspaceRoot, tc.statsRelPath)
+		distPath := filepath.Join(workspaceRoot, tc.distRelPath)
+
+		if _, err := os.Stat(statsPath); os.IsNotExist(err) {
+			t.Skipf("skipping %s: build artifact not found at %s", tc.name, statsPath)
+		}
+
+		target := core.Target{
+			Name:      tc.name,
+			StatsPath: statsPath,
+			DistPath:  distPath,
+		}
+
+		p, err := reg.Resolve(target)
+		if err != nil {
+			t.Fatalf("[%s] failed to resolve parser: %v", tc.name, err)
+		}
+
+		if p.Name() != tc.expectedName {
+			t.Fatalf("[%s] expected parser %q, got %q", tc.name, tc.expectedName, p.Name())
+		}
+
+		bundle, err := p.Parse(context.Background(), target)
+		if err != nil {
+			t.Fatalf("[%s] failed to parse bundle: %v", tc.name, err)
+		}
+
+		if len(bundle.Entrypoints) == 0 {
+			t.Errorf("[%s] expected at least 1 entrypoint, got 0", tc.name)
+		}
+
+		if bundle.TotalInitialBytes() == 0 {
+			t.Errorf("[%s] expected non-zero initial bytes", tc.name)
+		}
+	}
+}
+

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sonuKumar03/bundleradar/internal/adapters/parsers"
 	"github.com/sonuKumar03/bundleradar/internal/adapters/workspaces"
 )
 
@@ -79,4 +80,69 @@ func TestNxResolver(t *testing.T) {
 	if len(targets) < 2 {
 		t.Fatalf("expected at least 2 targets from nx-workspace, got %d", len(targets))
 	}
+
+	targetNames := make(map[string]bool)
+	for _, target := range targets {
+		targetNames[target.Name] = true
+	}
+
+	expected := []string{"admin-dashboard", "portal"}
+	for _, exp := range expected {
+		if !targetNames[exp] {
+			t.Errorf("expected target %q not found in nx-workspace", exp)
+		}
+	}
 }
+
+func TestNxResolver_EndToEndAngularScan(t *testing.T) {
+	nxDir := filepath.Join("..", "..", "..", "testdata", "nx-workspace")
+	resolver := &workspaces.NxResolver{}
+	reg := parsers.DefaultRegistry()
+
+	targets, err := resolver.Resolve(context.Background(), nxDir)
+	if err != nil {
+		t.Fatalf("unexpected error resolving targets: %v", err)
+	}
+
+	for _, target := range targets {
+		if _, err := os.Stat(target.StatsPath); os.IsNotExist(err) {
+			t.Skipf("skipping target %s: stats not found at %s", target.Name, target.StatsPath)
+		}
+
+		p, err := reg.Resolve(target)
+		if err != nil {
+			t.Fatalf("[%s] failed to resolve parser: %v", target.Name, err)
+		}
+
+		if p.Name() != "angular" {
+			t.Fatalf("[%s] expected parser 'angular', got %q", target.Name, p.Name())
+		}
+
+		bundle, err := p.Parse(context.Background(), target)
+		if err != nil {
+			t.Fatalf("[%s] failed to parse bundle: %v", target.Name, err)
+		}
+
+		ep, ok := bundle.Entrypoints["main"]
+		if !ok {
+			t.Fatalf("[%s] expected main entrypoint in bundle", target.Name)
+		}
+
+		t.Logf("[%s] Initial Bytes: %d, Async Bytes: %d, Chunks: %d",
+			target.Name, ep.InitialBytes, ep.AsyncBytes, len(bundle.Chunks))
+
+		if target.Name == "admin-dashboard" {
+			if ep.InitialBytes != 1151927 {
+				t.Errorf("admin-dashboard initial bytes mismatch: got %d, want 1151927", ep.InitialBytes)
+			}
+		} else if target.Name == "portal" {
+			if ep.InitialBytes != 2186272 {
+				t.Errorf("portal initial bytes mismatch: got %d, want 2186272", ep.InitialBytes)
+			}
+			if ep.AsyncBytes != 88854 {
+				t.Errorf("portal async bytes mismatch: got %d, want 88854", ep.AsyncBytes)
+			}
+		}
+	}
+}
+

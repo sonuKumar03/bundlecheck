@@ -84,6 +84,13 @@ func TestDiff_EntrypointsAndPackages(t *testing.T) {
 		t.Fatalf("expected analytics.js in added chunks: %+v", d.AddedChunks)
 	}
 
+	if d.Summary.InitialDeltaBytes != 30000 {
+		t.Fatalf("expected summary initial delta 30000, got %d", d.Summary.InitialDeltaBytes)
+	}
+	if d.Summary.BaseInitialBytes != 100000 || d.Summary.HeadInitialBytes != 130000 {
+		t.Fatalf("unexpected summary base/head: %+v", d.Summary)
+	}
+
 	foundMoment := false
 	for _, p := range d.Packages {
 		if p.Name == "moment" {
@@ -95,6 +102,23 @@ func TestDiff_EntrypointsAndPackages(t *testing.T) {
 	}
 	if !foundMoment {
 		t.Fatalf("expected moment in package deltas: %+v", d.Packages)
+	}
+
+	foundLodashUnchanged := false
+	for _, p := range d.UnchangedPackages {
+		if p.Name == "lodash" {
+			foundLodashUnchanged = true
+			if p.CurrBytes != 20000 {
+				t.Fatalf("expected lodash size 20000, got %d", p.CurrBytes)
+			}
+		}
+	}
+	if !foundLodashUnchanged {
+		t.Fatalf("expected lodash in unchanged packages: %+v", d.UnchangedPackages)
+	}
+
+	if len(d.Attributions) == 0 || d.Attributions[0].SourceFile != "moment" {
+		t.Fatalf("expected moment attribution: %+v", d.Attributions)
 	}
 }
 

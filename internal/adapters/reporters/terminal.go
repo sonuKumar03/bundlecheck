@@ -45,15 +45,57 @@ func (r *TerminalReporter) Render(ctx context.Context, w io.Writer, data any) er
 	case *diff.BundleDiff:
 		sb.WriteString("\n⚡ BUNDLERADAR COMPARISON & DIFF\n")
 		sb.WriteString("-------------------------------------------------------------\n")
-		for name, ep := range v.Entrypoints {
-			sign := "+"
-			if ep.InitialDelta < 0 {
-				sign = ""
+		s := v.Summary
+		formatDelta := func(d int64) string {
+			if d > 0 {
+				return "+" + formatBytes(d)
+			} else if d < 0 {
+				return formatBytes(d)
 			}
-			fmt.Fprintf(&sb, "Entrypoint %q Initial Delta: %s%s [~+%s gzip]\n",
-				name, sign, formatBytes(ep.InitialDelta), formatBytes(ep.InitialGzipDelta))
+			return "0 B"
 		}
+		if s.HeadTotalBytes > 0 || s.BaseTotalBytes > 0 {
+			fmt.Fprintf(&sb, "Initial JS:   %s → %s (%s)\n", formatBytes(s.BaseInitialBytes), formatBytes(s.HeadInitialBytes), formatDelta(s.InitialDeltaBytes))
+			fmt.Fprintf(&sb, "Lazy JS:      %s → %s (%s)\n", formatBytes(s.BaseLazyBytes), formatBytes(s.HeadLazyBytes), formatDelta(s.LazyDeltaBytes))
+			fmt.Fprintf(&sb, "Total JS:     %s → %s (%s)\n", formatBytes(s.BaseTotalBytes), formatBytes(s.HeadTotalBytes), formatDelta(s.TotalDeltaBytes))
+		} else {
+			for name, ep := range v.Entrypoints {
+				sign := "+"
+				if ep.InitialDelta < 0 {
+					sign = ""
+				}
+				fmt.Fprintf(&sb, "Entrypoint %q Initial Delta: %s%s [~+%s gzip]\n",
+					name, sign, formatBytes(ep.InitialDelta), formatBytes(ep.InitialGzipDelta))
+			}
+		}
+
+		if len(v.Packages) > 0 {
+			sb.WriteString("\nCHANGED PACKAGES\n")
+			sb.WriteString("-------------------------------------------------------------\n")
+			for _, pkg := range v.Packages {
+				status := "🔄"
+				if pkg.BaseBytes == 0 {
+					status = "➕"
+				} else if pkg.CurrBytes == 0 {
+					status = "➖"
+				}
+				sign := "+"
+				if pkg.DeltaBytes < 0 {
+					sign = ""
+				}
+				chunkInfo := ""
+				if len(pkg.ChunkNames) > 0 {
+					chunkInfo = fmt.Sprintf(" (%s)", strings.Join(pkg.ChunkNames, ", "))
+				}
+				fmt.Fprintf(&sb, "%s %-22s %10s%s\n", status, pkg.Name, sign+formatBytes(pkg.DeltaBytes), chunkInfo)
+				if pkg.ImportPath != "" {
+					fmt.Fprintf(&sb, "   • Import path: %s\n", pkg.ImportPath)
+				}
+			}
+		}
+
 		if v.MicroDriftBytes > 0 {
+			sb.WriteString("\n")
 			fmt.Fprintf(&sb, "Micro-drift: %s across sub-threshold updates\n", formatBytes(v.MicroDriftBytes))
 		}
 		sb.WriteString("\n")

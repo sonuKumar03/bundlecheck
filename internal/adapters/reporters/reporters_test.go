@@ -8,6 +8,7 @@ import (
 
 	"github.com/sonuKumar03/bundleradar/internal/adapters/reporters"
 	"github.com/sonuKumar03/bundleradar/internal/core"
+	"github.com/sonuKumar03/bundleradar/internal/core/diff"
 	"github.com/sonuKumar03/bundleradar/internal/core/policy"
 )
 
@@ -94,5 +95,51 @@ func TestReporters_GateResult(t *testing.T) {
 
 	if !strings.Contains(buf.String(), "❌ Policy Check Failed") {
 		t.Fatalf("expected failure badge in gate report: %s", buf.String())
+	}
+}
+
+func TestReporters_DiffMarkdown(t *testing.T) {
+	d := &diff.BundleDiff{
+		Summary: diff.DiffSummary{
+			BaseInitialBytes:  1000000,
+			HeadInitialBytes:  1300000,
+			InitialDeltaBytes: 300000,
+			BaseLazyBytes:     50000,
+			HeadLazyBytes:     50000,
+			LazyDeltaBytes:    0,
+			BaseTotalBytes:    1050000,
+			HeadTotalBytes:    1350000,
+			TotalDeltaBytes:   300000,
+		},
+		Packages: []diff.PackageDelta{
+			{
+				Name:       "three",
+				DeltaBytes: 300000,
+				BaseBytes:  0,
+				CurrBytes:  300000,
+				ChunkNames: []string{"main.js"},
+				ImportPath: "src/main.ts → src/app.ts → three",
+			},
+		},
+	}
+
+	mdRep, _ := reporters.New("markdown")
+	var buf bytes.Buffer
+	if err := mdRep.Render(context.Background(), &buf, d); err != nil {
+		t.Fatalf("render diff markdown failed: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "## ⚡ BundleRadar Comparison & Diff") {
+		t.Fatalf("missing diff header: %s", out)
+	}
+	if !strings.Contains(out, "| **Initial JS** |") || !strings.Contains(out, "⚠️ Increased") {
+		t.Fatalf("missing category summary table: %s", out)
+	}
+	if !strings.Contains(out, "### 🔎 Regression Explanation") || !strings.Contains(out, "src/main.ts → src/app.ts → three") {
+		t.Fatalf("missing regression explanation or import path: %s", out)
+	}
+	if !strings.Contains(out, "### Changed Packages") || !strings.Contains(out, "➕ Added") {
+		t.Fatalf("missing changed packages table: %s", out)
 	}
 }

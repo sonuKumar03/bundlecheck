@@ -40,8 +40,14 @@ func (r *NxResolver) Resolve(ctx context.Context, root string) ([]core.Target, e
 		statsCandidates := []string{
 			filepath.Join(root, "dist", "apps", name, "stats.json"),
 			filepath.Join(root, "dist", "apps", name, "browser", "stats.json"),
+			filepath.Join(root, "dist", "apps", name, "metafile.json"),
+			filepath.Join(root, "dist", "apps", name, "manifest.json"),
+			filepath.Join(root, "dist", "apps", name, ".vite", "manifest.json"),
 			filepath.Join(appPath, "dist", "stats.json"),
 			filepath.Join(appPath, "stats.json"),
+			filepath.Join(appPath, "dist", "metafile.json"),
+			filepath.Join(appPath, "dist", "manifest.json"),
+			filepath.Join(appPath, "dist", ".vite", "manifest.json"),
 		}
 
 		foundStats := ""
