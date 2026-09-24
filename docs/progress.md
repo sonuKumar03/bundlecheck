@@ -1,39 +1,30 @@
 # bundleradar progress
 
-Last updated: 2026-09-18
+Last updated: 2026-09-24
 
 Update this document when a milestone changes. Mark work complete only after
 implementation and verification; record remaining limitations separately.
 
 ## Current status
 
-Optimization Advisor (`bundleradar suggest`), Markdown PR / CI Reporter (`--format markdown`), Gzip wire transfer estimation (`--gzip`), baseline measurement, zero-config artifact auto-discovery, dependency import path tracing (`why`), CI budget validation, and universal AI agent skill workflows are fully implemented and verified.
+BundleRadar v2 is officially released (`v2.0.0`) with a clean-slate hexagonal architecture centered on 5 orthogonal verbs: `scan`, `diff`, `gate`, `workspace`, and `mcp`. All CI pipelines, cross-platform build matrices, Go microbenchmarks, and GitHub Actions integrations are fully verified and passing.
 
 ## Completed
 
-- [x] Parse and validate Angular/esbuild metafiles; normalize into portable snapshot types.
-- [x] Match local index script roots to emitted browser artifacts.
-- [x] Classify initial JS through static imports, handling shared chunks and cycles.
-- [x] Treat remaining browser JS as lazy; exclude CSS, maps, assets, and server outputs.
-- [x] Calculate raw output bytes and emitted npm package contributions.
-- [x] Handle scoped, nested, and Windows-style package paths and normalization collisions.
-- [x] Expose `summary --stats --dist --format text|json|markdown` with auto-discovery, short flags (`-s`, `-d`, `-p`, `-f`, `-o`), `--gzip`, and `--suggest`.
-- [x] Provide deterministic JSON with schema version `1`, tool version `0.3.0`, and all contributing packages.
-- [x] Provide text totals, percentage shares, and configurable `--top`, `--filter`, `--all` flags.
-- [x] Add zero-config artifact auto-discovery (`internal/discovery`) for single and multi-project workspaces.
-- [x] Implement baseline capture (`bundleradar baseline`) and `.bundleradar/baseline.json` management.
-- [x] Implement iterative change measurement (`bundleradar measure`) against baselines.
-- [x] Implement bundle size budgets and regression checks (`bundleradar check`).
-- [x] Implement dependency and import path tracer (`bundleradar why`) with ASCII trees and JSON output.
-- [x] Implement automated optimization advisor (`bundleradar suggest`) for dynamic imports, eager routes, and duplicate packages.
-- [x] Implement real and estimated Gzip wire transfer sizing (`internal/compression`).
-- [x] Implement GitHub Flavored Markdown PR & CI reporting (`--format markdown`, `-f md`) across summary, compare, measure, suggest, and check.
-- [x] Add direct file output support (`-o, --output`) across CLI commands.
-- [x] Add universal AI agent skill (`.agents/skills/bundleradar/SKILL.md`) with complete optimization playbooks.
-- [x] Implement Model Context Protocol (MCP) server (`bundleradar mcp`) exposing 6 core analysis tools and `bundleradar://rules` resource.
-- [x] Update `install.sh` to support multi-environment skill installation (`--with-skill`, `--skill-dir`).
-- [x] Compare saved summary snapshots with signed JS/package deltas and deterministic text/JSON/markdown.
-- [x] Warn when Nx workspace bundle inputs are newer than an app's `stats.json`, without changing report completeness or exit status.
+- [x] Clean-slate v2 architecture designed and implemented across `internal/core`, `internal/adapters`, and `cmd/`.
+- [x] Streamlined CLI verbs: `scan`, `diff`, `gate`, `workspace`, and `mcp`.
+- [x] Universal Bundle AST in `internal/core/bundle.go` with zero external dependencies.
+- [x] Pluggable parsers registry in `internal/adapters/parsers/` supporting Angular, Esbuild, Vite, and Webpack.
+- [x] Universal Diff & Source Attribution Engine in `internal/core/diff/` with micro-drift bucketing.
+- [x] Policy & Budget Evaluation Gate in `internal/core/policy/`.
+- [x] Multi-format reporters in `internal/adapters/reporters/` (Terminal, Markdown, GitHub PR, JSON).
+- [x] Monorepo & multi-app workspace discovery in `internal/adapters/workspaces/`.
+- [x] Public Go SDK in `pkg/bundleradar/`.
+- [x] Modernized MCP server (`bundleradar mcp`) with updated tools (`scan_bundle`, `diff_bundles`, `gate_bundle`, `workspace_scan`).
+- [x] Full GitHub Action (`action.yml`) modernization and automated test suite.
+- [x] Documentation & schema contract test suite passing.
+- [x] Cross-platform build and release automation for Linux, macOS, and Windows.
+- [x] Official `v2.0.0` release published on GitHub Releases with floating major tag `v2`.
 
 ## Verification recorded
 
