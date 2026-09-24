@@ -2,8 +2,8 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
@@ -51,28 +51,24 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.Lock()
-	if s.bundle == nil && s.statsPath != "" {
-		resolvedPath := s.statsPath
-		if _, err := os.Stat(resolvedPath); os.IsNotExist(err) {
-			if strings.Contains(resolvedPath, "apps/portal/stats.json") {
-				candidate := strings.Replace(resolvedPath, "apps/portal/stats.json", "dist/apps/portal/stats.json", 1)
-				if _, err2 := os.Stat(candidate); err2 == nil {
-					resolvedPath = candidate
-				}
-			}
-		}
-
-		bundle, err := s.client.Scan(r.Context(), bundleradar.ScanOptions{
-			StatsPath: resolvedPath,
-		})
-		if err == nil {
-			s.bundle = bundle
-		}
-	}
-	bundle := s.bundle
+	bundle := s.Bundle()
 	statsPath := s.statsPath
-	s.mu.Unlock()
+
+	if bundle == nil && statsPath != "" {
+		scanned, err := s.client.Scan(r.Context(), bundleradar.ScanOptions{
+			StatsPath: statsPath,
+		})
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": fmt.Sprintf("failed to parse bundle stats: %v", err),
+			})
+			return
+		}
+		s.SetBundle(scanned)
+		bundle = scanned
+	}
 
 	if bundle == nil {
 		w.Header().Set("Content-Type", "application/json")

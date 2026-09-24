@@ -120,17 +120,27 @@ function renderTable(packages) {
     tr.className = 'hover:bg-slate-800/40 transition-colors package-row';
     tr.dataset.name = (p.name || '').toLowerCase();
 
+    const safeName = escapeHTML(p.name);
+    const safeChunks = (p.chunks || []).map(escapeHTML).join(', ');
+    const safeIngress = p.ingressPath ? escapeHTML(p.ingressPath) : '';
+
     tr.innerHTML = `
-      <td class="py-2.5 px-3 font-semibold text-white">${p.name}</td>
+      <td class="py-2.5 px-3 font-semibold text-white">${safeName}</td>
       <td class="py-2.5 px-3 text-amber-300 font-bold">${formatBytes(p.sizeBytes)}</td>
       <td class="py-2.5 px-3 text-slate-400">${p.gzipBytes ? '~' + formatBytes(p.gzipBytes) : '--'}</td>
-      <td class="py-2.5 px-3 text-slate-400">${(p.chunks || []).join(', ')}</td>
-      <td class="py-2.5 px-3 text-indigo-300 text-[11px] truncate max-w-xs" title="${p.ingressPath || ''}">
-        ${p.ingressPath || '<span class="text-slate-600">--</span>'}
+      <td class="py-2.5 px-3 text-slate-400">${safeChunks}</td>
+      <td class="py-2.5 px-3 text-indigo-300 text-[11px] truncate max-w-xs" title="${safeIngress}">
+        ${safeIngress || '<span class="text-slate-600">--</span>'}
       </td>
     `;
     tbody.appendChild(tr);
   }
+}
+
+function escapeHTML(str) {
+  return (str || '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
 }
 
 function filterTable(q) {

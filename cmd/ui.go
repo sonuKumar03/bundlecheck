@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -47,6 +48,9 @@ trace package bloat with directed BFS ingress chains, and monitor size metrics.`
 			statsPath := ""
 			if len(args) > 0 {
 				statsPath = args[0]
+				if _, err := os.Stat(statsPath); os.IsNotExist(err) {
+					return &UsageError{Err: fmt.Errorf("stats file not found: %s", statsPath)}
+				}
 			} else {
 				statsPath = autoDiscoverStatsFile(".")
 			}
@@ -116,7 +120,6 @@ func autoDiscoverStatsFile(startDir string) string {
 		"dist/stats.json",
 		"build/stats.json",
 		"apps/portal/dist/stats.json",
-		"testdata/nx-workspace/apps/portal/stats.json",
 	}
 
 	for _, c := range candidates {
@@ -129,5 +132,7 @@ func autoDiscoverStatsFile(startDir string) string {
 }
 
 func openInBrowser(url string) {
-	_ = browserLauncher(url)
+	// 0.0.0.0 is non-routable in browser address bars on macOS/Safari/Windows; rewrite to 127.0.0.1
+	targetURL := strings.Replace(url, "://0.0.0.0:", "://127.0.0.1:", 1)
+	_ = browserLauncher(targetURL)
 }

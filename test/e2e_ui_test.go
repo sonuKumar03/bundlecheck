@@ -13,7 +13,7 @@ import (
 )
 
 func TestE2E_StudioWebServer(t *testing.T) {
-	fixtureStats := "../testdata/nx-workspace/apps/portal/stats.json"
+	fixtureStats := "../testdata/nx-workspace/dist/apps/portal/stats.json"
 
 	srv, err := server.New(server.Config{
 		Host:      "127.0.0.1",

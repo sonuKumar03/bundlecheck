@@ -103,10 +103,12 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// Close gracefully terminates the server.
+// Close gracefully terminates the server with a bounded 5-second timeout.
 func (s *Server) Close() error {
 	if s.httpServer != nil {
-		return s.httpServer.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return s.httpServer.Shutdown(ctx)
 	}
 	return nil
 }

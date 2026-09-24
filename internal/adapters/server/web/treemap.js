@@ -97,33 +97,34 @@ class TreemapEngine {
   }
 
   computeLayout() {
-    if (!this.data || this.data.length === 0 || !this.displayWidth) return;
+    if (!this.data || this.data.length === 0 || !this.displayWidth || !this.displayHeight) return;
     this.nodes = [];
 
-    // Slice-and-dice squarified division for canvas
     let remaining = [...this.data];
     let x = 0, y = 0, w = this.displayWidth, h = this.displayHeight;
 
-    const total = remaining.reduce((sum, item) => sum + item.sizeBytes, 0);
-    if (total === 0) return;
+    let remainingTotal = remaining.reduce((sum, item) => sum + item.sizeBytes, 0);
+    if (remainingTotal === 0) return;
 
     for (let i = 0; i < remaining.length; i++) {
       const item = remaining[i];
-      const ratio = item.sizeBytes / total;
+      const isLast = (i === remaining.length - 1);
+      const ratio = isLast ? 1 : Math.min(1, item.sizeBytes / remainingTotal);
+      remainingTotal = Math.max(1, remainingTotal - item.sizeBytes);
 
       let nw, nh;
       if (w > h) {
-        nw = Math.max(2, w * ratio);
+        nw = isLast ? w : Math.min(w, Math.max(2, Math.round(w * ratio)));
         nh = h;
         this.nodes.push({ item, x, y, w: nw, h: nh });
         x += nw;
-        w -= nw;
+        w = Math.max(0, w - nw);
       } else {
         nw = w;
-        nh = Math.max(2, h * ratio);
+        nh = isLast ? h : Math.min(h, Math.max(2, Math.round(h * ratio)));
         this.nodes.push({ item, x, y, w: nw, h: nh });
         y += nh;
-        h -= nh;
+        h = Math.max(0, h - nh);
       }
     }
   }
@@ -181,14 +182,21 @@ class TreemapEngine {
       return;
     }
     const pct = this.totalBytes > 0 ? ((node.item.sizeBytes / this.totalBytes) * 100).toFixed(1) : '0.0';
+    const escapedName = this.escapeHTML(node.item.name);
     this.tooltip.innerHTML = `
-      <div class="font-bold text-white">${node.item.name}</div>
+      <div class="font-bold text-white">${escapedName}</div>
       <div class="text-slate-300">Size: ${this.formatBytes(node.item.sizeBytes)} (${pct}%)</div>
       ${node.item.gzipBytes ? `<div class="text-slate-400">Gzip: ~${this.formatBytes(node.item.gzipBytes)}</div>` : ''}
     `;
     this.tooltip.style.left = `${clientX + 12}px`;
     this.tooltip.style.top = `${clientY + 12}px`;
     this.tooltip.classList.remove('hidden');
+  }
+
+  escapeHTML(str) {
+    return (str || '').replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
   }
 
   formatBytes(b) {
