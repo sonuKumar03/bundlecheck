@@ -64,6 +64,7 @@ func (s *Server) setupRoutes() {
 		})
 	})
 	s.mux.HandleFunc("/api/bundle", s.handleGetBundle)
+	s.registerStaticRoutes()
 }
 
 // Handler returns the HTTP handler with developer CORS enabled.

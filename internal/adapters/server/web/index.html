@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BundleRadar Studio</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+  <!-- Top Navigation & Controls -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <span class="text-xl">⚡</span>
+      <h1 class="font-bold text-base tracking-tight text-white flex items-center space-x-2">
+        <span>BundleRadar</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-mono">Studio</span>
+      </h1>
+      <span id="stats-badge" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">Loading...</span>
+    </div>
+
+    <!-- Chunk Selector -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2">
+        <label for="chunk-select" class="text-xs text-slate-400 font-medium">Viewing Chunk:</label>
+        <select id="chunk-select" class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+          <option value="main">Initial Bootstrap (main)</option>
+        </select>
+      </div>
+
+      <div class="relative">
+        <input type="text" id="search-input" placeholder="Search packages..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 rounded-lg px-3 py-1.5 pl-8 focus:ring-2 focus:ring-indigo-500 outline-none w-48">
+        <span class="absolute left-2.5 top-2 text-slate-500 text-xs">🔍</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Metric Badges Bar -->
+  <section class="border-b border-slate-800/60 bg-slate-900/40 px-6 py-2.5 flex items-center space-x-6 text-xs font-mono">
+    <div>Initial JS: <strong id="metric-initial" class="text-emerald-400">--</strong></div>
+    <div>Async Chunks: <strong id="metric-async" class="text-sky-400">--</strong></div>
+    <div>Total Build: <strong id="metric-total" class="text-slate-200">--</strong></div>
+  </section>
+
+  <!-- Main Studio Workspace -->
+  <main class="flex-1 flex flex-col p-6 space-y-6 max-w-7xl w-full mx-auto">
+    <!-- Treemap Container -->
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl flex flex-col space-y-2">
+      <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+        <span>INTERACTIVE CANVAS TREEMAP (60fps)</span>
+        <span>Click tile to inspect dependency path</span>
+      </div>
+      <div class="w-full h-96 relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800/80">
+        <canvas id="treemap-canvas" class="w-full h-full block cursor-pointer"></canvas>
+        <div id="tooltip" class="absolute pointer-events-none hidden z-40 bg-slate-900/95 border border-slate-700 text-white text-xs p-2.5 rounded-lg shadow-2xl font-mono backdrop-blur"></div>
+      </div>
+    </div>
+
+    <!-- Bloat Contributors Table -->
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl space-y-3">
+      <h2 class="text-sm font-bold text-white flex items-center justify-between">
+        <span>Package Bloat Breakdown</span>
+        <span id="package-count" class="text-xs font-mono text-slate-400 font-normal">--</span>
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+            <tr>
+              <th class="py-2 px-3">Package</th>
+              <th class="py-2 px-3">Raw Size</th>
+              <th class="py-2 px-3">Gzip Estimate</th>
+              <th class="py-2 px-3">Emitted Chunks</th>
+              <th class="py-2 px-3">Directed Ingress Trail</th>
+            </tr>
+          </thead>
+          <tbody id="package-table-body" class="divide-y divide-slate-800/50 text-slate-300">
+            <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading bundle data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="/treemap.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
