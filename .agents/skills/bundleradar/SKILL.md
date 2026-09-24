@@ -23,18 +23,18 @@ Use BundleRadar as the reasoning loop for Angular esbuild bundle work. Prefer ex
 
 | User intent | First operation |
 | --- | --- |
-| What is large? | summary |
-| Why is X bundled? | why |
-| What should I optimize? | suggest, then why |
-| Optimize this app | baseline → summary/suggest → why → inspect source → edit → rebuild/test → measure/check |
-| Did this PR regress? | measure or compare |
-| Prevent regressions | check |
-| Compare Nx applications | workspace summary |
+| What is large? | `scan` |
+| Why is X bundled? | `scan --why <pkg>` |
+| What should I optimize? | `scan` (review top packages) |
+| Optimize this app | `scan` → edit → rebuild → `diff` → `gate` loop |
+| Did this PR regress? | `diff --against <ref>` |
+| Prevent regressions | `gate` |
+| Compare Nx applications | `workspace scan` |
 
 ## Choose execution
 
-1. Use matching `bundle_*` or `workspace_summary` MCP tools when available.
-2. Otherwise verify `command -v bundleradar` and run CLI commands with `--format json`.
+1. Use matching `bundle_scan`, `bundle_diff`, `bundle_gate`, or `workspace_summary` MCP tools when available.
+2. Otherwise verify `command -v bundleradar` and run CLI commands with `-f json`.
 3. If missing, stop and offer the supported remote install command:
 
 ```sh
@@ -47,11 +47,11 @@ Never assume the BundleRadar repository or a local `./install.sh` exists. MCP an
 
 1. Build production stats when artifacts are missing or stale, normally with `ng build --configuration production --stats-json`.
 2. Capture the pre-edit baseline.
-3. Rank candidates with summary or suggest.
-4. Confirm one candidate with why, then inspect its actual application source usage.
+3. Rank candidates with `scan`.
+4. Confirm one candidate with `scan --why <pkg>`, then inspect its actual application source usage.
 5. Make the smallest authorized application change; preserve unrelated work.
 6. Rebuild production stats and run relevant application tests.
-7. Measure against the baseline and run any requested check gate.
+7. Measure against the baseline with `diff` and run budget enforcement with `gate`.
 8. Keep the change only when measured evidence supports it. Otherwise report the result without deleting unrelated or pre-existing work.
 
 Treat `savingsBytes` and `savingsGzipBytes` as estimates until a production rebuild and measure confirm the delta. Static bundle evidence cannot establish LCP, INP, memory, CPU, or other runtime improvements.

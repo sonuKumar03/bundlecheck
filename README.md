@@ -328,14 +328,13 @@ Audit any public open-source Angular repository directly via GitHub Actions with
 
 ## ⚙️ Configuration (`.bundleradar.yml`)
 
-Persist size budgets and disallowed-package rules at the root of your project. `check` loads the nearest configuration in the current directory or a parent directory; CLI budgets override corresponding configuration budgets. Invalid YAML and unsupported settings fail the check:
+Persist size budgets and disallowed-package rules at the root of your project. `gate` loads the nearest configuration in the current directory or a parent directory; CLI flags override corresponding configuration values. Invalid YAML and unsupported settings fail with exit code 2:
 
 ```yaml
 # .bundleradar.yml
 budgets:
   initial_js_max: 250kb
   total_max: 1.5mb
-  max_delta_increase: 25kb
 
 rules:
   disallow_packages:
@@ -345,15 +344,13 @@ rules:
 
 ### Budget Precedence Table
 
-Bundlecheck enforces limits strictly according to the following deterministic precedence:
+bundleradar enforces limits strictly according to the following deterministic precedence:
 
 | Priority | Source | Description |
 |:---:|:---|:---|
 | **1 (Highest)** | **CLI Flags** | Explicit command-line arguments (e.g., `--max-initial 200KB`, `--max-total 1MB`) override all configuration values. |
-| **2** | **Explicit Config** | Configuration file specified explicitly via `--config <path>`. |
-| **3** | **Auto-Loaded Config** | Automatically discovered `.bundleradar.yml` / `.bundleradar.yaml` in current or parent directory. |
-| **4** | **Imported Budgets** | Budgets imported from `angular.json` (e.g. via `bundleradar init --from-angular-budgets`). |
-| **5 (Lowest)** | **No Limit** | Default for unconfigured projects: report-only mode with zero invented failures. |
+| **2** | **Auto-Loaded Config** | Automatically discovered `.bundleradar.yml` / `.bundleradar.yaml` in current or parent directory. |
+| **3 (Lowest)** | **No Limit** | Default for unconfigured projects: report-only mode with zero invented failures. |
 
 ### Outcome Semantics
 
@@ -361,8 +358,8 @@ Bundlecheck enforces limits strictly according to the following deterministic pr
 |:---|:---:|:---|
 | **Pass** | `0` | All configured budgets and package rules passed, or project was evaluated in unconfigured report-only mode. Full metrics and summary are output. |
 | **Policy Violation** | `1` | One or more thresholds or disallowed package rules were breached. Detailed violations are printed alongside actual vs limit values, while preserving full bundle breakdown. |
-| **Invalid Configuration** | `1` | Malformed YAML, unparseable byte values, or unknown configuration fields are rejected before analysis begins. |
-| **Execution Failure** | `1` | Missing build artifacts, unparseable stats JSON, or missing baseline file prevents analysis from completing. |
+| **Usage / Config Error** | `2` | Invalid CLI flags, missing required arguments, malformed YAML, unparseable byte values, or unknown configuration fields are rejected before analysis begins. |
+| **Execution Failure** | `3` | Missing build artifacts, unparseable stats JSON, I/O errors, or missing baseline file prevents analysis from completing. |
 
 ---
 
@@ -424,27 +421,23 @@ For complete agent documentation and JSON contracts, see [**docs/agents.md**](do
 ```text
 Angular esbuild stats.json ──────────┐
                                      ▼
-browser/ dist + index.html ──► internal/discovery
+browser/ dist + index.html ──► internal/adapters/parsers (Angular, Esbuild, Vite, Webpack)
                                      │
                                      ▼
-                             internal/angular (Metafile Parser)
+                             internal/core (Bundle AST, BFS Traversal, Gzip Estimation)
                                      │
+                  ┌──────────────────┼──────────────────┐
+                  ▼                  ▼                  ▼
+         internal/core/diff   internal/core/policy   internal/adapters/workspaces
+        (Delta Attribution)    (Budget Gate)           (Nx Monorepo Discovery)
+                  │                  │                  │
+                  └──────────────────┼──────────────────┘
                                      ▼
-                             internal/artifact (Script Matching)
-                                     │
-                                     ▼
-                             internal/graph (BFS Traversal & 'why' Tracer)
-                                     │
-                                     ▼
-                             internal/compression (Gzip Wire Estimation)
-                                     │
-                                     ▼
-                             internal/advisor (Optimization Engine)
-                                     │
-                 ┌───────────────────┼───────────────────┐
-                 ▼                   ▼                   ▼
-           Text Reporter       JSON Reporter       Markdown Reporter
-         (CLI Terminal)        (AI Agents)          (GitHub PR / CI)
+                     internal/adapters/reporters
+                  ┌──────────┬───────────┬──────────┐
+                  ▼          ▼           ▼          ▼
+            Terminal       JSON      Markdown   GitHub PR
+          (CLI Output)  (AI Agents)  (Reports)  (PR Comments)
 ```
 
 ---
@@ -452,7 +445,7 @@ browser/ dist + index.html ──► internal/discovery
 ## 🧪 Development & Testing
 
 ```bash
-# Run test suite (296 tests across 19 packages)
+# Run test suite (71 tests across 11 packages)
 go test -v ./...
 
 # Run linter

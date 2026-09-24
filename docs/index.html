@@ -323,7 +323,7 @@
                 <h3 class="text-base font-semibold text-white">MCP Server</h3>
               </div>
               <p class="text-xs text-slate-300 leading-relaxed">
-                Six typed tools let an agent inspect bundles, trace import paths, measure deltas, and enforce budgets through structured calls.
+                Four typed tools let an agent inspect bundles, trace import paths, measure deltas, and enforce budgets through structured calls.
               </p>
             </div>
             <div>
@@ -571,7 +571,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
-                <h3 class="text-base font-mono font-bold text-cyan-300">bundleradar workspace [list|scan] [--projects &lt;names&gt;]</h3>
+                <h3 class="text-base font-mono font-bold text-cyan-300">bundleradar workspace [list|scan] [--root &lt;dir&gt;] [--app &lt;name=stats&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">Nx Monorepo</span>
             </div>
@@ -636,7 +636,6 @@
 budgets:
   initial_js_max: 250kb
   total_max: 1.5mb
-  max_delta_increase: 50kb
 
 rules:
   disallow_packages:

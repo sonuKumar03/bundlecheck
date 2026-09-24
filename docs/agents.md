@@ -1,14 +1,14 @@
 # Using bundleradar as an AI Coding Agent
 
-Give your coding agent a measured bundle optimization loop for Angular applications using esbuild:
+Give your coding agent a measured bundle optimization loop for applications:
 
-**baseline → diagnose → trace → edit → rebuild/test → measure → gate**
+**scan → diff → gate**
 
 - **Agent Skill**: the reasoning and optimization workflow.
 - **MCP**: the preferred structured tool interface when available.
 - **CLI JSON**: the universal fallback, using `--format json`.
 
-The installed `bundleradar` binary and compatible Angular esbuild `stats.json` are prerequisites. Install the binary and complete skill tree for generic agents, Claude Code, and Codex with:
+The installed `bundleradar` binary and compatible `stats.json` are prerequisites. Install the binary and complete skill tree for generic agents, Claude Code, and Codex with:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/install.sh | sh -s -- --with-skill
@@ -78,18 +78,14 @@ Add to `~/.gemini/antigravity-cli/mcp/bundleradar.json` (or project MCP settings
 
 ### Exposed MCP Tools
 
-The MCP server provides 6 typed tools formatted for LLM consumption:
+The MCP server provides 4 typed tools formatted for LLM consumption:
 
 | Tool | Parameters | Description |
 | :--- | :--- | :--- |
-| `bundle_summary` | `path` (opt), `project` (opt), `entry` (opt), `top` (opt, def 10), `filter` (opt) | Summarizes initial, lazy, and total JS sizes and top npm package contributors. |
-| `bundle_why` | `package` (required), `path` (opt), `project` (opt), `entry` (opt), `initial_only` (opt), `max_chains` (opt) | Traces exact static & dynamic import chains from entrypoints to target package. |
-| `bundle_suggest` | `path` (opt), `project` (opt), `entry` (opt), `min_savings` (opt) | Generates prioritized, actionable bundle optimization recommendations. |
-| `bundle_check` | `path` (opt), `project` (opt), `entry` (opt), `max_initial` (opt), `max_total` (opt), `disallowed_packages` (opt) | Enforces size budgets and verifies disallowed package constraints. |
-| `bundle_measure` | `baseline` (required), `path` (opt), `project` (opt), `entry` (opt), `max_initial_delta` (opt) | Measures size deltas against a saved baseline and gates regressions. |
-| `workspace_summary`| `root` (opt), `projects` (opt array) | Analyzes all Angular applications and shared libraries across an Nx workspace. |
-
-When `index.html` references a script absent from `stats.json`, bundle tools retry with the `browser` or `main` entry from `angular.json`/Nx `project.json` when it matches the stats. Otherwise the error lists valid selectors so the agent can retry with `entry`.
+| `bundle_scan` | `path` (required), `dist`, `bundler`, `top` | Inspect bundle sizes, breakdown, and package dependencies. |
+| `bundle_diff` | `path` (required), `against` (required), `drift_threshold` | Compare against baseline with regression attribution. |
+| `bundle_gate` | `path` (required), `against`, `max_initial`, `max_total`, `max_initial_delta`, `forbid` (array) | Validate bundle sizes against policy budgets in CI. |
+| `workspace_summary`| `root` | Analyzes all applications and shared libraries across a workspace. |
 
 ### Exposed MCP Resources
 
@@ -99,40 +95,15 @@ When `index.html` references a script absent from `stats.json`, bundle tools ret
 
 ## ⚡ Auto-Discovery & Zero-Config CLI Usage
 
-When executed in an Angular application directory after `ng build --configuration production --stats-json`, `bundleradar` automatically locates `stats.json` and matching browser `dist` directories.
+When executed in an application directory after a build that produces `stats.json`, `bundleradar` can automatically locate it and matching `dist` directories.
 
 ```sh
-# Zero-config summary (JSON)
-bundleradar summary --format json
+# Zero-config scan (JSON)
+bundleradar scan --format json
 
-# Summary with Gzip wire transfer estimation
-bundleradar summary --gzip --format json
-
-# Multi-app workspace: specify project positionally or with flag
-bundleradar summary portal
-bundleradar summary --project portal --format json
+# Multi-app workspace: scan
+bundleradar workspace scan
 ```
-
----
-
-## 🧭 Automated Optimization Advisor (`suggest`)
-
-Analyze the bundle to receive prioritized, actionable size optimization recommendations:
-
-```sh
-# Get ranked suggestions
-bundleradar suggest --format json
-
-# Summary with suggestions appended
-bundleradar summary --suggest --format json
-```
-
-Each suggestion includes:
-- `rule`: Diagnostic rule name (`heavy-initial-package`, `eager-feature-component`, `split-package`).
-- `severity`: Priority level (`HIGH`, `MEDIUM`, `LOW`).
-- `savingsBytes`: Estimated byte reduction in initial JS.
-- `file`: Source file / importing component.
-- `action`: Concrete refactoring guidance.
 
 ---
 
@@ -142,29 +113,26 @@ Trace the import path explaining why a package or module is in the bundle:
 
 ```sh
 # Trace dependency path to lodash
-bundleradar why lodash --format json
-
-# Trace in a multi-app monorepo
-bundleradar why portal lodash --format json
-
-# Trace only initial bundle import paths
-bundleradar why @angular/material --initial-only --format json
+bundleradar scan stats.json --why lodash --format json
 ```
 
-Inspect `chains[].path` to see the sequence of source files leading from root entrypoints (`src/main.ts`) to the target package.
+Inspect the output to see the sequence of source files leading from root entrypoints to the target package.
 
 ---
 
-## 🏢 Multi-App Monorepos (`workspace summary`)
+## 🏢 Multi-App Monorepos (`workspace`)
 
-In Nx or Angular multi-app monorepos:
+In Nx or multi-app monorepos:
 
 ```sh
-# Compare all applications, shared library costs, and duplicated dependencies
-bundleradar workspace summary --format json
+# List apps
+bundleradar workspace list
+
+# Scan all applications
+bundleradar workspace scan --format json
 
 # Filter specific applications
-bundleradar workspace summary --projects admin-dashboard,portal --format json
+bundleradar workspace scan --app portal=stats.json --format json
 ```
 
 ---
@@ -172,42 +140,37 @@ bundleradar workspace summary --projects admin-dashboard,portal --format json
 ## 🔄 Iteration & Measurement Playbook for Agents
 
 ### 1. Establish Baseline Before Modifying Code
-```sh
-bundleradar baseline save --name pre-refactor --format json
-```
-Saves the initial bundle state to `.bundleradar/baselines/pre-refactor.json`.
+Baselines are handled seamlessly by `--against`. You can pass a path to a previous `stats.json` or a git ref (like `HEAD`).
 
 ### 2. Trace & Apply Optimization
-1. Run `bundleradar suggest --format json` to find high-impact targets.
-2. Run `bundleradar why <package> --format json` to identify the importing component.
-3. Replace heavy modules with lazy loading (`import(...)`, `@defer`, `loadComponent`).
+1. Run `bundleradar scan stats.json --format json` to find high-impact targets.
+2. Run `bundleradar scan stats.json --why <package> --format json` to identify the importing component.
+3. Replace heavy modules with lazy loading.
 
 ### 3. Measure Changes & Verify
 ```sh
-ng build --configuration production --stats-json
-bundleradar measure -b pre-refactor --format json
+npm run build
+bundleradar diff stats.json --against baseline.json --format json
 ```
-Inspect `summary.delta`:
-- `summary.delta.initialJs`: Negative = savings (success); Positive = regression.
-- `packages[].delta`: Shows which packages grew or shrank.
+Inspect the output to see size deltas.
 
 ### 4. Gate Regressions
 ```sh
 # Fails with exit code 1 if initial JS grew
-bundleradar measure -b pre-refactor --max-initial-delta 0B
+bundleradar gate stats.json --against baseline.json --max-initial-delta 0B
 ```
 
 ---
 
 ## 📋 JSON Schema Contracts
 
-### Summary JSON (`command: "summary"`)
+### Scan JSON (`command: "scan"`)
 
 | Field | Meaning |
 | :--- | :--- |
 | `schemaVersion` | JSON contract version; currently `"1"`. |
 | `toolVersion` | Tool release version; currently `"2.0.0"`. |
-| `command` | The string `"summary"`. |
+| `command` | The string `"scan"`. |
 | `summary.initialJs`, `summary.initialGzipJs` | Raw & Gzip bytes of browser JS in static bootstrap closure. |
 | `summary.lazyJs`, `summary.lazyGzipJs` | Raw & Gzip bytes of lazy JS outputs. |
 | `summary.totalJs`, `summary.totalGzipJs` | Total uncompressed & Gzip JS bytes. |
@@ -216,20 +179,7 @@ bundleradar measure -b pre-refactor --max-initial-delta 0B
 | `packages[].lazyBytes` | Emitted input contributions within lazy JS outputs. |
 | `packages[].totalBytes` | Combined initial + lazy bytes for this package. |
 
-### Suggestions JSON (`command: "suggest"`)
-
-| Field | Meaning |
-| :--- | :--- |
-| `suggestions[].rule` | Diagnosis rule name (`heavy-initial-package`, `duplicate-package`, etc.). |
-| `suggestions[].severity` | Priority severity (`HIGH`, `MEDIUM`, `LOW`). |
-| `suggestions[].title` | Short summary title. |
-| `suggestions[].target` | Targeted package or component file. |
-| `suggestions[].file` | Importing file to modify. |
-| `suggestions[].savingsBytes` | Estimated initial JS reduction. |
-| `suggestions[].action` | Specific code refactoring steps. |
-| `totalPotentialSavings` | Combined potential initial JS savings. |
-
-### Trace JSON (`command: "why"`)
+### Trace JSON (via `--why`)
 
 | Field | Meaning |
 | :--- | :--- |
@@ -242,14 +192,16 @@ bundleradar measure -b pre-refactor --max-initial-delta 0B
 | `chains[].path` | Ordered array of module file paths from root to target. |
 | `chains[].bytesInChunk` | Contributed bytes inside this specific chunk. |
 
-### Comparison & Measure JSON (`command: "compare"`)
+### Diff JSON (`command: "diff"`)
 
 | Field | Meaning |
 | :--- | :--- |
+| `schemaVersion` | JSON contract version; currently `"1"`. |
+| `toolVersion` | Tool release version; currently `"2.0.0"`. |
+| `command` | The string `"diff"`. |
 | `summary.before`, `summary.after`, `summary.delta` | Each holds `initialJs`, `lazyJs`, and `totalJs`. |
 | `packages[].before`, `packages[].after`, `packages[].delta` | Each holds `initialBytes`, `lazyBytes`, and `totalBytes`. |
 | `packages[].status` | `"added"`, `"removed"`, `"changed"`, or `"unchanged"`. |
-| `findings[]` | Optional deterministic regression findings (`name`, `deltaBytes`, `kind`, `chunks`, `tracePath`, `reason`). |
 
 ---
 
@@ -277,8 +229,7 @@ Integrations and CI scripts can rely on stable, numeric exit codes:
 
 | Failure | Next check |
 | :--- | :--- |
-| `no Angular build artifacts found` | Run `ng build --configuration production --stats-json` first or pass `--stats` and `--dist`. |
-| `multiple Angular build outputs found` | Specify the project: `bundleradar summary <project>` or `--project <name>`. |
-| `target package not found` | Verify spelling or check `bundleradar summary` for attributed packages. |
-| `baseline file not found` | Run `bundleradar baseline save` to initialize the reference baseline. |
-| `budget check failed` | Review `violations[]` in JSON or error table in stderr to see which threshold was breached. |
+| `no build artifacts found` | Run your build command first to generate `stats.json`. |
+| `target package not found` | Verify spelling or check `bundleradar scan` for attributed packages. |
+| `baseline file not found` | Check the path provided to `--against` in `bundleradar diff` or `bundleradar gate`. |
+| `budget check failed` | Review `violations[]` in JSON or error table in stderr to see which threshold was breached during `bundleradar gate`. |
