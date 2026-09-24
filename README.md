@@ -29,26 +29,26 @@ Modern Angular applications build with **esbuild** for incredible compilation sp
 `bundleradar` is a self-contained Go binary with zero runtime dependencies that turns Angular `stats.json` files into **actionable dependency hierarchies, file-by-file root cause traces, automated optimization suggestions, and hard CI budget gates**. Fast native analysis; reported timings exclude Angular builds and external Nx subprocesses.
 
 ```text
-$ bundleradar summary dist/my-app/stats.json --gzip --suggest
+$ bundleradar diff dist/apps/portal/stats.json --against origin/master
 
-BUNDLE SUMMARY
+⚡ BUNDLERADAR COMPARISON & DIFF
 -------------------------------------------------------------
-Initial JavaScript:   248.50 KB (3 files: main, polyfills, styles) [~74.20 KB gzip]
-Lazy Chunks:          812.20 KB (14 route-split chunks)
-Total Assets:         1.06 MB
+Initial JS:   2.79 MB → 3.08 MB (+295.73 KB)
+Lazy JS:      87.13 KB → 87.13 KB (0 B)
+Total JS:     2.88 MB → 3.17 MB (+295.73 KB)
 
-TOP CONTRIBUTING NPM PACKAGES
+CHANGED PACKAGES
 -------------------------------------------------------------
-1. @angular/core       84.20 KB  (33.8% of initial)  [~25.10 KB gzip]
-2. rxjs                 42.10 KB  (16.9% of initial)  [~12.40 KB gzip]
-3. @angular/common     31.50 KB  (12.6% of initial)  [~9.20 KB gzip]
-4. lodash-es            18.40 KB  (7.4% of initial)   [~5.80 KB gzip]
-5. tslib                6.20 KB   (2.5% of initial)   [~1.90 KB gzip]
+➕ three                  +295.20 KB (main-PJ5NP3ZD.js)
+   • Import path: apps/portal/src/main.ts → apps/portal/src/app/app.component.ts → node_modules/three/build/three.module.js
+🔄 @angular/router            +244 B (main-PJ5NP3ZD.js)
+   • Import path: apps/portal/src/main.ts → apps/portal/src/app/app.config.ts → node_modules/@angular/router/fesm2022/router.mjs
+🔄 lodash                      +11 B (main-PJ5NP3ZD.js)
+   • Import path: apps/portal/src/main.ts → apps/portal/src/app/app.component.ts → node_modules/lodash/cloneDeep.js
+🔄 @angular/platform-browser       +2 B (chunk-IF6QX6MW.js, main-PJ5NP3ZD.js)
+   • Import path: apps/portal/src/main.ts → node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs
 
-[!] 2 OPTIMIZATION OPPORTUNITIES DETECTED
--------------------------------------------------------------
-• moment (72.4 KB): Found in initial JS. Move behind a dynamic import if not critical for first paint.
-• Duplicate package 'tslib': Multiple installed copies contribute to initial JS. Run npm dedupe.
+Micro-drift: 70.31 KB across sub-threshold updates
 ```
 
 ---
@@ -59,12 +59,12 @@ TOP CONTRIBUTING NPM PACKAGES
 | :--- | :---: | :---: | :---: | :---: |
 | **Execution** | **Fast native analysis** | Node.js process | Node.js process | Integrated into build |
 | **Runtime Dependencies** | **Zero** (Self-contained binary) | ~40+ npm packages | ~30+ npm packages | Node.js |
-| **Import Chain Tracer (`why`)** | **Yes (ASCII Tree)** | ❌ No | ❌ No | ❌ No |
-| **Optimization Advisor (`suggest`)** | **Yes (Automated Rules)** | ❌ No (Visual only) | ❌ No | ❌ No |
-| **Gzip Wire Modeling** | **Yes (`--gzip`)** | Yes | Yes | ❌ Raw bytes only |
-| **PR Delta Diffs (`compare`)** | **Yes (Signed +/- KB)** | ❌ No | ❌ No | ❌ No |
-| **Headless CI Gating** | **Yes (Exit 0/1)** | ❌ GUI Required | ❌ GUI / HTML | Yes (Limited) |
-| **AI Coding Agent Skill** | **Yes (`SKILL.md`)** | ❌ No | ❌ No | ❌ No |
+| **Import Chain Tracer (`--why`)** | **Yes (Directed BFS Trail)** | ❌ No | ❌ No | ❌ No |
+| **Regression Attribution** | **Yes (Package & Chunk level)** | ❌ No (Visual only) | ❌ No | ❌ No |
+| **Gzip Wire Modeling** | **Yes (Built-in estimation)** | Yes | Yes | ❌ Raw bytes only |
+| **PR Delta Diffs (`diff`)** | **Yes (Signed +/- KB & PR Markdown)** | ❌ No | ❌ No | ❌ No |
+| **Headless CI Gating (`gate`)** | **Yes (Exit 0/1 automation codes)** | ❌ GUI Required | ❌ GUI / HTML | Yes (Limited) |
+| **AI Coding Agent Skill & MCP** | **Yes (`bundleradar mcp`)** | ❌ No | ❌ No | ❌ No |
 
 ---
 
@@ -169,6 +169,32 @@ bundleradar diff dist/my-app/stats.json --against main --drift-threshold 1KB
 
 # Generate PR markdown report for CI
 bundleradar diff dist/my-app/stats.json --against main -f github-pr -o report.md
+```
+
+**Sample Generated PR Markdown Comment:**
+
+```markdown
+<!-- bundleradar-report -->
+## ⚡ BundleRadar Comparison & Diff
+
+| Category | Before | After | Delta | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Initial JS** | `2.79 MB` | `3.08 MB` | **+295.73 KB** | ⚠️ Increased |
+| **Lazy JS** | `87.13 KB` | `87.13 KB` | **0 B** | ⚪ Neutral |
+| **Total JS** | `2.88 MB` | `3.17 MB` | **+295.73 KB** | ⚠️ Increased |
+
+### 🔎 Regression Explanation
+
+- 📦 **`three`** (`+295.20 KB`) → emitted in `main-PJ5NP3ZD.js`
+  - **Import path:** `apps/portal/src/main.ts → apps/portal/src/app/app.component.ts → node_modules/three/build/three.module.js`
+
+### Changed Packages
+
+| Package | Status | Delta | Base Size | Current Size |
+| :--- | :---: | :---: | :---: | :---: |
+| `three` | ➕ Added | `+295.20 KB` | `0 B` | `295.20 KB` |
+| `@angular/router` | 🔄 Changed | `+244 B` | `81.32 KB` | `81.56 KB` |
+| `lodash` | 🔄 Changed | `+11 B` | `18.27 KB` | `18.28 KB` |
 ```
 
 ---

@@ -215,49 +215,25 @@
         <div>
           <div class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 px-2">Commands Reference</div>
           <nav class="space-y-1 font-mono text-xs">
-            <a href="#cmd-summary" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>summary</span>
-              <span class="text-[10px] text-slate-400">Breakdown</span>
+            <a href="#cmd-scan" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>scan</span>
+              <span class="text-[10px] text-indigo-400">Breakdown</span>
             </a>
-            <a href="#cmd-inspect" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>inspect &lt;chunk&gt;</span>
-              <span class="text-[10px] text-slate-400">Chunk deep-dive</span>
+            <a href="#cmd-diff" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>diff</span>
+              <span class="text-[10px] text-sky-400">PR Delta</span>
             </a>
-            <a href="#cmd-why" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>why &lt;pkg&gt;</span>
-              <span class="text-[10px] text-slate-400">Trace chain</span>
-            </a>
-            <a href="#cmd-suggest" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>suggest</span>
-              <span class="text-[10px] text-slate-400">Tips</span>
-            </a>
-            <a href="#cmd-baseline" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>baseline</span>
-              <span class="text-[10px] text-slate-400">Snapshots</span>
-            </a>
-            <a href="#cmd-measure" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>measure</span>
-              <span class="text-[10px] text-slate-400">Live delta</span>
-            </a>
-            <a href="#cmd-compare" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>compare</span>
-              <span class="text-[10px] text-slate-400">JSON diff</span>
-            </a>
-            <a href="#cmd-check" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>check</span>
-              <span class="text-[10px] text-slate-400">CI gate</span>
-            </a>
-            <a href="#cmd-init" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
-              <span>init</span>
-              <span class="text-[10px] text-emerald-400">Setup</span>
+            <a href="#cmd-gate" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
+              <span>gate</span>
+              <span class="text-[10px] text-rose-400">CI Budget</span>
             </a>
             <a href="#cmd-workspace" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>workspace</span>
-              <span class="text-[10px] text-cyan-400">Nx Monorepo</span>
+              <span class="text-[10px] text-cyan-400">Monorepo</span>
             </a>
             <a href="#cmd-mcp" onclick="closeMobileSidebar()" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80">
               <span>mcp</span>
-              <span class="text-[10px] text-fuchsia-400">Agent Protocol</span>
+              <span class="text-[10px] text-fuchsia-400">AI Protocol</span>
             </a>
           </nav>
         </div>
@@ -479,7 +455,7 @@
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
             <div class="text-indigo-400 font-semibold font-sans text-sm">Step 2: Inspect Bundle Breakdown</div>
             <div class="p-2.5 rounded bg-black/50 border border-slate-800 text-slate-200">
-              bundleradar summary dist/my-app/stats.json
+              bundleradar scan dist/my-app/stats.json
             </div>
           </div>
         </div>
@@ -497,18 +473,18 @@
 
         <div class="space-y-8">
           
-          <!-- CMD 1: summary -->
-          <div id="cmd-summary" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <!-- CMD 1: scan -->
+          <div id="cmd-scan" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-6 h-6 rounded-md bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs">1</span>
-                <h3 class="text-base font-mono font-bold text-indigo-300">bundleradar summary &lt;stats.json&gt; [--entry &lt;source-or-glob&gt;]</h3>
+                <h3 class="text-base font-mono font-bold text-indigo-300">bundleradar scan &lt;stats.json&gt; [--entry &lt;source-or-glob&gt;] [--why &lt;pkg&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">Breakdown</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Parses initial entry points, lazy route chunks, and calculates total NPM package contributions sorted by byte weight. Use <code>--entry</code> / <code>-e</code> (e.g. source path <code>src/main.ts</code> or emitted chunk glob <code>main-*.js</code> / <code>worker.js</code>) to scope analysis to a specific entrypoint.
+              Inspects initial entry points, lazy route chunks, and calculates total NPM package contributions sorted by byte weight. Use <code>--entry</code> / <code>-e</code> (e.g. source path <code>src/main.ts</code> or emitted chunk glob <code>main-*.js</code>) to scope analysis to a specific entrypoint, or <code>--why &lt;pkg&gt;</code> to trace package import roots.
             </p>
             <p class="text-xs text-indigo-300/90 font-mono bg-indigo-950/40 p-2.5 rounded-lg border border-indigo-900/50">
               💡 <strong>Entrypoint Scoping &amp; TotalJS Invariant:</strong> <code>--entry</code> / <code>-e</code> scopes initial versus lazy reachability, package attribution, and root traces strictly to the selected entrypoint. The overall <code>TotalJS</code> metric consistently reflects the whole browser build across all chunks.
@@ -516,257 +492,102 @@
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar summary</span> dist/my-app/stats.json</div>
-              <div class="text-white font-bold pt-1">BUNDLE SUMMARY</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar scan</span> dist/apps/portal/stats.json</div>
+              <div class="text-white font-bold pt-1">⚡ BUNDLERADAR BUNDLE SCAN</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>Initial JavaScript:   <span class="text-emerald-300 font-bold">248.50 KB</span> (3 files: main, polyfills, styles)</div>
-              <div>Lazy Chunks:          <span class="text-slate-300">812.20 KB</span> (14 route-split chunks)</div>
-              <div>Total Assets:         <span class="text-slate-300">1.06 MB</span></div>
+              <div>Entrypoint "main":</div>
+              <div>  Initial JavaScript:   <span class="text-emerald-300 font-bold">3.08 MB</span> [~946.81 KB gzip]</div>
+              <div>  Async / Lazy Chunks:  <span class="text-slate-300">87.13 KB</span> (18 chunks)</div>
               <div class="pt-2 text-white font-bold">TOP CONTRIBUTING NPM PACKAGES</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>1. @angular/core       <span class="text-amber-300">84.20 KB</span>  (33.8% of initial)</div>
-              <div>2. rxjs                 <span class="text-amber-300">42.10 KB</span>  (16.9% of initial)</div>
-              <div>3. @angular/common     <span class="text-amber-300">31.50 KB</span>  (12.6% of initial)</div>
-              <div>4. lodash-es            <span class="text-amber-300">18.40 KB</span>  (7.4% of initial)</div>
-              <div>5. tslib                <span class="text-amber-300">6.20 KB</span>   (2.5% of initial)</div>
+              <div>1. exceljs               <span class="text-amber-300">923.69 KB</span>  [~277.11 KB gzip] (1 modules)</div>
+              <div>2. moment-timezone       <span class="text-amber-300">723.39 KB</span>  [~217.02 KB gzip] (3 modules)</div>
+              <div>3. pdfjs-dist            <span class="text-amber-300">324.85 KB</span>  [~97.45 KB gzip]  (1 modules)</div>
+              <div>4. three                 <span class="text-amber-300">295.20 KB</span>  [~88.56 KB gzip]  (2 modules)</div>
+              <div>5. chart.js              <span class="text-amber-300">192.18 KB</span>  [~57.65 KB gzip]  (2 modules)</div>
               <div class="text-slate-400 pt-2 select-none"># Scoped to entrypoint:</div>
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar summary</span> dist/my-app/stats.json --entry src/main.ts</div>
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar summary</span> dist/my-app/stats.json -e "main-*.js"</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar scan</span> dist/apps/portal/stats.json --entry src/main.ts</div>
             </div>
           </div>
 
-          <!-- CMD 2: inspect -->
-          <div id="cmd-inspect" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <!-- CMD 2: diff -->
+          <div id="cmd-diff" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center font-mono font-bold text-xs">2</span>
-                <h3 class="text-base font-mono font-bold text-blue-300">bundleradar inspect &lt;chunk.js&gt; [--stats &lt;stats.json&gt;] [--dist &lt;dir&gt;]</h3>
+                <span class="w-6 h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono font-bold text-xs">2</span>
+                <h3 class="text-base font-mono font-bold text-sky-300">bundleradar diff &lt;stats.json&gt; --against &lt;baseline-or-git-ref&gt;</h3>
               </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/30">Chunk Breakdown</span>
+              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/30">PR Delta & Attribution</span>
             </div>
 
             <p class="text-sm text-slate-300">
-              Deep-dives into a specific emitted JavaScript chunk or route bundle, attributing exact byte weights to participating source files and npm packages.
+              Compares the current build against a baseline file or Git ref (e.g. <code>origin/master</code>), automatically building the baseline in an isolated worktree. Traces the shortest BFS import chain directly to regressing packages with emitted chunk attribution.
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar inspect</span> chunk-ABC123.js --stats dist/my-app/stats.json</div>
-              <div class="text-white font-bold pt-1">CHUNK INSPECTION: chunk-ABC123.js (215.40 KB)</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar diff</span> dist/apps/portal/stats.json --against origin/master</div>
+              <div class="text-white font-bold pt-1">⚡ BUNDLERADAR COMPARISON &amp; DIFF</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>1. @angular/forms       <span class="text-amber-300">92.40 KB</span>  (42.9% of chunk)</div>
-              <div>2. src/app/features/    <span class="text-emerald-300">68.20 KB</span>  (31.7% of chunk)</div>
-              <div>3. rxjs/operators       <span class="text-amber-300">34.10 KB</span>  (15.8% of chunk)</div>
-              <div>4. tslib                <span class="text-slate-400">4.20 KB</span>   (1.9% of chunk)</div>
-            </div>
-          </div>
-
-          <!-- CMD 3: why -->
-          <div id="cmd-why" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono font-bold text-xs">3</span>
-                <h3 class="text-base font-mono font-bold text-sky-300">bundleradar why &lt;stats.json&gt; &lt;package-name&gt; [--entry &lt;entry&gt;]</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/30">Trace Chain</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Traces the exact import graph path showing why a particular npm package was bundled, which application file pulled it in, and which chunk it landed inside. Use <code>--entry</code> / <code>-e</code> (e.g. <code>src/main.ts</code> or <code>main-*.js</code>) to scope traces to a specific root entrypoint.
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar why</span> dist/my-app/stats.json lodash-es --entry src/main.ts</div>
-              <div class="text-white font-bold pt-1">IMPORT CHAIN TRACE: 'lodash-es' (18.40 KB)</div>
+              <div>Initial JS:   <span class="text-slate-300">2.79 MB</span> → <span class="text-slate-300">3.08 MB</span> (<span class="text-rose-400 font-bold">+295.73 KB</span>)</div>
+              <div>Lazy JS:      <span class="text-slate-300">87.13 KB</span> → <span class="text-slate-300">87.13 KB</span> (<span class="text-slate-400">0 B</span>)</div>
+              <div>Total JS:     <span class="text-slate-300">2.88 MB</span> → <span class="text-slate-300">3.17 MB</span> (<span class="text-rose-400 font-bold">+295.73 KB</span>)</div>
+              <div class="pt-2 text-white font-bold">CHANGED PACKAGES</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div class="text-slate-300">src/main.ts</div>
-              <div class="text-slate-300"> └── src/app/app.config.ts</div>
-              <div class="text-slate-300">      └── src/app/services/analytics.service.ts</div>
-              <div class="text-indigo-300 font-bold">           └── node_modules/lodash-es/debounce.js [in chunk: main-C82D.js]</div>
-              <div class="pt-2 text-xs text-emerald-300 font-sans font-medium">
-                ✓ Direct dependency. Package enters through the initial entry point.
-              </div>
+              <div><span class="text-emerald-400">➕</span> <span class="text-white font-semibold">three</span>                  <span class="text-rose-400">+295.20 KB</span> <span class="text-slate-400">(main-PJ5NP3ZD.js)</span></div>
+              <div class="text-slate-400 pl-4">   • Import path: apps/portal/src/main.ts → apps/portal/src/app/app.component.ts → node_modules/three/build/three.module.js</div>
+              <div><span class="text-amber-400">🔄</span> <span class="text-white font-semibold">@angular/router</span>            <span class="text-rose-400">+244 B</span> <span class="text-slate-400">(main-PJ5NP3ZD.js)</span></div>
+              <div><span class="text-amber-400">🔄</span> <span class="text-white font-semibold">lodash</span>                      <span class="text-rose-400">+11 B</span> <span class="text-slate-400">(main-PJ5NP3ZD.js)</span></div>
+              <div class="text-slate-500 pt-1">Micro-drift: 70.31 KB across sub-threshold updates</div>
             </div>
           </div>
 
-          <!-- CMD 4: suggest -->
-          <div id="cmd-suggest" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <!-- CMD 3: gate -->
+          <div id="cmd-gate" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
-                <h3 class="text-base font-mono font-bold text-amber-300">bundleradar suggest &lt;stats.json&gt;</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">Optimization</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Scans for heavy legacy libraries (moment, lodash), duplicate bundled package copies, and non-tree-shakeable dependencies with actionable refactoring advice.
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar suggest</span> dist/my-app/stats.json</div>
-              <div class="text-amber-300 font-bold pt-1">[!] 3 OPTIMIZATION OPPORTUNITIES DETECTED</div>
-              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>• <strong class="text-white">moment (72.4 KB)</strong>: Found in initial bundle. Replace with native <span class="text-emerald-300 font-semibold">Intl.DateTimeFormat</span> (-65 KB).</div>
-              <div>• <strong class="text-white">lodash (54.1 KB)</strong>: CommonJS build detected. Replace with <span class="text-emerald-300 font-semibold">lodash-es</span> to enable tree-shaking.</div>
-              <div>• <strong class="text-white">Duplicate package 'tslib'</strong>: Multiple distinct installed copies contribute to initial JS. Run npm dedupe.</div>
-            </div>
-          </div>
-
-          <!-- CMD 5: baseline -->
-          <div id="cmd-baseline" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">5</span>
-                <h3 class="text-base font-mono font-bold text-purple-300">bundleradar baseline [save | list | use | rebuild | show | delete]</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">Worktree & Snapshots</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Capture, manage, and inspect baseline bundle metrics from local builds or git branches (using isolated worktrees without branch-switching).
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar baseline save</span> --ref release/v2.0 --name release-v2</div>
-              <div class="text-purple-300 font-bold">Checking out git ref "release/v2.0" in temporary worktree...</div>
-              <div class="text-slate-300">Building "release/v2.0" in worktree (npm run build)...</div>
-              <div class="text-emerald-300 font-bold">✓ Successfully captured and saved baseline to .bundleradar/baselines/release-v2.json</div>
-              <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundleradar baseline list</span></div>
-              <div class="text-slate-200">
-Saved Baselines (.bundleradar/baselines/):<br>
-  NAME          REF / SOURCE            INITIAL JS    TOTAL JS    CREATED        STATUS<br>
-  * release-v2  release/v2.0 (43eb721)  1.42 MB       4.52 MB     just now       ✓ active<br>
-    main        origin/main (a10c82f)   1.40 MB       4.48 MB     1 day ago
-              </div>
-            </div>
-          </div>
-
-          <!-- CMD 6: measure -->
-          <div id="cmd-measure" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-teal-500/20 text-teal-400 flex items-center justify-center font-mono font-bold text-xs">6</span>
-                <h3 class="text-base font-mono font-bold text-teal-300">bundleradar measure [-b baseline-name]</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/30">Live Delta Benchmarking</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Measures current working branch changes against the active or named baseline with instant byte deltas and regression budget verification.
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar measure</span></div>
-              <div class="text-white font-bold pt-1">MEASURING AGAINST ACTIVE BASELINE (release-v2)</div>
-              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>Initial JavaScript:  1.42 MB  -&gt; 1.18 MB  (<span class="text-emerald-300 font-bold">-240.00 KB / -16.9%</span>) 📉</div>
-              <div>Lazy Chunks:         3.10 MB  -&gt; 2.95 MB  (<span class="text-emerald-300 font-bold">-150.00 KB / -4.8%</span>)  📉</div>
-              <div>Total Bundle Size:   4.52 MB  -&gt; 4.13 MB  (<span class="text-emerald-300 font-bold">-390.00 KB / -8.6%</span>)  🎉</div>
-            </div>
-          </div>
-
-          <!-- CMD 7: compare -->
-          <div id="cmd-compare" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">7</span>
-                <h3 class="text-base font-mono font-bold text-emerald-300">bundleradar compare &lt;baseline.json&gt; &lt;stats.json&gt;</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">JSON File Diff</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Calculates exact byte and percentage deltas between two exported JSON snapshot summary files.
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar compare</span> .bundleradar/baseline.json dist/my-app/stats.json</div>
-              <div class="text-white font-bold pt-1">BRANCH DELTA COMPARISON</div>
-              <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
-              <div>Initial JavaScript:  248.50 KB -&gt; 232.10 KB (<span class="text-emerald-300 font-bold">-16.40 KB / -6.6%</span>) ✓</div>
-              <div>Lazy Chunks:         812.20 KB -&gt; 808.50 KB (<span class="text-emerald-300 font-bold">-3.70 KB / -0.4%</span>) ✓</div>
-              <div>Total Bundle Size:   1.06 MB   -&gt; 1.04 MB   (<span class="text-emerald-300 font-bold">-20.10 KB / -1.8%</span>) ✓</div>
-            </div>
-          </div>
-
-          <!-- CMD 8: check -->
-          <div id="cmd-check" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">8</span>
-                <h3 class="text-base font-mono font-bold text-rose-300">bundleradar check &lt;stats.json&gt; [--entry &lt;entry&gt;] [flags]</h3>
+                <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">3</span>
+                <h3 class="text-base font-mono font-bold text-rose-300">bundleradar gate &lt;stats.json&gt; [--entry &lt;entry&gt;] [flags]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30">CI Gate</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Enforces strict size budgets. Returns exit code 0 on pass, or exit code 1 with budget violation details to block oversized pull requests. Budgets can be scoped to specific entrypoints via <code>--entry</code> / <code>-e</code> (e.g. <code>src/main.ts</code> or <code>worker.js</code>).
+              Enforces strict size budgets and regression limits in pull request pipelines. Returns exit code 0 on pass, or exit code 1 with budget violation details to block oversized pull requests. Budgets can be scoped to specific entrypoints via <code>--entry</code> / <code>-e</code> (e.g. <code>src/main.ts</code> or <code>main-*.js</code>).
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar check</span> dist/my-app/stats.json --entry src/main.ts --max-initial=300KB</div>
-              <div class="text-emerald-300 font-bold">✓ BUDGET CHECK PASSED: Initial JS is 248.50 KB (budget: 300.00 KB)</div>
-              <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundleradar check</span> dist/my-app/stats.json --max-initial=200KB</div>
-              <div class="text-rose-400 font-bold">✗ BUDGET CHECK FAILED: Initial JS is 248.50 KB (budget: 200.00 KB, exceeded by +48.50 KB)</div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar gate</span> dist/apps/portal/stats.json --entry src/main.ts --max-initial=300KB</div>
+              <div class="text-emerald-300 font-bold">✓ BUDGET GATE PASSED: Initial JS is 248.50 KB (budget: 300.00 KB)</div>
+              <div class="text-slate-400 pt-2">$ <span class="text-indigo-300 font-semibold">bundleradar gate</span> dist/apps/portal/stats.json --max-initial=200KB</div>
+              <div class="text-rose-400 font-bold">✗ BUDGET GATE FAILED: Initial JS is 248.50 KB (budget: 200.00 KB, exceeded by +48.50 KB)</div>
               <div class="text-slate-400 text-[11px]">Process exited with status code 1. Pipeline failed.</div>
             </div>
           </div>
 
-          <!-- CMD 9: init -->
-          <div id="cmd-init" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">9</span>
-                <h3 class="text-base font-mono font-bold text-emerald-300">bundleradar init [path] [flags]</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Assisted Setup</span>
-            </div>
-            
-            <p class="text-sm text-slate-300">
-              Generates or previews a reviewable <code>.bundleradar.yml</code> configuration with headroom over measured sizes or imported from Angular budgets. Refuses to overwrite existing configs.
-            </p>
-
-            <!-- Inline Terminal Output -->
-            <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar init</span> --headroom 10</div>
-              <div class="text-slate-400"># Proposed configuration with 10.0% headroom:</div>
-              <div class="text-slate-400"># Measured: Initial JS 248.50 KB, Total JS 1.06 MB</div>
-              <div class="text-slate-400"># Proposed: initial_js_max: 274KB, total_max: 1.17MB</div>
-              <div class="text-white font-bold pt-1">budgets:</div>
-              <div class="text-emerald-300">  initial_js_max: 274KB</div>
-              <div class="text-emerald-300">  total_max: 1.17MB</div>
-            </div>
-          </div>
-
-          <!-- CMD 10: workspace summary -->
+          <!-- CMD 4: workspace -->
           <div id="cmd-workspace" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">10</span>
-                <h3 class="text-base font-mono font-bold text-cyan-300">bundleradar workspace summary [--projects &lt;names&gt;]</h3>
+                <span class="w-6 h-6 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
+                <h3 class="text-base font-mono font-bold text-cyan-300">bundleradar workspace [list|scan] [--projects &lt;names&gt;]</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">Nx Monorepo</span>
             </div>
             
             <p class="text-sm text-slate-300">
-              Aggregates existing Angular builds across an Nx workspace to compare multi-app sizes, shared library costs, duplicate dependencies, and artifact freshness.
+              Discovers and scans builds across an Nx monorepo workspace to compare multi-app sizes, shared library costs, duplicate dependencies, and artifact freshness.
             </p>
 
             <!-- Inline Terminal Output -->
             <div class="rounded-xl border border-slate-800 bg-[#090e1a] p-4 font-mono text-xs text-slate-200 space-y-2 overflow-x-auto shadow-inner">
-              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar workspace summary</span></div>
+              <div class="text-slate-400">$ <span class="text-indigo-300 font-semibold">bundleradar workspace scan</span></div>
               <div class="text-white font-bold pt-1">WORKSPACE APPLICATION SUMMARY</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
               <div>• <strong class="text-cyan-300">admin-dashboard</strong>: Initial 1.25 MB | Lazy 450 KB | Total 1.70 MB <span class="text-emerald-400">✓ fresh</span></div>
               <div>• <strong class="text-cyan-300">portal</strong>:          Initial 2.08 MB | Lazy 86 KB  | Total 2.16 MB <span class="text-emerald-400">✓ fresh</span></div>
-              <div class="pt-2 text-white font-bold">SHARED NX LIBRARIES & DUPLICATES</div>
+              <div class="pt-2 text-white font-bold">SHARED NX LIBRARIES &amp; DUPLICATES</div>
               <div class="text-slate-600 select-none">-------------------------------------------------------------</div>
               <div>1. @nx-workspace/reports    <span class="text-amber-300">412.50 KB</span> (used in admin-dashboard, portal)</div>
               <div>2. @nx-workspace/charting   <span class="text-amber-300">195.20 KB</span> (used in portal)</div>
@@ -774,11 +595,11 @@ Saved Baselines (.bundleradar/baselines/):<br>
             </div>
           </div>
 
-          <!-- CMD 11: mcp -->
+          <!-- CMD 5: mcp -->
           <div id="cmd-mcp" class="scroll-mt-20 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-6 h-6 rounded-md bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center font-mono font-bold text-xs">11</span>
+                <span class="w-6 h-6 rounded-md bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center font-mono font-bold text-xs">5</span>
                 <h3 class="text-base font-mono font-bold text-fuchsia-300">bundleradar mcp</h3>
               </div>
               <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">Model Context Protocol</span>
@@ -793,8 +614,8 @@ Saved Baselines (.bundleradar/baselines/):<br>
               <div class="text-slate-400 select-none"># Register with Claude Code CLI (stdio protocol):</div>
               <div class="text-indigo-300 font-semibold">$ claude mcp add bundleradar -- bundleradar mcp</div>
               <div class="text-slate-400 select-none pt-2"># Stdio server starts quietly and exchanges JSON-RPC 2.0 messages with client:</div>
-              <div class="text-slate-300">{"jsonrpc":"2.0","method":"tools/list"} → 6 tools available</div>
-              <div class="text-emerald-300">✓ Tools: bundle_summary, bundle_why, bundle_suggest, bundle_check, bundle_measure, workspace_summary</div>
+              <div class="text-slate-300">{"jsonrpc":"2.0","method":"tools/list"} → 4 tools available</div>
+              <div class="text-emerald-300">✓ Tools: bundle_scan, bundle_diff, bundle_gate, workspace_summary</div>
             </div>
           </div>
 
@@ -874,55 +695,35 @@ jobs:
         <!-- MCP Tools Grid -->
         <div class="space-y-3">
           <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Available MCP Tools (<code class="text-indigo-300">bundleradar mcp</code>)</div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             
             <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
               <div class="flex items-center justify-between">
-                <code class="text-xs font-mono font-bold text-indigo-300">bundle_summary</code>
+                <code class="text-xs font-mono font-bold text-indigo-300">bundle_scan</code>
                 <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inspection</span>
               </div>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Initial vs lazy JS totals, Gzip wire estimations, and top npm package contributors with optional path, project, and substring filters.
+                Analyze bundle sizes (initial JS, async JS, total assets) and top contributing npm packages with optional filters and entrypoint scoping.
               </p>
             </div>
 
             <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
               <div class="flex items-center justify-between">
-                <code class="text-xs font-mono font-bold text-sky-300">bundle_why</code>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Tracer</span>
+                <code class="text-xs font-mono font-bold text-sky-300">bundle_diff</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Delta & Attribution</span>
               </div>
               <p class="text-xs text-slate-400 leading-relaxed">
-                BFS import graph tracer revealing static and dynamic chains from entrypoints to any target library or source module.
+                Compare current build against a baseline file or git ref, calculating size deltas with BFS import chain regression attribution and micro-drift grouping.
               </p>
             </div>
 
             <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
               <div class="flex items-center justify-between">
-                <code class="text-xs font-mono font-bold text-amber-300">bundle_suggest</code>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Advisor</span>
+                <code class="text-xs font-mono font-bold text-rose-300">bundle_gate</code>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">CI Budget Gate</span>
               </div>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Generates prioritized optimization recommendations for heavy packages, eager components, and duplicate libraries with potential byte savings.
-              </p>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
-              <div class="flex items-center justify-between">
-                <code class="text-xs font-mono font-bold text-rose-300">bundle_check</code>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">Guard</span>
-              </div>
-              <p class="text-xs text-slate-400 leading-relaxed">
-                Evaluates size budgets (max initial, max total) and enforces disallowed package policies to prevent unapproved dependencies.
-              </p>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-sm">
-              <div class="flex items-center justify-between">
-                <code class="text-xs font-mono font-bold text-teal-300">bundle_measure</code>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">Delta</span>
-              </div>
-              <p class="text-xs text-slate-400 leading-relaxed">
-                Calculates signed byte movements against saved baseline snapshots with configurable regression limits (e.g. max initial delta).
+                Validate bundle sizes, regressions, and architecture rules against policy budgets in CI (max initial, max total, max delta, forbidden packages).
               </p>
             </div>
 
@@ -932,7 +733,7 @@ jobs:
                 <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Monorepo</span>
               </div>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Inspects Nx monorepos, comparing multi-app sizes, shared library contributions, repeated cross-app dependencies, and build freshness.
+                Discover and summarize all application targets across an Nx or multi-package monorepo workspace, tracking cross-app shared packages.
               </p>
             </div>
 
@@ -1060,66 +861,31 @@ jobs:
           </div>
           <span class="text-[10px] text-slate-400">Run</span>
         </a>
-        <a href="#cmd-summary" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+        <a href="#cmd-scan" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-indigo-400">$</span>
-            <span>bundleradar summary</span>
+            <span>bundleradar scan</span>
           </div>
           <span class="text-[10px] text-slate-400">Breakdown</span>
         </a>
-        <a href="#cmd-inspect" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
-          <div class="flex items-center space-x-2">
-            <span class="text-blue-400">$</span>
-            <span>bundleradar inspect &lt;chunk&gt;</span>
-          </div>
-          <span class="text-[10px] text-slate-400">Deep-dive</span>
-        </a>
-        <a href="#cmd-why" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+        <a href="#cmd-diff" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-sky-400">$</span>
-            <span>bundleradar why &lt;pkg&gt;</span>
+            <span>bundleradar diff</span>
           </div>
-          <span class="text-[10px] text-slate-400">Trace</span>
+          <span class="text-[10px] text-slate-400">PR Delta</span>
         </a>
-        <a href="#cmd-suggest" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
-          <div class="flex items-center space-x-2">
-            <span class="text-amber-400">$</span>
-            <span>bundleradar suggest</span>
-          </div>
-          <span class="text-[10px] text-slate-400">Tips</span>
-        </a>
-        <a href="#cmd-baseline" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
-          <div class="flex items-center space-x-2">
-            <span class="text-purple-400">$</span>
-            <span>bundleradar baseline [save|list|use|rebuild]</span>
-          </div>
-          <span class="text-[10px] text-slate-400">Worktree</span>
-        </a>
-        <a href="#cmd-measure" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
-          <div class="flex items-center space-x-2">
-            <span class="text-teal-400">$</span>
-            <span>bundleradar measure [-b name]</span>
-          </div>
-          <span class="text-[10px] text-slate-400">Live delta</span>
-        </a>
-        <a href="#cmd-compare" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
-          <div class="flex items-center space-x-2">
-            <span class="text-emerald-400">$</span>
-            <span>bundleradar compare</span>
-          </div>
-          <span class="text-[10px] text-slate-400">JSON diff</span>
-        </a>
-        <a href="#cmd-check" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
+        <a href="#cmd-gate" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-rose-400">$</span>
-            <span>bundleradar check (CI)</span>
+            <span>bundleradar gate</span>
           </div>
-          <span class="text-[10px] text-slate-400">Budget</span>
+          <span class="text-[10px] text-slate-400">CI Budget Gate</span>
         </a>
         <a href="#cmd-workspace" onclick="closeSearchModal()" class="search-item flex items-center justify-between p-2.5 rounded-lg text-slate-200 hover:bg-slate-800/80 hover:text-white group">
           <div class="flex items-center space-x-2">
             <span class="text-cyan-400">$</span>
-            <span>bundleradar workspace summary</span>
+            <span>bundleradar workspace [list|scan]</span>
           </div>
           <span class="text-[10px] text-slate-400">Nx Monorepo</span>
         </a>
