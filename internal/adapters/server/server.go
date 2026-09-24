@@ -63,6 +63,7 @@ func (s *Server) setupRoutes() {
 			"version": bundleradar.ToolVersion,
 		})
 	})
+	s.mux.HandleFunc("/api/bundle", s.handleGetBundle)
 }
 
 // Handler returns the HTTP handler with developer CORS enabled.
