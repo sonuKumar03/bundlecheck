@@ -18,6 +18,7 @@ func newScanCommand() *cobra.Command {
 		entry   string
 		why     string
 		top     int
+		uiMode  bool
 	)
 
 	c := &cobra.Command{
@@ -31,6 +32,10 @@ func newScanCommand() *cobra.Command {
 			}
 			if statsPath == "" {
 				return fmt.Errorf("stats path is required")
+			}
+
+			if uiMode {
+				return runUIServer("127.0.0.1", 4200, statsPath, true)
 			}
 
 			client := bundleradar.New()
@@ -77,6 +82,7 @@ func newScanCommand() *cobra.Command {
 	c.Flags().StringVarP(&entry, "entry", "e", "", "Scope scan to a specific entrypoint")
 	c.Flags().StringVar(&why, "why", "", "Trace import path root for a specific package")
 	c.Flags().IntVar(&top, "top", 10, "Number of top packages to list")
+	c.Flags().BoolVar(&uiMode, "ui", false, "Launch interactive BundleRadar Studio web UI after scan")
 
 	return c
 }
