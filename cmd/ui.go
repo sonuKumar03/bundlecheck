@@ -118,8 +118,9 @@ func autoDiscoverStatsFile(startDir string) string {
 	candidates := []string{
 		"stats.json",
 		"dist/stats.json",
+		"dist/apps/portal/stats.json",
+		"dist/apps/admin-dashboard/stats.json",
 		"build/stats.json",
-		"apps/portal/dist/stats.json",
 	}
 
 	for _, c := range candidates {
@@ -128,6 +129,18 @@ func autoDiscoverStatsFile(startDir string) string {
 			return p
 		}
 	}
+
+	// Dynamic search across Nx monorepo apps and multi-app builds
+	matches, _ := filepath.Glob(filepath.Join(startDir, "dist", "apps", "*", "stats.json"))
+	if len(matches) > 0 {
+		return matches[0]
+	}
+
+	matches, _ = filepath.Glob(filepath.Join(startDir, "dist", "*", "stats.json"))
+	if len(matches) > 0 {
+		return matches[0]
+	}
+
 	return ""
 }
 
