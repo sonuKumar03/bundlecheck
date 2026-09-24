@@ -25,7 +25,11 @@ BundleRadar Studio is a high-performance, zero-sluggishness interactive web work
 ## 2. CLI Invocation
 
 Users can launch the studio in two ways:
-1. **Dedicated Command**:
+1. **Dedicated Command (Zero-argument auto-discovery)**:
+   ```bash
+   bundleradar ui
+   ```
+   Or pointing explicitly to a stats file or custom port:
    ```bash
    bundleradar ui [stats.json] [--port 4200] [--host 127.0.0.1] [--open]
    ```
@@ -33,6 +37,12 @@ Users can launch the studio in two ways:
    ```bash
    bundleradar scan dist/apps/portal/stats.json --ui
    ```
+
+### Zero-Argument Auto-Discovery & Empty State
+When run as `bundleradar ui` without arguments:
+- **Auto-Discovery**: Scans current directory and workspace for `stats.json` or `metafile.json` across standard build output paths (`dist/`, `build/`, `apps/*/dist/`).
+- **Monorepo Discovery**: If an Nx or multi-app workspace is detected, discovers all application targets and selects the primary target.
+- **Empty State / First-Run**: If no build artifacts exist yet, the UI launches gracefully instead of erroring out. It displays an empty-state screen with project context and a single-click **`[ 🔨 Build Application Now ]`** button to trigger the initial compilation.
 
 ### Command Flags (`cmd/ui.go` & `cmd/scan.go`)
 | Flag | Shorthand | Type | Default | Description |
