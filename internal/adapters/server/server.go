@@ -1,0 +1,132 @@
+package server
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/sonuKumar03/bundleradar/internal/core"
+	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
+)
+
+// Config configures the live studio HTTP server.
+type Config struct {
+	Host      string
+	Port      int
+	StatsPath string
+	Client    *bundleradar.Client
+}
+
+// Server provides the live web UI HTTP server adapter.
+type Server struct {
+	host       string
+	port       int
+	statsPath  string
+	client     *bundleradar.Client
+	bundle     *core.Bundle
+	mux        *http.ServeMux
+	httpServer *http.Server
+	listener   net.Listener
+	mu         sync.RWMutex
+}
+
+// New creates an initialized HTTP server adapter.
+func New(cfg Config) (*Server, error) {
+	if cfg.Host == "" {
+		cfg.Host = "127.0.0.1"
+	}
+	if cfg.Client == nil {
+		cfg.Client = bundleradar.New()
+	}
+
+	s := &Server{
+		host:      cfg.Host,
+		port:      cfg.Port,
+		statsPath: cfg.StatsPath,
+		client:    cfg.Client,
+		mux:       http.NewServeMux(),
+	}
+
+	s.setupRoutes()
+	return s, nil
+}
+
+func (s *Server) setupRoutes() {
+	s.mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status":  "ok",
+			"version": bundleradar.ToolVersion,
+		})
+	})
+}
+
+// Handler returns the HTTP handler with developer CORS enabled.
+func (s *Server) Handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS for local developer tools
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		s.mux.ServeHTTP(w, r)
+	})
+}
+
+// Start binds the listener and starts serving HTTP requests asynchronously.
+func (s *Server) Start() error {
+	addr := fmt.Sprintf("%s:%d", s.host, s.port)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to bind %s: %w", addr, err)
+	}
+	s.listener = ln
+	s.port = ln.Addr().(*net.TCPAddr).Port
+
+	s.httpServer = &http.Server{
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		_ = s.httpServer.Serve(ln)
+	}()
+	return nil
+}
+
+// Close gracefully terminates the server.
+func (s *Server) Close() error {
+	if s.httpServer != nil {
+		return s.httpServer.Shutdown(context.Background())
+	}
+	return nil
+}
+
+// SetBundle updates the server's cached bundle AST.
+func (s *Server) SetBundle(bundle *core.Bundle) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.bundle = bundle
+}
+
+// Bundle returns the server's cached bundle AST.
+func (s *Server) Bundle() *core.Bundle {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.bundle
+}
+
+// URL returns the base URL of the running server.
+func (s *Server) URL() string {
+	if s.listener == nil {
+		return fmt.Sprintf("http://%s:%d", s.host, s.port)
+	}
+	return fmt.Sprintf("http://%s", s.listener.Addr().String())
+}
