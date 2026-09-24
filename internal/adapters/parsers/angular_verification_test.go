@@ -201,12 +201,13 @@ func TestAngularParser_InitialVsAsyncBoundary(t *testing.T) {
 	var bundleAsyncBytes int64
 
 	for _, chunk := range bundle.Chunks {
-		if chunk.Type == core.LoadTypeInitial {
+		switch chunk.Type {
+		case core.LoadTypeInitial:
 			bundleInitialBytes += chunk.SizeBytes
 			if _, isInitial := gt.InitialFiles[chunk.Name]; !isInitial {
 				t.Errorf("chunk %q marked as INITIAL by parser, but is NOT in index.html ground truth", chunk.Name)
 			}
-		} else if chunk.Type == core.LoadTypeAsync {
+		case core.LoadTypeAsync:
 			bundleAsyncBytes += chunk.SizeBytes
 			if _, isLazy := gt.LazyFiles[chunk.Name]; !isLazy {
 				t.Errorf("chunk %q marked as ASYNC by parser, but is NOT in lazy chunks ground truth", chunk.Name)

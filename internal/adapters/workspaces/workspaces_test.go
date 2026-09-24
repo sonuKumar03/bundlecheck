@@ -131,11 +131,12 @@ func TestNxResolver_EndToEndAngularScan(t *testing.T) {
 		t.Logf("[%s] Initial Bytes: %d, Async Bytes: %d, Chunks: %d",
 			target.Name, ep.InitialBytes, ep.AsyncBytes, len(bundle.Chunks))
 
-		if target.Name == "admin-dashboard" {
+		switch target.Name {
+		case "admin-dashboard":
 			if ep.InitialBytes != 1151927 {
 				t.Errorf("admin-dashboard initial bytes mismatch: got %d, want 1151927", ep.InitialBytes)
 			}
-		} else if target.Name == "portal" {
+		case "portal":
 			if ep.InitialBytes != 2186272 {
 				t.Errorf("portal initial bytes mismatch: got %d, want 2186272", ep.InitialBytes)
 			}
