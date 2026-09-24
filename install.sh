@@ -129,8 +129,8 @@ install_binary() {
         else
           ZIP_DEST="$TMP_DIR"
         fi
-        BUNDLECHECK_INSTALL_ARCHIVE="$ARCHIVE" BUNDLECHECK_INSTALL_DEST="$ZIP_DEST" \
-          powershell -NoProfile -Command 'Expand-Archive -LiteralPath $env:BUNDLECHECK_INSTALL_ARCHIVE -DestinationPath $env:BUNDLECHECK_INSTALL_DEST -Force'
+        BUNDLERADAR_INSTALL_ARCHIVE="$ARCHIVE" BUNDLERADAR_INSTALL_DEST="$ZIP_DEST" \
+          powershell -NoProfile -Command 'Expand-Archive -LiteralPath $env:BUNDLERADAR_INSTALL_ARCHIVE -DestinationPath $env:BUNDLERADAR_INSTALL_DEST -Force'
       fi
     else
       tar -xzf "$ARCHIVE" -C "$TMP_DIR"

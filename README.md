@@ -98,6 +98,14 @@ Download standalone binaries directly from the [**GitHub Releases**](https://git
 go install github.com/sonuKumar03/bundleradar@latest
 ```
 
+### Clean Uninstall
+
+To cleanly remove `bundleradar` (and legacy `bundlecheck`) binaries and installed companion agent skills:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonuKumar03/bundleradar/master/uninstall.sh | sh
+```
+
 ---
 
 ## 🚀 Quick Start
