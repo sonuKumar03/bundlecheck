@@ -48,8 +48,8 @@ jobs:
 
       - name: Smoke Test Binary on Fixture
         run: |
-          ./bundleradar summary testdata/minimal
-          ./bundleradar check testdata/minimal --max-initial 5MB
+          ./bundleradar scan testdata/minimal/stats.json -d testdata/minimal/browser
+          ./bundleradar gate testdata/minimal/stats.json -d testdata/minimal/browser --max-initial 5MB
 
   publish:
     name: Build & Publish GitHub Release
