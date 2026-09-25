@@ -145,7 +145,6 @@ func (p *AngularParser) Parse(ctx context.Context, target core.Target) (*core.Bu
 	var initialGzipBytes int64
 	var asyncBytes int64
 	var initialChunkIDs []string
-	var asyncChunkIDs []string
 
 	// 2.5 Compute shortest import ingress path from entrypoint roots
 	rootInputs := make([]string, 0)
@@ -187,6 +186,9 @@ func (p *AngularParser) Parse(ctx context.Context, target core.Target) (*core.Bu
 
 		if inData, ok := meta.Inputs[curr]; ok {
 			for _, imp := range inData.Imports {
+				if imp.Kind != "import-statement" {
+					continue
+				}
 				target := imp.Path
 				if target == "" {
 					continue
@@ -238,7 +240,6 @@ func (p *AngularParser) Parse(ctx context.Context, target core.Target) (*core.Bu
 			initialBytes += out.Bytes
 			initialGzipBytes += estimateGzip(out.Bytes)
 		} else {
-			asyncChunkIDs = append(asyncChunkIDs, baseName)
 			asyncBytes += out.Bytes
 		}
 
@@ -294,7 +295,7 @@ func (p *AngularParser) Parse(ctx context.Context, target core.Target) (*core.Bu
 		InitialBytes:     initialBytes,
 		InitialGzipBytes: initialGzipBytes,
 		AsyncBytes:       asyncBytes,
-		ChunkIDs:         append(initialChunkIDs, asyncChunkIDs...),
+		ChunkIDs:         initialChunkIDs,
 	})
 
 	return bundle, nil
