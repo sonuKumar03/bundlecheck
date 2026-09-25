@@ -1,4 +1,130 @@
 /* BundleRadar Live Studio Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 :root {
   color-scheme: dark;
+  --bg-canvas: #0d1117;
+  --bg-surface: #161b22;
+  --bg-surface-elevated: #21262d;
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --text-primary: #e6edf3;
+  --text-muted: #8b949e;
+  --text-subtle: #6e7681;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-gold: #d29922;
+  --accent-coral: #f85149;
 }
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Crisp developer monospace */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Minimalist scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* GitHub Dark Surface Cards */
+.surface-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+}
+
+.surface-elevated {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+}
+
+/* Row selection */
+.row-selected {
+  background-color: rgba(56, 139, 253, 0.1) !important;
+  border-left: 2px solid var(--accent-blue) !important;
+}
+
+/* Navigation tabs */
+.tab-active {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+.tab-inactive {
+  background-color: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+.tab-inactive:hover {
+  color: var(--text-primary);
+  background-color: rgba(177, 186, 196, 0.08);
+}
+
+/* Code block highlight */
+.code-box {
+  background-color: #0b0f14;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #c9d1d9;
+}
+
+/* Custom interactive checkbox */
+.sim-check:checked {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+/* Ingress node trail */
+.ingress-node {
+  position: relative;
+}
+.ingress-node:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 22px;
+  bottom: -6px;
+  width: 1px;
+  background: #30363d;
+}
+
+/* Smooth transitions */
+.fade-in {
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Side-by-Side Synchronized Row Highlight */
+.sbs-row {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.sbs-row:hover,
+.sbs-highlight {
+  background-color: rgba(88, 166, 255, 0.12) !important;
+  border-left: 2px solid var(--accent-blue) !important;
+}
+

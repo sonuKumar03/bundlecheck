@@ -7,79 +7,529 @@
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
-  <!-- Top Navigation & Controls -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between">
+<body class="bg-[#0d1117] text-[#c9d1d9] font-sans antialiased h-screen flex flex-col overflow-hidden">
+  
+  <!-- Header: Brand, Live Sync, Version History & Global Controls -->
+  <header class="border-b border-[#30363d] bg-[#161b22] px-5 py-2.5 flex items-center justify-between shrink-0 z-30">
     <div class="flex items-center space-x-3">
-      <span class="text-xl">⚡</span>
-      <h1 class="font-bold text-base tracking-tight text-white flex items-center space-x-2">
-        <span>BundleRadar</span>
-        <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-mono">Studio</span>
-      </h1>
-      <span id="stats-badge" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">Loading...</span>
+      <div class="flex items-center space-x-2">
+        <span class="text-[#58a6ff] font-bold text-base leading-none">⚡</span>
+        <span class="font-bold text-sm tracking-tight text-[#e6edf3]">BundleRadar</span>
+        <span class="text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#21262d] text-[#58a6ff] border border-[#30363d]">Studio</span>
+      </div>
+      <div class="h-4 w-[1px] bg-[#30363d]"></div>
+      
+      <!-- Live Sync status badge -->
+      <span id="live-indicator" class="flex items-center space-x-1.5 text-[11px] font-mono text-[#3fb950] bg-[#238636]/10 border border-[#238636]/30 px-2 py-0.5 rounded-full" title="Real-time live file watcher active">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#3fb950] animate-pulse"></span>
+        <span>Live Sync</span>
+      </span>
+
+      <!-- Build Version / Checkpoint Selector -->
+      <div class="flex items-center space-x-1.5 bg-[#0d1117] border border-[#30363d] rounded-md px-2 py-1 text-xs">
+        <span class="text-[#8b949e] text-[11px] font-mono">Build:</span>
+        <select id="version-select" class="bg-transparent text-xs text-[#e6edf3] font-mono outline-none cursor-pointer">
+          <option value="latest">Latest</option>
+        </select>
+        <button id="btn-pin-baseline" class="ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#21262d] hover:bg-[#30363d] text-[#58a6ff] border border-[#30363d] transition-colors" title="Pin active build as baseline">📌 Set Baseline</button>
+      </div>
+
+      <span id="stats-badge" class="text-xs font-mono text-[#8b949e] bg-[#0d1117] border border-[#30363d] px-2.5 py-1 rounded-md max-w-xs truncate hidden md:inline-block" title="Active stats file">
+        Loading stats...
+      </span>
     </div>
 
-    <!-- Chunk Selector -->
-    <div class="flex items-center space-x-4">
+    <!-- Center Navigation Tabs -->
+    <nav class="flex items-center space-x-1 p-0.5 bg-[#0d1117] rounded-md border border-[#30363d] text-xs font-medium">
+      <button id="tab-diagnosis" data-tab="diagnosis" class="tab-btn px-3 py-1.5 rounded border text-xs flex items-center space-x-1.5 tab-active transition-all">
+        <span>⚡ Bundle Diagnostics</span>
+        <span id="diag-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#f85149]/15 text-[#f85149] border border-[#f85149]/30">--</span>
+      </button>
+      <button id="tab-compare" data-tab="compare" class="tab-btn px-3 py-1.5 rounded border text-xs flex items-center space-x-1.5 tab-inactive transition-all">
+        <span>📊 Compare & Drift</span>
+        <span id="drift-summary-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#3fb950]/15 text-[#3fb950] border border-[#3fb950]/30 hidden">0 B</span>
+      </button>
+      <button id="tab-side-by-side" data-tab="side-by-side" class="tab-btn px-3 py-1.5 rounded border text-xs flex items-center space-x-1.5 tab-inactive transition-all">
+        <span>⇄ Side-by-Side</span>
+      </button>
+      <button id="tab-packages" data-tab="packages" class="tab-btn px-3 py-1.5 rounded border text-xs flex items-center space-x-1.5 tab-inactive transition-all">
+        <span>🔍 Ingress & Packages</span>
+      </button>
+      <button id="tab-treemap" data-tab="treemap" class="tab-btn px-3 py-1.5 rounded border text-xs flex items-center space-x-1.5 tab-inactive transition-all">
+        <span>🗺️ Treemap</span>
+      </button>
+    </nav>
+
+    <!-- Right Controls: Chunk select & search -->
+    <div class="flex items-center space-x-3">
       <div class="flex items-center space-x-2">
-        <label for="chunk-select" class="text-xs text-slate-400 font-medium">Viewing Chunk:</label>
-        <select id="chunk-select" class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
-          <option value="main">Initial Bootstrap (main)</option>
+        <select id="chunk-select" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#c9d1d9] rounded-md px-2.5 py-1.5 focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none cursor-pointer">
+          <option value="all">All Chunks</option>
         </select>
       </div>
 
-      <div class="relative">
-        <input type="text" id="search-input" placeholder="Search packages..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 rounded-lg px-3 py-1.5 pl-8 focus:ring-2 focus:ring-indigo-500 outline-none w-48">
-        <span class="absolute left-2.5 top-2 text-slate-500 text-xs">🔍</span>
+      <div class="relative flex items-center">
+        <input type="text" id="search-input" placeholder="Search packages (⌘K)" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#c9d1d9] placeholder-[#6e7681] rounded-md px-3 py-1.5 pl-8 pr-7 focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] outline-none w-48">
+        <span class="absolute left-2.5 text-[#6e7681] text-xs pointer-events-none">🔍</span>
+        <button id="clear-search" class="absolute right-2 text-[#8b949e] hover:text-[#e6edf3] text-xs hidden" title="Clear filter">✕</button>
       </div>
     </div>
   </header>
 
-  <!-- Metric Badges Bar -->
-  <section class="border-b border-slate-800/60 bg-slate-900/40 px-6 py-2.5 flex items-center space-x-6 text-xs font-mono">
-    <div>Initial JS: <strong id="metric-initial" class="text-emerald-400">--</strong></div>
-    <div>Async Chunks: <strong id="metric-async" class="text-sky-400">--</strong></div>
-    <div>Total Build: <strong id="metric-total" class="text-slate-200">--</strong></div>
-  </section>
+  <!-- Main Viewports Container -->
+  <main class="flex-1 flex overflow-hidden min-h-0 bg-[#0d1117]">
+    
+    <!-- ========================================== -->
+    <!-- VIEW 1: BUNDLE DIAGNOSTICS & INGRESS (DEFAULT) -->
+    <!-- ========================================== -->
+    <section id="view-diagnosis" class="view-panel flex-1 flex flex-col p-6 lg:p-8 space-y-6 overflow-y-auto w-full">
+      
+      <!-- Top Scorecard & Health Audit -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+        
+        <!-- Initial JS Health Card -->
+        <div class="surface-card p-4 space-y-2 relative overflow-hidden">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>INITIAL BOOTSTRAP JS</span>
+            <span id="health-status-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#f85149]/15 text-[#f85149] border border-[#f85149]/30">CRITICAL BLOAT</span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="metric-initial-large" class="text-2xl font-bold font-mono text-[#e6edf3]">--</span>
+            <span class="text-xs text-[#8b949e] font-mono">/ 500 KB budget</span>
+          </div>
+          <div class="w-full bg-[#21262d] rounded-full h-1.5 overflow-hidden">
+            <div id="health-meter" class="bg-[#f85149] h-full rounded-full transition-all duration-500" style="width: 100%"></div>
+          </div>
+          <p id="health-description" class="text-[11px] text-[#8b949e] leading-normal">
+            Initial JS is significantly above web performance standards.
+          </p>
+        </div>
 
-  <!-- Main Studio Workspace -->
-  <main class="flex-1 flex flex-col p-6 space-y-6 max-w-7xl w-full mx-auto">
-    <!-- Treemap Container -->
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl flex flex-col space-y-2">
-      <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
-        <span>INTERACTIVE CANVAS TREEMAP (60fps)</span>
-        <span>Click tile to inspect dependency path</span>
+        <!-- Chunks Architecture Card -->
+        <div class="surface-card p-4 space-y-2">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>CHUNKS ARCHITECTURE</span>
+            <span id="metric-chunks-count" class="text-[#58a6ff] text-xs font-mono font-semibold">-- chunks</span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="metric-async-large" class="text-2xl font-bold font-mono text-[#e6edf3]">--</span>
+            <span class="text-xs text-[#8b949e] font-mono">async / lazy</span>
+          </div>
+          <div class="text-[11px] text-[#8b949e] font-mono flex items-center justify-between pt-1">
+            <span>Initial Chunks: <strong id="metric-initial-chunks" class="text-[#e6edf3]">--</strong></span>
+            <span>Lazy Chunks: <strong id="metric-lazy-chunks" class="text-[#58a6ff]">--</strong></span>
+          </div>
+        </div>
+
+        <!-- Total Composition Card -->
+        <div class="surface-card p-4 space-y-2">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>TOTAL BUILD METRICS</span>
+            <span id="metric-pkgs-count" class="text-[#8b949e] text-xs font-mono">-- pkgs</span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="metric-total-large" class="text-2xl font-bold font-mono text-[#e6edf3]">--</span>
+            <span id="metric-total-gzip" class="text-xs text-[#3fb950] font-mono font-semibold">-- gzip</span>
+          </div>
+          <div class="text-[11px] text-[#8b949e] font-mono flex items-center justify-between pt-1">
+            <span>Duplicated Packages: <strong id="metric-dup-count" class="text-[#d29922]">0</strong></span>
+            <span>Initial Share: <strong id="metric-initial-pct" class="text-[#f85149]">--%</strong></span>
+          </div>
+        </div>
+
       </div>
-      <div class="w-full h-96 relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800/80">
+
+      <!-- Section: Initial JS Contributors Table -->
+      <div class="surface-card p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#30363d] pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-[#e6edf3] flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-[#f85149]"></span>
+              <span>Initial JS Contributors & Ingress Trails</span>
+            </h2>
+            <p class="text-xs text-[#8b949e] mt-0.5">
+              These packages are bundled into the critical initial entrypoint (<code class="text-[#58a6ff] font-mono">main.js</code>). Trace their ingress chain to identify which application files pull them in:
+            </p>
+          </div>
+          <span class="text-xs font-mono text-[#8b949e]">Sorted by size impact</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-[#30363d] text-[#8b949e] text-[11px] uppercase tracking-wider">
+                <th class="pb-2 font-medium w-8">#</th>
+                <th class="pb-2 font-medium">Package</th>
+                <th class="pb-2 font-medium w-28 text-right">Raw Size</th>
+                <th class="pb-2 font-medium w-28 text-right">Gzip Est.</th>
+                <th class="pb-2 font-medium w-24 text-right">% Initial</th>
+                <th class="pb-2 font-medium pl-6">Direct Ingress Trail (Root Cause)</th>
+                <th class="pb-2 font-medium w-20 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="initial-contributors-body" class="divide-y divide-[#21262d]">
+              <tr>
+                <td colspan="7" class="py-6 text-center text-[#8b949e]">Loading initial bundle contributors...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section: Chunks Breakdown Inventory -->
+      <div class="surface-card p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#30363d] pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-[#e6edf3] flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-[#58a6ff]"></span>
+              <span>Emitted Chunks Inventory</span>
+            </h2>
+            <p class="text-xs text-[#8b949e] mt-0.5">
+              Breakdown of initial synchronous chunks vs. dynamically imported lazy chunks:
+            </p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-[#30363d] text-[#8b949e] text-[11px] uppercase tracking-wider">
+                <th class="pb-2 font-medium">Chunk Name</th>
+                <th class="pb-2 font-medium w-28">Type</th>
+                <th class="pb-2 font-medium w-28 text-right">Raw Size</th>
+                <th class="pb-2 font-medium w-28 text-right">Gzip Est.</th>
+                <th class="pb-2 font-medium w-28 text-right">% of Build</th>
+              </tr>
+            </thead>
+            <tbody id="chunks-inventory-body" class="divide-y divide-[#21262d]"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: COMPARE & DRIFT VIEW (NEW)         -->
+    <!-- ========================================== -->
+    <section id="view-compare" class="view-panel flex-1 flex flex-col p-6 lg:p-8 space-y-6 overflow-y-auto w-full hidden">
+      
+      <!-- Drift Top Scorecards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+        
+        <!-- Initial JS Delta Card -->
+        <div class="surface-card p-4 space-y-2 relative overflow-hidden">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>INITIAL JS DRIFT</span>
+            <span id="drift-status-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#3fb950]/15 text-[#3fb950] border border-[#3fb950]/30">--</span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="drift-init-large" class="text-2xl font-bold font-mono text-[#3fb950]">--</span>
+            <span id="drift-init-pct" class="text-xs text-[#8b949e] font-mono">--%</span>
+          </div>
+          <div class="text-[11px] text-[#8b949e] font-mono flex items-center justify-between pt-1">
+            <span>Baseline: <strong id="drift-base-init" class="text-[#e6edf3]">--</strong></span>
+            <span>Current: <strong id="drift-target-init" class="text-[#58a6ff]">--</strong></span>
+          </div>
+        </div>
+
+        <!-- Total Bundle Delta Card -->
+        <div class="surface-card p-4 space-y-2">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>TOTAL BUNDLE DRIFT</span>
+            <span id="drift-total-badge" class="text-[#8b949e] text-xs font-mono">--</span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="drift-total-large" class="text-2xl font-bold font-mono text-[#e6edf3]">--</span>
+          </div>
+          <div class="text-[11px] text-[#8b949e] font-mono flex items-center justify-between pt-1">
+            <span>Baseline: <strong id="drift-base-total" class="text-[#e6edf3]">--</strong></span>
+            <span>Current: <strong id="drift-target-total" class="text-[#58a6ff]">--</strong></span>
+          </div>
+        </div>
+
+        <!-- Movements Count Card -->
+        <div class="surface-card p-4 space-y-2">
+          <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono">
+            <span>PACKAGE MOVEMENTS</span>
+            <span id="drift-impact-count" class="text-[#58a6ff] text-xs font-mono font-semibold">-- moved</span>
+          </div>
+          <div class="text-[11px] text-[#8b949e] font-mono space-y-1 pt-1">
+            <div class="flex justify-between"><span>Eliminated from initial:</span><strong id="drift-count-eliminated" class="text-[#3fb950]">0</strong></div>
+            <div class="flex justify-between"><span>Reduced in size:</span><strong id="drift-count-reduced" class="text-[#58a6ff]">0</strong></div>
+            <div class="flex justify-between"><span>Regressed / Increased:</span><strong id="drift-count-regressed" class="text-[#f85149]">0</strong></div>
+            <div class="flex justify-between"><span>New additions:</span><strong id="drift-count-added" class="text-[#d29922]">0</strong></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Compare Controls & Table -->
+      <div class="surface-card p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#30363d] pb-3">
+          <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1.5 text-xs font-mono">
+              <span class="text-[#8b949e]">Target:</span>
+              <select id="compare-target-select" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#e6edf3] rounded px-2 py-1 outline-none cursor-pointer"></select>
+            </div>
+            <span class="text-xs text-[#8b949e]">vs Baseline:</span>
+            <div class="flex items-center space-x-1.5 text-xs font-mono">
+              <select id="compare-base-select" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#e6edf3] rounded px-2 py-1 outline-none cursor-pointer"></select>
+            </div>
+          </div>
+
+          <!-- Drift Filter Chips -->
+          <div class="flex items-center space-x-1 text-[11px] font-mono">
+            <button data-drift-filter="all" class="drift-filter-chip px-2.5 py-1 rounded bg-[#21262d] text-[#58a6ff] border border-[#30363d]">All Packages</button>
+            <button data-drift-filter="changed" class="drift-filter-chip px-2.5 py-1 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">Changed Only</button>
+            <button data-drift-filter="improved" class="drift-filter-chip px-2.5 py-1 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">Eliminated / Reduced</button>
+            <button data-drift-filter="regressed" class="drift-filter-chip px-2.5 py-1 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">Regressed</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-[#30363d] text-[#8b949e] text-[11px] uppercase tracking-wider">
+                <th class="pb-2 font-medium w-8">#</th>
+                <th class="pb-2 font-medium">Package</th>
+                <th class="pb-2 font-medium w-28 text-right">Baseline Initial</th>
+                <th class="pb-2 font-medium w-28 text-right">Current Initial</th>
+                <th class="pb-2 font-medium w-32 text-right">Initial Delta</th>
+                <th class="pb-2 font-medium w-40 text-center">Status</th>
+                <th class="pb-2 font-medium pl-6">Ingress Root Trail</th>
+                <th class="pb-2 font-medium w-20 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="drift-table-body" class="divide-y divide-[#21262d]">
+              <tr>
+                <td colspan="8" class="py-6 text-center text-[#8b949e]">Loading checkpoint comparison...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW: SIDE-BY-SIDE DIFF (NEW)              -->
+    <!-- ========================================== -->
+    <section id="view-side-by-side" class="view-panel flex-1 flex flex-col p-6 lg:p-8 space-y-5 overflow-y-auto w-full hidden">
+      
+      <!-- Top Diff Header Bar -->
+      <div class="surface-card p-4 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <!-- Baseline & Target Selectors with Arrow -->
+        <div class="flex items-center space-x-3 flex-wrap">
+          <div class="flex items-center space-x-2 text-xs font-mono">
+            <span class="text-[#8b949e]">Baseline (Left):</span>
+            <select id="sbs-base-select" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#e6edf3] rounded px-2.5 py-1.5 outline-none cursor-pointer focus:border-[#58a6ff]"></select>
+          </div>
+
+          <span class="text-[#58a6ff] text-base font-bold">➔</span>
+
+          <div class="flex items-center space-x-2 text-xs font-mono">
+            <span class="text-[#8b949e]">Target (Right):</span>
+            <select id="sbs-target-select" class="bg-[#0d1117] border border-[#30363d] text-xs text-[#e6edf3] rounded px-2.5 py-1.5 outline-none cursor-pointer focus:border-[#58a6ff]"></select>
+          </div>
+
+          <!-- Quick Net Delta Badge -->
+          <div id="sbs-net-delta-pill" class="flex items-center space-x-1.5 px-2.5 py-1 rounded text-xs font-mono font-semibold bg-[#3fb950]/15 text-[#3fb950] border border-[#3fb950]/30">
+            <span>Initial:</span>
+            <span id="sbs-net-delta-text">--</span>
+          </div>
+        </div>
+
+        <!-- Filter Chips & Search Input -->
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-1 text-xs">
+            <button class="sbs-filter-chip px-2.5 py-1 rounded text-[11px] font-mono border bg-[#21262d] text-[#e6edf3] border-[#58a6ff]" data-sbs-filter="all">All</button>
+            <button class="sbs-filter-chip px-2.5 py-1 rounded text-[11px] font-mono border bg-[#0d1117] text-[#8b949e] border-[#30363d] hover:text-[#e6edf3]" data-sbs-filter="changed">Changed Only</button>
+            <button class="sbs-filter-chip px-2.5 py-1 rounded text-[11px] font-mono border bg-[#0d1117] text-[#8b949e] border-[#30363d] hover:text-[#e6edf3]" data-sbs-filter="eliminated">Eliminated</button>
+            <button class="sbs-filter-chip px-2.5 py-1 rounded text-[11px] font-mono border bg-[#0d1117] text-[#8b949e] border-[#30363d] hover:text-[#e6edf3]" data-sbs-filter="regressed">Regressed</button>
+          </div>
+
+          <div class="relative flex items-center">
+            <input type="text" id="sbs-search-input" placeholder="Filter packages..." class="bg-[#0d1117] border border-[#30363d] text-xs text-[#c9d1d9] placeholder-[#6e7681] rounded-md px-3 py-1.5 pl-8 focus:border-[#58a6ff] outline-none w-44">
+            <span class="absolute left-2.5 text-[#6e7681] text-xs pointer-events-none">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Dual Column Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        
+        <!-- LEFT COLUMN: BASELINE -->
+        <div class="surface-card flex flex-col min-h-0 overflow-hidden">
+          <!-- Column Header -->
+          <div class="p-3.5 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between shrink-0">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-[#8b949e]"></span>
+                <span class="text-xs font-bold text-[#e6edf3] font-mono uppercase tracking-wider" id="sbs-base-title">Baseline Build</span>
+              </div>
+              <div class="text-[11px] font-mono text-[#8b949e] mt-0.5">
+                Initial: <span id="sbs-base-init-stat" class="text-[#e6edf3] font-semibold">--</span> • Total: <span id="sbs-base-total-stat" class="text-[#8b949e]">--</span>
+              </div>
+            </div>
+            <div id="sbs-base-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-[#21262d] text-[#8b949e] border border-[#30363d]">
+              ORIGINAL
+            </div>
+          </div>
+
+          <!-- Baseline Package List -->
+          <div class="flex-1 overflow-y-auto divide-y divide-[#21262d]" id="sbs-base-rows">
+            <!-- Dynamically populated rows -->
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: TARGET -->
+        <div class="surface-card flex flex-col min-h-0 overflow-hidden">
+          <!-- Column Header -->
+          <div class="p-3.5 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between shrink-0">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-[#58a6ff]"></span>
+                <span class="text-xs font-bold text-[#e6edf3] font-mono uppercase tracking-wider" id="sbs-target-title">Target Build</span>
+              </div>
+              <div class="text-[11px] font-mono text-[#8b949e] mt-0.5">
+                Initial: <span id="sbs-target-init-stat" class="text-[#58a6ff] font-semibold">--</span> • Total: <span id="sbs-target-total-stat" class="text-[#8b949e]">--</span>
+              </div>
+            </div>
+            <div id="sbs-target-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#3fb950]/15 text-[#3fb950] border border-[#3fb950]/30">
+              SAVINGS
+            </div>
+          </div>
+
+          <!-- Target Package List -->
+          <div class="flex-1 overflow-y-auto divide-y divide-[#21262d]" id="sbs-target-rows">
+            <!-- Dynamically populated rows -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Side-by-Side Detailed Ingress Comparison Drawer -->
+      <div id="sbs-detail-panel" class="surface-card p-4 hidden shrink-0 border border-[#388bfd]/50 bg-[#161b22]/90">
+        <div class="flex items-center justify-between border-b border-[#30363d] pb-2 mb-3">
+          <div class="flex items-center space-x-2 font-mono">
+            <span class="text-xs text-[#8b949e]">Ingress Trail Comparison:</span>
+            <span id="sbs-detail-pkg-name" class="text-xs font-bold text-[#e6edf3]">--</span>
+          </div>
+          <button id="sbs-detail-close" class="text-xs text-[#8b949e] hover:text-[#e6edf3] cursor-pointer">✕ Close</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+          <div class="p-3 bg-[#0d1117] rounded border border-[#30363d]">
+            <div class="text-[10px] text-[#8b949e] uppercase mb-1 font-semibold">Baseline Ingress Path</div>
+            <div id="sbs-detail-base-ingress" class="text-[11px] text-[#c9d1d9] leading-relaxed">--</div>
+          </div>
+          <div class="p-3 bg-[#0d1117] rounded border border-[#30363d]">
+            <div class="text-[10px] text-[#58a6ff] uppercase mb-1 font-semibold">Target Ingress Path</div>
+            <div id="sbs-detail-target-ingress" class="text-[11px] text-[#c9d1d9] leading-relaxed">--</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: INGRESS & PACKAGES (EXPLORER)     -->
+    <!-- ========================================== -->
+    <section id="view-packages" class="view-panel flex-1 flex flex-row overflow-hidden min-h-0 hidden">
+      <!-- Left: Table of Packages -->
+      <div class="flex-1 flex flex-col min-w-0 border-r border-[#30363d] bg-[#0d1117] overflow-hidden">
+        <div class="p-3 border-b border-[#30363d] flex items-center justify-between shrink-0 bg-[#161b22]">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-semibold text-[#e6edf3]">Packages</span>
+            <span id="explorer-count" class="text-[11px] font-mono text-[#8b949e] bg-[#21262d] px-1.5 py-0.5 rounded">--</span>
+          </div>
+          <div class="flex items-center space-x-1 text-[10px] font-mono">
+            <button data-filter="all" class="filter-chip px-2 py-0.5 rounded bg-[#21262d] text-[#58a6ff] border border-[#30363d]">All</button>
+            <button data-filter="initial" class="filter-chip px-2 py-0.5 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">Initial Only</button>
+            <button data-filter="async" class="filter-chip px-2 py-0.5 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">Async / Lazy</button>
+            <button data-filter="heavy" class="filter-chip px-2 py-0.5 rounded bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3] border border-[#30363d]">&gt;100KB</button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto divide-y divide-[#21262d]" id="explorer-package-list">
+          <div class="p-4 text-center text-xs font-mono text-[#8b949e]">Loading packages...</div>
+        </div>
+      </div>
+
+      <!-- Right: Detailed Ingress & Inspection Drawer -->
+      <aside class="w-[480px] flex flex-col shrink-0 bg-[#161b22] border-l border-[#30363d] overflow-y-auto p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#30363d] pb-3">
+          <div>
+            <span class="text-[10px] uppercase font-mono tracking-wider text-[#58a6ff] font-semibold">Package Inspector</span>
+            <h2 id="exp-pkg-name" class="text-base font-bold text-[#e6edf3] truncate max-w-sm mt-0.5">Select a package</h2>
+          </div>
+          <div id="exp-pkg-size" class="text-base font-mono font-bold text-[#d29922]">--</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="p-2.5 rounded bg-[#0d1117] border border-[#30363d]">
+            <div class="text-[10px] text-[#f85149] uppercase">Initial Payload</div>
+            <div id="exp-initial" class="font-semibold text-[#e6edf3] mt-0.5">--</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#0d1117] border border-[#30363d]">
+            <div class="text-[10px] text-[#58a6ff] uppercase">Async / Lazy</div>
+            <div id="exp-async" class="font-semibold text-[#e6edf3] mt-0.5">--</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="p-2.5 rounded bg-[#0d1117] border border-[#30363d]">
+            <div class="text-[10px] text-[#8b949e] uppercase">Total Size</div>
+            <div id="exp-raw" class="font-semibold text-[#e6edf3] mt-0.5">--</div>
+          </div>
+          <div class="p-2.5 rounded bg-[#0d1117] border border-[#30363d]">
+            <div class="text-[10px] text-[#8b949e] uppercase">Gzip Estimate</div>
+            <div id="exp-gzip" class="font-semibold text-[#e6edf3] mt-0.5">--</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase font-mono text-[#8b949e] mb-1">Emitted Chunks</div>
+          <div id="exp-chunks" class="flex flex-wrap gap-1 text-[11px] font-mono text-[#c9d1d9]">--</div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase font-mono text-[#8b949e] mb-2 flex items-center justify-between">
+            <span>Directed Ingress Trail</span>
+            <span class="text-[9px] text-[#6e7681]">Why was this imported?</span>
+          </div>
+          <div id="exp-ingress" class="bg-[#0d1117] p-3 rounded-md border border-[#30363d] text-[11px] font-mono leading-relaxed space-y-2">
+            Click any package on the left to trace its dependency chain.
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 4: CANVAS TREEMAP (AUXILIARY)         -->
+    <!-- ========================================== -->
+    <section id="view-treemap" class="view-panel flex-1 flex flex-col min-w-0 p-4 space-y-2 bg-[#0d1117] hidden">
+      <div class="flex items-center justify-between text-xs text-[#8b949e] font-mono shrink-0 px-1">
+        <div class="flex items-center space-x-2">
+          <span class="text-[11px] uppercase tracking-wider text-[#8b949e] font-medium">Treemap Visualizer</span>
+          <span id="active-chunk-pill" class="text-[10px] px-2 py-0.5 rounded bg-[#21262d] text-[#c9d1d9] border border-[#30363d]">All Chunks</span>
+        </div>
+        <div class="flex items-center space-x-3 text-[11px] text-[#8b949e]">
+          <span>Click tile to jump to Package Ingress</span>
+          <span class="text-[#30363d]">•</span>
+          <span>60fps Canvas</span>
+        </div>
+      </div>
+
+      <div class="flex-1 w-full relative rounded-md overflow-hidden bg-[#0d1117] border border-[#30363d] shadow-lg min-h-0">
         <canvas id="treemap-canvas" class="w-full h-full block cursor-pointer"></canvas>
-        <div id="tooltip" class="absolute pointer-events-none hidden z-40 bg-slate-900/95 border border-slate-700 text-white text-xs p-2.5 rounded-lg shadow-2xl font-mono backdrop-blur"></div>
+        <div id="tooltip" class="absolute pointer-events-none hidden z-50 bg-[#161b22] border border-[#30363d] text-[#c9d1d9] text-xs p-3 rounded-md shadow-2xl font-mono backdrop-blur-md"></div>
       </div>
-    </div>
+    </section>
 
-    <!-- Bloat Contributors Table -->
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl space-y-3">
-      <h2 class="text-sm font-bold text-white flex items-center justify-between">
-        <span>Package Bloat Breakdown</span>
-        <span id="package-count" class="text-xs font-mono text-slate-400 font-normal">--</span>
-      </h2>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono">
-          <thead class="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
-            <tr>
-              <th class="py-2 px-3">Package</th>
-              <th class="py-2 px-3">Raw Size</th>
-              <th class="py-2 px-3">Gzip Estimate</th>
-              <th class="py-2 px-3">Emitted Chunks</th>
-              <th class="py-2 px-3">Directed Ingress Trail</th>
-            </tr>
-          </thead>
-          <tbody id="package-table-body" class="divide-y divide-slate-800/50 text-slate-300">
-            <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading bundle data...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </main>
+
+  <!-- Live Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <script src="/treemap.js"></script>
   <script src="/app.js"></script>
