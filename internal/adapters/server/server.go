@@ -19,19 +19,26 @@ type Config struct {
 	Port      int
 	StatsPath string
 	Client    *bundleradar.Client
+	Watch     bool
 }
 
 // Server provides the live web UI HTTP server adapter.
 type Server struct {
-	host       string
-	port       int
-	statsPath  string
-	client     *bundleradar.Client
-	bundle     *core.Bundle
-	mux        *http.ServeMux
-	httpServer *http.Server
-	listener   net.Listener
-	mu         sync.RWMutex
+	host        string
+	port        int
+	statsPath   string
+	client      *bundleradar.Client
+	bundle      *core.Bundle
+	mux         *http.ServeMux
+	httpServer  *http.Server
+	listener    net.Listener
+	watch       bool
+	stopWatcher chan struct{}
+	checkpoints []*BuildCheckpoint
+	baselineID  string
+	clients     map[chan []byte]struct{}
+	clientsMu   sync.Mutex
+	mu          sync.RWMutex
 }
 
 // New creates an initialized HTTP server adapter.
@@ -44,11 +51,14 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	s := &Server{
-		host:      cfg.Host,
-		port:      cfg.Port,
-		statsPath: cfg.StatsPath,
-		client:    cfg.Client,
-		mux:       http.NewServeMux(),
+		host:        cfg.Host,
+		port:        cfg.Port,
+		statsPath:   cfg.StatsPath,
+		client:      cfg.Client,
+		watch:       cfg.Watch,
+		mux:         http.NewServeMux(),
+		clients:     make(map[chan []byte]struct{}),
+		checkpoints: make([]*BuildCheckpoint, 0),
 	}
 
 	s.setupRoutes()
@@ -64,6 +74,10 @@ func (s *Server) setupRoutes() {
 		})
 	})
 	s.mux.HandleFunc("/api/bundle", s.handleGetBundle)
+	s.mux.HandleFunc("/api/history", s.handleGetHistory)
+	s.mux.HandleFunc("/api/baseline", s.handleSetBaseline)
+	s.mux.HandleFunc("/api/diff", s.handleGetDiff)
+	s.mux.HandleFunc("/api/events", s.handleGetEvents)
 	s.registerStaticRoutes()
 }
 
@@ -100,11 +114,25 @@ func (s *Server) Start() error {
 	go func() {
 		_ = s.httpServer.Serve(ln)
 	}()
+
+	if s.watch && s.statsPath != "" {
+		s.StartWatcher()
+	}
+
 	return nil
 }
 
 // Close gracefully terminates the server with a bounded 5-second timeout.
 func (s *Server) Close() error {
+	s.StopWatcher()
+
+	s.clientsMu.Lock()
+	for ch := range s.clients {
+		close(ch)
+	}
+	s.clients = make(map[chan []byte]struct{})
+	s.clientsMu.Unlock()
+
 	if s.httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sonuKumar03/bundleradar/internal/core"
 	"github.com/sonuKumar03/bundleradar/pkg/bundleradar"
 )
 
@@ -38,17 +39,29 @@ type ChunkDTO struct {
 
 // PackageDTO aggregates module metrics and BFS ingress attribution for a single package.
 type PackageDTO struct {
-	Name        string   `json:"name"`
-	SizeBytes   int64    `json:"sizeBytes"`
-	GzipBytes   int64    `json:"gzipBytes"`
-	Chunks      []string `json:"chunks"`
-	IngressPath string   `json:"ingressPath"`
+	Name         string   `json:"name"`
+	SizeBytes    int64    `json:"sizeBytes"`
+	GzipBytes    int64    `json:"gzipBytes"`
+	InitialBytes int64    `json:"initialBytes"`
+	AsyncBytes   int64    `json:"asyncBytes"`
+	Chunks       []string `json:"chunks"`
+	IngressPath  string   `json:"ingressPath"`
 }
 
 func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
+	}
+
+	buildID := r.URL.Query().Get("build")
+	if buildID != "" && buildID != "latest" {
+		cp := s.GetCheckpoint(buildID)
+		if cp != nil && cp.Bundle != nil {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(cp.Bundle)
+			return
+		}
 	}
 
 	bundle := s.Bundle()
@@ -68,6 +81,9 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 		}
 		s.SetBundle(scanned)
 		bundle = scanned
+		if s.CheckpointCount() == 0 {
+			s.RecordCheckpoint(scanned, "Build #1 (Initial Baseline)")
+		}
 	}
 
 	if bundle == nil {
@@ -77,6 +93,17 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 			"error": "No stats.json has been scanned yet",
 		})
 		return
+	}
+
+	dto := s.BundleToDTO(bundle)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(dto)
+}
+
+// BundleToDTO converts a core.Bundle model into the wire DTO representation.
+func (s *Server) BundleToDTO(bundle *core.Bundle) *BundleDTO {
+	if bundle == nil {
+		return nil
 	}
 
 	var totalBytes int64
@@ -104,6 +131,13 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Build map of chunk load types
+	chunkTypeMap := make(map[string]core.LoadType)
+	for _, ch := range bundle.Chunks {
+		chunkTypeMap[ch.ID] = ch.Type
+		chunkTypeMap[ch.Name] = ch.Type
+	}
+
 	// Aggregate and sort packages
 	pkgMap := make(map[string]*PackageDTO)
 	bestPaths := make(map[string][]string)
@@ -123,10 +157,26 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 		}
 		p.SizeBytes += mod.SizeBytes
 		p.GzipBytes += mod.GzipBytes
+
+		hasInitial := false
+		hasAsync := false
 		for _, cid := range mod.ChunkIDs {
 			if !contains(p.Chunks, cid) {
 				p.Chunks = append(p.Chunks, cid)
 			}
+			switch chunkTypeMap[cid] {
+			case core.LoadTypeInitial:
+				hasInitial = true
+			case core.LoadTypeAsync:
+				hasAsync = true
+			}
+		}
+
+		if hasInitial {
+			p.InitialBytes += mod.SizeBytes
+		}
+		if hasAsync {
+			p.AsyncBytes += mod.SizeBytes
 		}
 
 		if pkgName != "(application code)" && len(mod.IngressPaths) > 0 {
@@ -153,22 +203,19 @@ func (s *Server) handleGetBundle(w http.ResponseWriter, r *http.Request) {
 		return topPackages[i].Name < topPackages[j].Name
 	})
 
-	dto := BundleDTO{
+	return &BundleDTO{
 		Bundler:     bundle.Metadata.Bundler,
-		StatsPath:   statsPath,
+		StatsPath:   s.statsPath,
 		Entrypoints: entrypoints,
 		Chunks:      chunks,
 		TopPackages: topPackages,
 		TotalBytes:  totalBytes,
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(dto)
 }
 
 func contains(slice []string, val string) bool {
-	for _, s := range slice {
-		if s == val {
+	for _, item := range slice {
+		if item == val {
 			return true
 		}
 	}
