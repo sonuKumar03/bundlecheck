@@ -1,11 +1,13 @@
 package server
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
-	"sort"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/sonuKumar03/bundleradar/internal/core"
@@ -310,13 +312,13 @@ func computeDiff(baseCP, targetCP *BuildCheckpoint) *DiffDTO {
 	}
 
 	// Sort package diffs: largest absolute delta in initial bytes first, then total bytes
-	sort.Slice(packageDiffs, func(i, j int) bool {
-		absI := math.Abs(float64(packageDiffs[i].DeltaInitialBytes))
-		absJ := math.Abs(float64(packageDiffs[j].DeltaInitialBytes))
-		if absI != absJ {
-			return absI > absJ
+	slices.SortFunc(packageDiffs, func(a, b PackageDiffDTO) int {
+		absA := math.Abs(float64(a.DeltaInitialBytes))
+		absB := math.Abs(float64(b.DeltaInitialBytes))
+		if absA != absB {
+			return cmp.Compare(absB, absA)
 		}
-		return packageDiffs[i].Name < packageDiffs[j].Name
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	initDelta := targetCP.InitialBytes - baseCP.InitialBytes

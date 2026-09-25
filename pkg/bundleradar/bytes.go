@@ -26,23 +26,27 @@ func ParseBytes(s string) (int64, error) {
 	multiplier := int64(1)
 
 	switch {
-	case strings.HasSuffix(upper, "KB") || strings.HasSuffix(upper, "K"):
+	case strings.HasSuffix(upper, "KB"):
 		multiplier = 1024
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "KB"), "kb")
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "Kb"), "k")
-		s = strings.TrimSuffix(s, "K")
-	case strings.HasSuffix(upper, "MB") || strings.HasSuffix(upper, "M"):
+		s = s[:len(s)-2]
+	case strings.HasSuffix(upper, "K"):
+		multiplier = 1024
+		s = s[:len(s)-1]
+	case strings.HasSuffix(upper, "MB"):
 		multiplier = 1024 * 1024
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "MB"), "mb")
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "Mb"), "m")
-		s = strings.TrimSuffix(s, "M")
-	case strings.HasSuffix(upper, "GB") || strings.HasSuffix(upper, "G"):
+		s = s[:len(s)-2]
+	case strings.HasSuffix(upper, "M"):
+		multiplier = 1024 * 1024
+		s = s[:len(s)-1]
+	case strings.HasSuffix(upper, "GB"):
 		multiplier = 1024 * 1024 * 1024
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "GB"), "gb")
-		s = strings.TrimSuffix(s, "G")
+		s = s[:len(s)-2]
+	case strings.HasSuffix(upper, "G"):
+		multiplier = 1024 * 1024 * 1024
+		s = s[:len(s)-1]
 	case strings.HasSuffix(upper, "B"):
 		multiplier = 1
-		s = strings.TrimSuffix(strings.TrimSuffix(s, "B"), "b")
+		s = s[:len(s)-1]
 	}
 
 	s = strings.TrimSpace(s)

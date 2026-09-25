@@ -1,9 +1,11 @@
 package server
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 
@@ -161,7 +163,7 @@ func (s *Server) BundleToDTO(bundle *core.Bundle) *BundleDTO {
 		hasInitial := false
 		hasAsync := false
 		for _, cid := range mod.ChunkIDs {
-			if !contains(p.Chunks, cid) {
+			if !slices.Contains(p.Chunks, cid) {
 				p.Chunks = append(p.Chunks, cid)
 			}
 			switch chunkTypeMap[cid] {
@@ -196,11 +198,11 @@ func (s *Server) BundleToDTO(bundle *core.Bundle) *BundleDTO {
 		topPackages = append(topPackages, *p)
 	}
 
-	sort.Slice(topPackages, func(i, j int) bool {
-		if topPackages[i].SizeBytes != topPackages[j].SizeBytes {
-			return topPackages[i].SizeBytes > topPackages[j].SizeBytes
+	slices.SortFunc(topPackages, func(a, b PackageDTO) int {
+		if a.SizeBytes != b.SizeBytes {
+			return cmp.Compare(b.SizeBytes, a.SizeBytes)
 		}
-		return topPackages[i].Name < topPackages[j].Name
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return &BundleDTO{
@@ -211,13 +213,4 @@ func (s *Server) BundleToDTO(bundle *core.Bundle) *BundleDTO {
 		TopPackages: topPackages,
 		TotalBytes:  totalBytes,
 	}
-}
-
-func contains(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
 }

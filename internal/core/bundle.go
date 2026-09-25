@@ -1,8 +1,9 @@
 package core
 
 import (
+	"cmp"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -17,10 +18,7 @@ const (
 
 // Metadata captures provenance information about the bundle.
 type Metadata struct {
-	Bundler   string `json:"bundler"`             // e.g. "esbuild", "vite", "webpack", "angular"
-	Version   string `json:"version,omitempty"`   // Bundler version
-	CommitSHA string `json:"commitSha,omitempty"` // Git commit SHA if available
-	Timestamp int64  `json:"timestamp"`           // Unix timestamp of generation
+	Bundler string `json:"bundler"` // e.g. "esbuild", "vite", "webpack", "angular"
 }
 
 // Bundle is the universal root aggregate representing a compiled web application.
@@ -99,26 +97,17 @@ func NewBundle(meta Metadata) *Bundle {
 
 // AddEntrypoint registers an entrypoint into the bundle.
 func (b *Bundle) AddEntrypoint(name string, ep Entrypoint) {
-	if b.Entrypoints == nil {
-		b.Entrypoints = make(map[string]Entrypoint)
-	}
 	b.Entrypoints[name] = ep
 }
 
 // AddChunk appends a chunk to the bundle.
 func (b *Bundle) AddChunk(c Chunk) {
-	if b.chunkIndex == nil {
-		b.chunkIndex = make(map[string]int)
-	}
 	b.chunkIndex[c.ID] = len(b.Chunks)
 	b.Chunks = append(b.Chunks, c)
 }
 
 // AddModule appends a module to the bundle.
 func (b *Bundle) AddModule(m Module) {
-	if b.moduleIndex == nil {
-		b.moduleIndex = make(map[string]int)
-	}
 	b.moduleIndex[m.ID] = len(b.Modules)
 	b.Modules = append(b.Modules, m)
 }
@@ -209,8 +198,8 @@ func (b *Bundle) TopPackages(limit int) []PackageContribution {
 		result = append(result, *c)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].SizeBytes > result[j].SizeBytes
+	slices.SortFunc(result, func(a, b PackageContribution) int {
+		return cmp.Compare(b.SizeBytes, a.SizeBytes)
 	})
 
 	if limit > 0 && len(result) > limit {

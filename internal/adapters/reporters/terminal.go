@@ -11,7 +11,9 @@ import (
 	"github.com/sonuKumar03/bundleradar/internal/core/policy"
 )
 
-type TerminalReporter struct{}
+type TerminalReporter struct {
+	Top int
+}
 
 func (r *TerminalReporter) Format() string {
 	return "terminal"
@@ -31,7 +33,11 @@ func (r *TerminalReporter) Render(ctx context.Context, w io.Writer, data any) er
 		}
 		sb.WriteString("\n")
 
-		top := v.TopPackages(5)
+		limit := 5
+		if r.Top > 0 {
+			limit = r.Top
+		}
+		top := v.TopPackages(limit)
 		if len(top) > 0 {
 			sb.WriteString("TOP CONTRIBUTING NPM PACKAGES\n")
 			sb.WriteString("-------------------------------------------------------------\n")

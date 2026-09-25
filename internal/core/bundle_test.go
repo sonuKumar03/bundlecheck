@@ -8,8 +8,7 @@ import (
 
 func TestBundleAggregation(t *testing.T) {
 	b := core.NewBundle(core.Metadata{
-		Bundler:   "esbuild",
-		Timestamp: 1700000000,
+		Bundler: "esbuild",
 	})
 
 	b.AddEntrypoint("main", core.Entrypoint{

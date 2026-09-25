@@ -1,7 +1,9 @@
 package diff
 
 import (
+	"cmp"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 
@@ -109,15 +111,7 @@ func Calculate(base, current *core.Bundle, opts Options) *BundleDiff {
 	}
 
 	// 2. Entrypoint deltas
-	allEntryNames := make(map[string]bool)
-	for name := range base.Entrypoints {
-		allEntryNames[name] = true
-	}
-	for name := range current.Entrypoints {
-		allEntryNames[name] = true
-	}
-
-	for name := range allEntryNames {
+	for _, name := range unionKeys(base.Entrypoints, current.Entrypoints) {
 		baseEP := base.Entrypoints[name]
 		currEP := current.Entrypoints[name]
 
@@ -171,15 +165,7 @@ func Calculate(base, current *core.Bundle, opts Options) *BundleDiff {
 		}
 	}
 
-	allPkgNames := make(map[string]bool)
-	for name := range basePkgMap {
-		allPkgNames[name] = true
-	}
-	for name := range currPkgMap {
-		allPkgNames[name] = true
-	}
-
-	for name := range allPkgNames {
+	for _, name := range unionKeys(basePkgMap, currPkgMap) {
 		bSize := basePkgMap[name].SizeBytes
 		bGzip := basePkgMap[name].GzipBytes
 		cSize := currPkgMap[name].SizeBytes
@@ -239,11 +225,19 @@ func Calculate(base, current *core.Bundle, opts Options) *BundleDiff {
 		}
 	}
 
-	sort.Slice(res.Packages, func(i, j int) bool {
-		return math.Abs(float64(res.Packages[i].DeltaBytes)) > math.Abs(float64(res.Packages[j].DeltaBytes))
+	slices.SortFunc(res.Packages, func(a, b PackageDelta) int {
+		absA := math.Abs(float64(a.DeltaBytes))
+		absB := math.Abs(float64(b.DeltaBytes))
+		if absA != absB {
+			return cmp.Compare(absB, absA)
+		}
+		return strings.Compare(a.Name, b.Name)
 	})
-	sort.Slice(res.UnchangedPackages, func(i, j int) bool {
-		return res.UnchangedPackages[i].CurrBytes > res.UnchangedPackages[j].CurrBytes
+	slices.SortFunc(res.UnchangedPackages, func(a, b PackageDelta) int {
+		if a.CurrBytes != b.CurrBytes {
+			return cmp.Compare(b.CurrBytes, a.CurrBytes)
+		}
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	// 5. Module diff & Micro-drift
@@ -256,15 +250,7 @@ func Calculate(base, current *core.Bundle, opts Options) *BundleDiff {
 		currModMap[m.ID] = m
 	}
 
-	allModIDs := make(map[string]bool)
-	for id := range baseModMap {
-		allModIDs[id] = true
-	}
-	for id := range currModMap {
-		allModIDs[id] = true
-	}
-
-	for id := range allModIDs {
+	for _, id := range unionKeys(baseModMap, currModMap) {
 		delta := currModMap[id].SizeBytes - baseModMap[id].SizeBytes
 		if delta == 0 {
 			continue
@@ -275,4 +261,19 @@ func Calculate(base, current *core.Bundle, opts Options) *BundleDiff {
 	}
 
 	return res
+}
+
+func unionKeys[M ~map[string]V, V any](a, b M) []string {
+	seen := make(map[string]struct{}, len(a)+len(b))
+	for k := range a {
+		seen[k] = struct{}{}
+	}
+	for k := range b {
+		seen[k] = struct{}{}
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
+		keys = append(keys, k)
+	}
+	return keys
 }

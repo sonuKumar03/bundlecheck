@@ -18,12 +18,9 @@ type Config struct {
 
 // ConfigBudgets holds threshold limits for bundle metrics and deltas.
 type ConfigBudgets struct {
-	InitialJSMax     string `yaml:"initial_js_max,omitempty"`
-	LazyJSMax        string `yaml:"lazy_js_max,omitempty"`
-	TotalMax         string `yaml:"total_max,omitempty"`
-	MaxInitialDelta  string `yaml:"max_initial_delta,omitempty"`
-	MaxTotalDelta    string `yaml:"max_total_delta,omitempty"`
-	MaxDeltaIncrease string `yaml:"max_delta_increase,omitempty"`
+	InitialJSMax    string `yaml:"initial_js_max,omitempty"`
+	TotalMax        string `yaml:"total_max,omitempty"`
+	MaxInitialDelta string `yaml:"max_initial_delta,omitempty"`
 }
 
 // ConfigRules holds architectural lint rules for bundled packages.

@@ -27,13 +27,6 @@ type WorkspaceResolver interface {
 	Resolve(ctx context.Context, root string) ([]Target, error)
 }
 
-// BaselineProvider retrieves and stores historical bundle snapshots.
-type BaselineProvider interface {
-	Name() string
-	Fetch(ctx context.Context, ref string) (*Bundle, error)
-	Save(ctx context.Context, bundle *Bundle, dest string) error
-}
-
 // Reporter renders analysis, comparison, or gate results into a designated format.
 type Reporter interface {
 	Format() string // "terminal", "markdown", "github-pr", "json", "html"
