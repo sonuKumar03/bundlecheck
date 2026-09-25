@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -83,15 +82,28 @@ func newWorkspaceCommand() *cobra.Command {
 
 			client := bundleradar.New()
 			ctx := c.Context()
-			if ctx == nil {
-				ctx = context.Background()
-			}
 
 			w, cleanup, err := getOutputWriter(c, output)
 			if err != nil {
 				return err
 			}
 			defer func() { _ = cleanup() }()
+
+			type targetScan struct {
+				target core.Target
+				bundle *core.Bundle
+				err    error
+			}
+
+			scans := make([]targetScan, 0, len(targets))
+			for _, t := range targets {
+				b, err := client.Scan(ctx, bundleradar.ScanOptions{
+					StatsPath: t.StatsPath,
+					DistPath:  t.DistPath,
+					Bundler:   t.Bundler,
+				})
+				scans = append(scans, targetScan{target: t, bundle: b, err: err})
+			}
 
 			if format == "json" {
 				type TargetResult struct {
@@ -109,27 +121,22 @@ func newWorkspaceCommand() *cobra.Command {
 					TotalBytes        int64          `json:"totalBytes"`
 				}
 
-				res := WorkspaceResult{Targets: make([]TargetResult, 0, len(targets))}
-				for _, t := range targets {
-					b, err := client.Scan(ctx, bundleradar.ScanOptions{
-						StatsPath: t.StatsPath,
-						DistPath:  t.DistPath,
-						Bundler:   t.Bundler,
-					})
-					if err != nil {
+				res := WorkspaceResult{Targets: make([]TargetResult, 0, len(scans))}
+				for _, s := range scans {
+					if s.err != nil {
 						continue
 					}
 					var chunkBytes int64
-					for _, ch := range b.Chunks {
+					for _, ch := range s.bundle.Chunks {
 						chunkBytes += ch.SizeBytes
 					}
 					tr := TargetResult{
-						Name:         t.Name,
-						StatsPath:    t.StatsPath,
-						InitialBytes: b.TotalInitialBytes(),
-						AsyncBytes:   b.TotalAsyncBytes(),
+						Name:         s.target.Name,
+						StatsPath:    s.target.StatsPath,
+						InitialBytes: s.bundle.TotalInitialBytes(),
+						AsyncBytes:   s.bundle.TotalAsyncBytes(),
 						TotalBytes:   chunkBytes,
-						ChunkCount:   len(b.Chunks),
+						ChunkCount:   len(s.bundle.Chunks),
 					}
 					res.Targets = append(res.Targets, tr)
 					res.TotalInitialBytes += tr.InitialBytes
@@ -145,18 +152,13 @@ func newWorkspaceCommand() *cobra.Command {
 				fmt.Fprintf(w, "## ⚡ Workspace Bundle Scan (%d targets)\n\n", len(targets))
 				fmt.Fprintf(w, "| Application | Initial JS | Async JS | Chunks |\n")
 				fmt.Fprintf(w, "| :--- | :--- | :--- | :---: |\n")
-				for _, t := range targets {
-					b, err := client.Scan(ctx, bundleradar.ScanOptions{
-						StatsPath: t.StatsPath,
-						DistPath:  t.DistPath,
-						Bundler:   t.Bundler,
-					})
-					if err != nil {
-						fmt.Fprintf(w, "| **`%s`** | *Error: %v* | - | - |\n", t.Name, err)
+				for _, s := range scans {
+					if s.err != nil {
+						fmt.Fprintf(w, "| **`%s`** | *Error: %v* | - | - |\n", s.target.Name, s.err)
 						continue
 					}
 					fmt.Fprintf(w, "| **`%s`** | `%s` | `%s` | %d |\n",
-						t.Name, bundleradar.FormatBytes(b.TotalInitialBytes()), bundleradar.FormatBytes(b.TotalAsyncBytes()), len(b.Chunks))
+						s.target.Name, bundleradar.FormatBytes(s.bundle.TotalInitialBytes()), bundleradar.FormatBytes(s.bundle.TotalAsyncBytes()), len(s.bundle.Chunks))
 				}
 				fmt.Fprintf(w, "\n")
 				return nil
@@ -164,18 +166,13 @@ func newWorkspaceCommand() *cobra.Command {
 
 			fmt.Fprintf(w, "\n⚡ WORKSPACE BUNDLE SCAN (%d targets)\n", len(targets))
 			fmt.Fprintf(w, "-------------------------------------------------------------\n")
-			for _, t := range targets {
-				b, err := client.Scan(ctx, bundleradar.ScanOptions{
-					StatsPath: t.StatsPath,
-					DistPath:  t.DistPath,
-					Bundler:   t.Bundler,
-				})
-				if err != nil {
-					fmt.Fprintf(w, "❌ %-20s Error: %v\n", t.Name, err)
+			for _, s := range scans {
+				if s.err != nil {
+					fmt.Fprintf(w, "❌ %-20s Error: %v\n", s.target.Name, s.err)
 					continue
 				}
 				fmt.Fprintf(w, "✓ %-20s Initial: %d bytes | Async: %d bytes (%d chunks)\n",
-					t.Name, b.TotalInitialBytes(), b.TotalAsyncBytes(), len(b.Chunks))
+					s.target.Name, s.bundle.TotalInitialBytes(), s.bundle.TotalAsyncBytes(), len(s.bundle.Chunks))
 			}
 			fmt.Fprintf(w, "\n")
 			return nil

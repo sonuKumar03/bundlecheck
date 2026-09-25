@@ -55,7 +55,7 @@ trace package bloat with directed BFS ingress chains, and monitor size metrics.`
 				statsPath = autoDiscoverStatsFile(".")
 			}
 
-			return runUIServer(host, port, statsPath, open, watch)
+			return runUIServerWithContext(cmd.Context(), host, port, statsPath, open, watch)
 		},
 	}
 
@@ -65,10 +65,6 @@ trace package bloat with directed BFS ingress chains, and monitor size metrics.`
 	cmd.Flags().BoolVarP(&watch, "watch", "w", true, "Watch stats file for changes")
 
 	return cmd
-}
-
-func runUIServer(host string, port int, statsPath string, openBrowser bool, watch bool) error {
-	return runUIServerWithContext(context.Background(), host, port, statsPath, openBrowser, watch)
 }
 
 func runUIServerWithContext(parentCtx context.Context, host string, port int, statsPath string, openBrowser bool, watch bool) error {
@@ -103,9 +99,6 @@ func runUIServerWithContext(parentCtx context.Context, host string, port int, st
 		openInBrowser(url)
 	}
 
-	if parentCtx == nil {
-		parentCtx = context.Background()
-	}
 	ctx, stop := signal.NotifyContext(parentCtx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
