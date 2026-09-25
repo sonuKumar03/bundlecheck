@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,7 +14,10 @@ import (
 )
 
 func TestE2E_StudioWebServer(t *testing.T) {
-	fixtureStats := "../testdata/nx-workspace/dist/apps/portal/stats.json"
+	fixtureStats := "../testdata/nx-workspace/apps/portal/stats.json"
+	if _, err := os.Stat(fixtureStats); os.IsNotExist(err) {
+		fixtureStats = "../testdata/nx-workspace/dist/apps/portal/stats.json"
+	}
 
 	srv, err := server.New(server.Config{
 		Host:      "127.0.0.1",
