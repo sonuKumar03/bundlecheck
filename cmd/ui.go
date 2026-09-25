@@ -55,8 +55,7 @@ trace package bloat with directed BFS ingress chains, and monitor size metrics.`
 				statsPath = autoDiscoverStatsFile(".")
 			}
 
-			_ = watch // reserved for live re-scan watcher
-			return runUIServer(host, port, statsPath, open)
+			return runUIServer(host, port, statsPath, open, watch)
 		},
 	}
 
@@ -68,11 +67,11 @@ trace package bloat with directed BFS ingress chains, and monitor size metrics.`
 	return cmd
 }
 
-func runUIServer(host string, port int, statsPath string, openBrowser bool) error {
-	return runUIServerWithContext(context.Background(), host, port, statsPath, openBrowser)
+func runUIServer(host string, port int, statsPath string, openBrowser bool, watch bool) error {
+	return runUIServerWithContext(context.Background(), host, port, statsPath, openBrowser, watch)
 }
 
-func runUIServerWithContext(parentCtx context.Context, host string, port int, statsPath string, openBrowser bool) error {
+func runUIServerWithContext(parentCtx context.Context, host string, port int, statsPath string, openBrowser bool, watch bool) error {
 	client := bundleradar.New()
 
 	srv, err := server.New(server.Config{
@@ -80,6 +79,7 @@ func runUIServerWithContext(parentCtx context.Context, host string, port int, st
 		Port:      port,
 		StatsPath: statsPath,
 		Client:    client,
+		Watch:     watch,
 	})
 	if err != nil {
 		return &UsageError{Err: fmt.Errorf("failed to initialize studio server: %w", err)}

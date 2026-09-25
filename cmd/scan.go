@@ -35,7 +35,7 @@ func newScanCommand() *cobra.Command {
 			}
 
 			if uiMode {
-				return runUIServer("127.0.0.1", 4200, statsPath, true)
+				return runUIServer("127.0.0.1", 4200, statsPath, true, true)
 			}
 
 			client := bundleradar.New()
